@@ -141,10 +141,7 @@ it('does not clear the existing collection when Discogs fails', function () {
 });
 
 it('purges the edge cache after a sync that changes the collection', function () {
-    config([
-        'services.laravel_cloud.purge_token' => 'purge-token',
-        'services.laravel_cloud.environment_id' => 'env-123',
-    ]);
+    configureEdgeCachePurging();
     [$kept, $sold] = $this->collection->snapshot();
     $this->collection->storeMany([$kept, $sold]);
     Http::fake([
@@ -162,10 +159,7 @@ it('purges the edge cache after a sync that changes the collection', function ()
 });
 
 it('keeps the edge cache when a sync changes nothing', function () {
-    config([
-        'services.laravel_cloud.purge_token' => 'purge-token',
-        'services.laravel_cloud.environment_id' => 'env-123',
-    ]);
+    configureEdgeCachePurging();
     $this->collection->store($this->existing);
     Http::fake([
         'api.discogs.com/users/*' => discogsCollectionPage([discogsCollectionEntry($this->existing['instanceId'], $this->existing['id'])]),
@@ -192,10 +186,7 @@ it('skips the edge cache purge when it is not configured', function () {
 });
 
 it('finishes the sync when the edge cache purge fails', function () {
-    config([
-        'services.laravel_cloud.purge_token' => 'purge-token',
-        'services.laravel_cloud.environment_id' => 'env-123',
-    ]);
+    configureEdgeCachePurging();
     [$kept, $sold] = $this->collection->snapshot();
     $this->collection->storeMany([$kept, $sold]);
     Http::fake([
@@ -216,6 +207,14 @@ it('can rerun the snapshot import without duplicating collection copies', functi
 
     $this->assertDatabaseCount('collection_records', 850);
 });
+
+function configureEdgeCachePurging(): void
+{
+    config([
+        'services.laravel_cloud.purge_token' => 'purge-token',
+        'services.laravel_cloud.environment_id' => 'env-123',
+    ]);
+}
 
 /** @return array<string, mixed> */
 function discogsCollectionEntry(int $instanceId, int $releaseId): array

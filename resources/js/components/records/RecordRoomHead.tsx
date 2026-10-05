@@ -17,6 +17,27 @@ type RecordRoomHeadProps = {
 /** Bump together with the `v` query the server adds to shared record images. */
 const recordShareImageVersion = 4;
 
+function shareImageUrl(
+    record: CollectionRecordSummary | null,
+    sharedRecord: SharedRecord | null,
+    social: SocialMeta,
+): string {
+    if (!record) {
+        return social.image;
+    }
+
+    if (record.instanceId === sharedRecord?.instanceId) {
+        return sharedRecord.image;
+    }
+
+    return new URL(
+        RecordShareImageController.url(record.instanceId, {
+            query: { v: recordShareImageVersion },
+        }),
+        social.url,
+    ).href;
+}
+
 /**
  * Title, social cards and structured data for the collection or the open
  * record. With SSR this is the only source of these tags; app.blade.php only
@@ -32,16 +53,7 @@ export function RecordRoomHead({
         : social.title;
     const description = record?.shareDescription ?? social.description;
     const url = record ? new URL(record.shareUrl, social.url).href : social.url;
-    const image = record
-        ? record.instanceId === sharedRecord?.instanceId
-            ? sharedRecord.image
-            : new URL(
-                  RecordShareImageController.url(record.instanceId, {
-                      query: { v: recordShareImageVersion },
-                  }),
-                  social.url,
-              ).href
-        : social.image;
+    const image = shareImageUrl(record, sharedRecord, social);
     const imageAlt = record
         ? `${record.displayTitle} sleeve and vinyl, by ${record.artist}`
         : social.imageAlt;
