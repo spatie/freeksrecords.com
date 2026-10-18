@@ -176,7 +176,9 @@ Local-only demo accounts: `alex@example.test`, `robin@example.test`, `sam@exampl
 Records, artwork and identities are synthetic, credentials are intentionally public,
 and digests are disabled for demo users. Alex has accepted friends and an incoming
 request from Jamie; Robin shares with friends, Sam with everyone, Casey with only
-themselves. Alex’s own empty shelf illustrates onboarding. The seeder is idempotent
+themselves. Alex’s own collection includes Vinyl, CD and Cassette releases, shared/private
+notes, a comment and an appreciation, with corresponding in-app notifications. Jamie’s
+empty shelf illustrates onboarding. The seeder is idempotent
 and refuses to run outside `APP_ENV=local`. The services configure SMTP to the local
 Mailpit instance; open its generated inbox portal to verify signup and password reset.
 In Settings, enable the digest and use **Check my digest preview** to exercise the

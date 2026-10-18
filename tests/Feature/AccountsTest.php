@@ -84,9 +84,16 @@ it('seeds repeatable synthetic local data without touching Freek and refuses pro
     $this->artisan('social:seed-demo')->assertSuccessful();
     $this->artisan('social:seed-demo')->assertSuccessful();
     $this->assertDatabaseCount('users', 6);
-    $this->assertDatabaseCount('collection_records', 9);
+    $this->assertDatabaseCount('collection_records', 12);
     $this->assertDatabaseCount('friendships', 4);
-    $this->assertDatabaseCount('social_notifications', 1);
+    $this->assertDatabaseCount('social_notifications', 3);
+    $this->assertDatabaseCount('comments', 1);
+    $this->assertDatabaseCount('appreciations', 1);
+    $alex = User::query()->where('handle', 'alex')->firstOrFail();
+    expect($alex->friends()->pluck('handle')->sort()->values()->all())->toBe(['casey', 'robin', 'sam'])
+        ->and($alex->records()->get()->map(fn ($record) => $record->formats())->all())->toBe([['Vinyl'], ['CD'], ['Cassette']])
+        ->and($alex->records()->where('instance_id', 900030)->firstOrFail()->private_note)->toContain('birthday gift')
+        ->and(User::query()->where('handle', 'jamie')->firstOrFail()->records()->count())->toBe(0);
     expect(User::freek()->password)->toBe($password);
     expect(User::query()->where('handle', 'casey')->first()->visibility)->toBe('only_me');
     Notification::assertNothingSent();
