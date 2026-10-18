@@ -16,7 +16,7 @@
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span> Freek’s records<span class="brand-period">.</span></a>
     <nav aria-label="Main navigation">
         @auth
-            <a href="/feed" @if(request()->is('feed')) aria-current="page" @endif>Friends’ additions</a>
+            <a href="/feed" @if(request()->is('feed') && !($startingCollection ?? false)) aria-current="page" @endif>Friends’ additions</a>
             <a href="/friends" @if(request()->is('friends')) aria-current="page" @endif>Friends</a>
             <a href="{{ route('profile', auth()->user()->handle) }}">My collection</a>
             <a href="/notifications">Notifications</a>
@@ -32,7 +32,9 @@
     @if($errors->any())<div class="errors" role="alert"><strong>Please check the following:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @yield('content')
 </main>
+@unless($startingCollection ?? false)
 <footer class="site-footer"><span>Good records. Good company.</span><a href="/collection">Back to Freek’s collection</a></footer>
+@endunless
 @if(request()->is('/', 'feed'))
 <script>
     (() => {

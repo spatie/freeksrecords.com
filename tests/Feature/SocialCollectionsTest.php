@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
@@ -96,6 +97,39 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
         $this->assertDatabaseCount('friendships', 0);
     }
 });
+
+it('prioritizes importing a first collection without empty feed and request clutter', function () {
+    $viewer = socialUser('newcollector');
+    $this->actingAs($viewer)->get('/feed')->assertOk()
+        ->assertSee('Add your records')->assertSee('Connect Discogs')
+        ->assertSee('action="/discogs/connect"', false)
+        ->assertDontSee('Nothing new yet')->assertDontSee('0 releases')
+        ->assertDontSee('Friend requests')->assertDontSee('View my collection')
+        ->assertDontSee('Good records. Good company.')->assertDontSee('Back to Freek’s collection')
+        ->assertDontSee('Historical first imports')->assertDontSee('The listening circle / Latest additions');
+
+    $requester = socialUser('requester');
+    Friendship::query()->create([
+        'user_low' => min($viewer->id, $requester->id), 'user_high' => max($viewer->id, $requester->id),
+        'requested_by' => $requester->id,
+    ]);
+    $this->get('/feed')->assertSeeInOrder(['Add your records', 'Friend requests', 'Requester'])
+        ->assertSee('Accept')->assertSee('Decline');
+
+    $viewer->update(['discogs_token' => 'test-token', 'sync_status' => 'Syncing']);
+    $this->get('/feed')->assertOk()->assertSee('Syncing')->assertSee('View import status')
+        ->assertDontSee('action="/discogs/connect"', false);
+});
+
+it('keeps the normal feed after importing even an empty collection', function (bool $hasRecords) {
+    $viewer = socialUser('returningcollector');
+    $hasRecords
+        ? socialRecord($viewer)
+        : $viewer->update(['collection_imported_at' => now()]);
+    $this->actingAs($viewer)->get('/feed')->assertOk()->assertSee('Nothing new yet')
+        ->assertSee('View my collection')->assertSee('Find friends')->assertDontSee('Add your records')
+        ->assertDontSee('action="/discogs/connect"', false)->assertDontSee('Friend requests');
+})->with([true, false]);
 
 it('orders the feed by original addition date, excludes initial imports, and revokes activity dynamically', function () {
     $viewer = socialUser('viewer');

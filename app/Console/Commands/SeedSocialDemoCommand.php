@@ -28,7 +28,7 @@ class SeedSocialDemoCommand extends Command
             $users[$handle] = User::query()->firstOrCreate(['email' => $handle.'@example.test'], [
                 'name' => ucfirst($handle).' (demo)', 'handle' => $handle,
                 'password' => 'demo-listening-2026', 'email_verified_at' => now(),
-                'visibility' => $visibility, 'collection_imported_at' => now(), 'digest_enabled' => false,
+                'visibility' => $visibility, 'collection_imported_at' => $handle === 'jamie' ? null : now(), 'digest_enabled' => false,
             ]);
         }
         foreach (['robin', 'sam', 'casey', 'jamie'] as $handle) {

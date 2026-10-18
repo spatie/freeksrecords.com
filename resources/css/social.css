@@ -657,11 +657,6 @@ small,
     padding: 9px 12px;
     font-size: 14px;
 }
-.request-link {
-    display: inline-block;
-    margin-top: 20px;
-    font-size: 14px;
-}
 .collection-page {
     background: #eae6dc url('/images/paper-grain.png') repeat;
 }

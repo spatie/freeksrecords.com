@@ -171,6 +171,8 @@ it('seeds repeatable real catalog local data without touching Freek and refuses 
         }
     }
     expect(User::query()->where('handle', 'casey')->first()->visibility)->toBe('only_me');
+    $this->actingAs(User::query()->where('handle', 'jamie')->firstOrFail())->get('/feed')
+        ->assertOk()->assertSee('Add your records')->assertSee('Connect Discogs');
     Notification::assertNothingSent();
     app()->detectEnvironment(fn () => 'production');
     $this->artisan('social:seed-demo')->assertFailed();
