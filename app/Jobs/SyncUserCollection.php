@@ -65,7 +65,9 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
                 foreach ($response['releases'] as $entry) {
                     $instance = $entry['instance_id'];
                     $seen[] = $instance;
-                    if ($user->records()->where('instance_id', $instance)->exists()) {
+                    if ($known = $user->records()->where('instance_id', $instance)->first()) {
+                        $changed = $known->refreshFormats($entry['basic_information'], $mapper) || $changed;
+
                         continue;
                     }
                     $release = $discogs->get('releases/'.$entry['basic_information']['id']);

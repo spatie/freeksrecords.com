@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\DiscogsConnectionController;
+use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
 use App\Http\Middleware\PrivateResponse;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,7 @@ Route::middleware(PrivateResponse::class)->group(function () {
             Route::view('/settings', 'social.settings')->name('settings');
             Route::patch('/settings', [AccountController::class, 'settings']);
             Route::post('/demo/digest', [SocialController::class, 'previewDigest'])->middleware('throttle:6,1');
+            Route::patch('/shelves/{record}/notes', [RecordNotesController::class, 'update'])->whereNumber('record')->name('shelf.notes.update');
             Route::post('/shelves/{record}/appreciations', [SocialController::class, 'appreciate'])->middleware('throttle:60,1');
             Route::delete('/shelves/{record}/appreciations', [SocialController::class, 'unappreciate']);
             Route::post('/shelves/{record}/comments', [SocialController::class, 'comment'])->middleware('throttle:20,1');

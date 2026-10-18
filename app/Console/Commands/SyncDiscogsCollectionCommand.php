@@ -42,6 +42,7 @@ class SyncDiscogsCollectionCommand extends Command
         $knownInstanceIds = array_fill_keys(CollectionRecord::legacy()->pluck('instance_id')->all(), true);
         $seenInstanceIds = [];
         $imported = 0;
+        $refreshed = 0;
         $failed = 0;
         $page = 1;
 
@@ -60,6 +61,12 @@ class SyncDiscogsCollectionCommand extends Command
                     $seenInstanceIds[] = $entry['instance_id'];
 
                     if (isset($knownInstanceIds[$entry['instance_id']])) {
+                        $known = CollectionRecord::legacy()->where('instance_id', $entry['instance_id'])->first();
+                        if ($known?->refreshFormats($entry['basic_information'], $mapper)) {
+                            $refreshed++;
+                            $collection->flush();
+                        }
+
                         continue;
                     }
 
@@ -89,7 +96,7 @@ class SyncDiscogsCollectionCommand extends Command
         } catch (ConnectionException|RequestException $exception) {
             $this->error("Discogs sync interrupted. Imported records are saved; rerun to resume. {$exception->getMessage()}");
 
-            $this->purgeEdgeCacheWhenChanged($edgeCache, $imported);
+            $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $refreshed);
 
             return self::FAILURE;
         }
@@ -102,7 +109,7 @@ class SyncDiscogsCollectionCommand extends Command
 
         $this->comment("Imported {$imported} new records, removed {$removed}, skipped {$failed}.");
 
-        $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $removed);
+        $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $removed + $refreshed);
 
         return $failed ? self::FAILURE : self::SUCCESS;
     }

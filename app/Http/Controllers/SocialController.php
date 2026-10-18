@@ -12,16 +12,19 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class SocialController extends Controller
 {
     public function profile(Request $request, User $user): View
     {
         $visible = $user->canViewCollection($request->user());
+        $request->validate(['format' => ['nullable', Rule::in(['Vinyl', 'CD', 'Cassette'])]]);
+        $format = $request->string('format')->toString();
 
         return view('social.profile', [
-            'person' => $user, 'visible' => $visible,
-            'records' => $visible ? $user->records()->orderByDesc('added_at')->orderByDesc('id')->paginate(24) : null,
+            'person' => $user, 'visible' => $visible, 'format' => $format,
+            'records' => $visible ? $user->records()->ofFormat($format)->orderByDesc('added_at')->orderByDesc('id')->paginate(24) : null,
         ]);
     }
 
@@ -38,7 +41,16 @@ class SocialController extends Controller
 
     public function feed(Request $request): View
     {
-        return view('social.feed', ['records' => CollectionRecord::friendActivity($request->user())->with('user')->paginate(24)]);
+        $user = $request->user();
+
+        return view('social.feed', [
+            'records' => CollectionRecord::friendActivity($user)->with('user')->paginate(24),
+            'collectionCount' => $user->records()->count(),
+            'incomingRequests' => User::query()->whereIn('id', Friendship::query()
+                ->whereNull('accepted_at')->where('requested_by', '!=', $user->id)
+                ->where(fn ($query) => $query->where('user_low', $user->id)->orWhere('user_high', $user->id))
+                ->select('requested_by'))->orderBy('name')->get(),
+        ]);
     }
 
     public function friends(Request $request): View

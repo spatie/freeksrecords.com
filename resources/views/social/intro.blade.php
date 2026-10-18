@@ -1,15 +1,23 @@
 @extends('social.layout')
-@section('title', 'A listening circle')
+@section('title', 'Your collection. Good company.')
 @section('content')
-<section class="hero">
-    <p class="eyebrow">Freek’s Records / Listening circle</p>
-    <h1>Better records.<br>Found together<span>.</span></h1>
-    <p class="lede">A small corner of the internet for the records you bring home and the friends you share them with.</p>
-    <div class="actions"><a class="button" href="/register">Start your shelf ↗</a><a href="/login">Already here? Sign in</a></div>
+<section class="landing-hero">
+    <div class="landing-copy">
+        <p class="eyebrow">A home for your music</p>
+        <h1>Your collection.<br>Good company<span>.</span></h1>
+        <p class="lede">Bring your vinyl, CDs and cassettes together. Share with friends, on your terms.</p>
+        <div class="landing-actions"><a class="button" href="/register">Start your collection ↗</a><a class="button secondary" href="#how-it-works">See how it works</a></div>
+    </div>
+    <div class="format-still-life" role="img" aria-label="An illustrated vinyl sleeve and record, CD case and cassette">
+        <div class="demo-vinyl"><div class="vinyl-disc"></div><img src="/images/demo-sleeve-1.svg" alt="" width="400" height="400"></div>
+        <div class="demo-cd"><img src="/images/demo-sleeve-2.svg" alt="" width="240" height="240"><span class="cd-disc"></span></div>
+        <div class="demo-cassette"><span>GOOD COMPANY / MIX TAPE</span><div class="cassette-window"><i></i><i></i></div><small>SIDE A · C60</small></div>
+    </div>
 </section>
-<div class="three-columns">
-    <section class="panel"><p class="eyebrow">01 / Your shelf</p><h2>Bring your collection.</h2><p>Connect Discogs once. Your collection stays in sync, with privacy set to Only me until you choose otherwise.</p></section>
-    <section class="panel"><p class="eyebrow">02 / Your people</p><h2>A mutual connection.</h2><p>Find friends by handle, send a request, and start sharing after they accept. No followers, no ranked feed.</p></section>
-    <section class="panel"><p class="eyebrow">03 / A little discovery</p><h2>See what came home.</h2><p>New additions, appreciations, and conversations. A weekly email when there’s something to share. Silence when there isn’t.</p></section>
-</div>
+<section id="how-it-works" class="landing-steps" aria-label="How it works">
+    <div><p class="eyebrow">01 / Bring your music</p><h2>Connect Discogs</h2><p>Import your collection and keep it in sync.</p></div>
+    <div><p class="eyebrow">02 / On your terms</p><h2>Choose who sees it</h2><p>Your collection is private by default. Share with friends when you’re ready.</p></div>
+    <div><p class="eyebrow">03 / Good company</p><h2>Find your friends</h2><p>See what your friends are adding and start a conversation. Newest first, no ranked feed.</p></div>
+</section>
+<p class="original-collection"><a href="/collection">Explore Freek’s original collection →</a></p>
 @endsection

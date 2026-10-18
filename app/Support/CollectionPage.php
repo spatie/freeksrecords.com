@@ -51,7 +51,7 @@ class CollectionPage
         return [
             'title' => "Freek's records",
             'description' => "A lifetime of digging, one shelf at a time. Browse Freek's vinyl collection by artist, decade or genre, and find your next favourite record.",
-            'url' => route('home'),
+            'url' => route('collection'),
             'image' => $this->shareImageUrl(
                 fn (): string => $this->shareImages->collectionUrl(),
                 route('collectionShareImage', ['v' => 3]),

@@ -7,7 +7,7 @@ import type {
     CollectionGroup,
     CollectionMode,
 } from '@/components/records/types';
-import { home } from '@/routes';
+import { collection } from '@/routes';
 
 type IndexMode = Exclude<CollectionMode, 'recent'>;
 
@@ -178,7 +178,7 @@ export function CollectionIndex({
                         aria-current={
                             activeGroup === group.name ? 'true' : undefined
                         }
-                        href={`${home.url()}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`}
+                        href={`${collection.url()}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`}
                         key={group.name}
                         onClick={(event) => {
                             if (

@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('lets guests browse the whole collection without downloading every track link', function () {
-    $this->get(route('home'))
+    $this->get(route('collection'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('welcome')
@@ -116,16 +116,16 @@ it('stores a small preview image for the collection and redirects to it', functi
 });
 
 it('renders each share image only once', function () {
-    $this->get(route('home'))->assertOk();
+    $this->get(route('collection'))->assertOk();
     $this->get(route('collectionShareImage'))->assertRedirect();
 
     expect(Storage::disk('public')->allFiles('share'))->toHaveCount(1);
 });
 
-it('renders social metadata for the collection homepage', function () {
-    $home = route('home');
+it('renders social metadata for the original collection', function () {
+    $home = route('collection');
 
-    $this->get(route('home'))
+    $this->get(route('collection'))
         ->assertSee('property="og:type" content="website"', false)
         ->assertSee('A lifetime of digging, one shelf at a time.')
         ->assertSee('name="twitter:description"', false)
@@ -139,7 +139,7 @@ it('renders social metadata for the collection homepage', function () {
 });
 
 it('describes the collection with structured data', function () {
-    $schema = structuredData($this->get(route('home'))->assertOk()->getContent());
+    $schema = structuredData($this->get(route('collection'))->assertOk()->getContent());
 
     expect($schema['@context'])->toBe('https://schema.org')
         ->and($schema['@type'])->toBe('CollectionPage')
@@ -163,7 +163,7 @@ it('reads the persisted collection once records are stored', function () {
 
     $collection->store($record);
 
-    $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
+    $this->get(route('collection'))->assertInertia(fn (Assert $page) => $page
         ->component('welcome')
         ->has('collection.records', 1)
         ->where('collection.records.0.instanceId', $record['instanceId'])

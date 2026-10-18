@@ -17,12 +17,12 @@
         @auth
             <a href="/feed" @if(request()->is('feed')) aria-current="page" @endif>Friends’ additions</a>
             <a href="/friends" @if(request()->is('friends')) aria-current="page" @endif>Friends</a>
-            <a href="{{ route('profile', auth()->user()->handle) }}">My shelf</a>
+            <a href="{{ route('profile', auth()->user()->handle) }}">My collection</a>
             <a href="/notifications">Notifications</a>
             <a href="/settings">Settings</a>
             <form method="post" action="/logout">@csrf<button class="text-button">Sign out</button></form>
         @else
-            <a href="/community">Listening circle</a><a href="/login">Sign in</a><a class="button small" href="/register">Join the circle</a>
+            <a href="{{ route('home') }}#how-it-works">How it works</a><a class="button small" href="/login">Sign in</a>
         @endauth
     </nav>
 </header>
@@ -31,6 +31,17 @@
     @if($errors->any())<div class="errors" role="alert"><strong>Please check the following:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @yield('content')
 </main>
-<footer class="site-footer"><span>Good records. Good company.</span><a href="/">Back to Freek’s collection ↗</a></footer>
+<footer class="site-footer"><span>Good records. Good company.</span><a href="/collection">Back to Freek’s collection ↗</a></footer>
+@if(request()->is('/', 'feed'))
+<script>
+    (() => {
+        const hash = window.location.hash;
+        if (/^#record-\d+$/.test(hash) || /^#(?:genre|artist|decade|q)=/.test(hash)) {
+            window.location.replace('/collection' + hash);
+        }
+    })();
+</script>
+@endif
+@stack('scripts')
 </body>
 </html>

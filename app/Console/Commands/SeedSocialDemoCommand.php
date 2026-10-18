@@ -44,7 +44,7 @@ class SeedSocialDemoCommand extends Command
                 $artist = ['The Paper Satellites', 'Harbor Lights', 'Studio Fern'][$index];
                 $payload = $mapper->record([
                     'instance_id' => $instance, 'date_added' => $added,
-                    'basic_information' => ['id' => $instance, 'title' => $title, 'artists' => [['name' => $artist]], 'year' => 2026, 'labels' => [['name' => 'Synthetic demo release']], 'cover_image' => ''],
+                    'basic_information' => ['id' => $instance, 'title' => $title, 'artists' => [['name' => $artist]], 'year' => 2026, 'labels' => [['name' => 'Synthetic demo release']], 'cover_image' => '', 'formats' => [['name' => ['Vinyl', 'CD', 'Cassette'][$number], 'qty' => '1']]],
                 ], ['year' => 2026, 'tracklist' => [['title' => 'A Small Beginning', 'position' => 'A1', 'duration' => '4:12']]], []);
                 $payload['cover'] = '/images/demo-sleeve-'.($number + 1).'.svg';
                 $users[$handle]->records()->firstOrCreate(['instance_id' => $instance], [

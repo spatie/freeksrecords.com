@@ -12,7 +12,7 @@ import {
     restoreBrowseState,
 } from '@/components/records/browseState';
 import type { BrowseState } from '@/components/records/browseState';
-import { home } from '@/routes';
+import { collection } from '@/routes';
 
 export type BrowseUpdate =
     | Partial<BrowseState>
@@ -41,7 +41,7 @@ export function useBrowseNavigation() {
     }, []);
 
     const restore = useEffectEvent(() => {
-        if (window.location.pathname !== home.url()) return;
+        if (window.location.pathname !== collection.url()) return;
         const saved = window.history.state?.recordBrowse as
             | BrowseState
             | undefined;
@@ -78,7 +78,7 @@ export function useBrowseNavigation() {
         };
         window.history.replaceState(currentState, '', window.location.href);
         const state = { ...currentState, recordBrowse: next };
-        const url = `${home.url()}${nextHash}`;
+        const url = `${collection.url()}${nextHash}`;
         if (browseHash(current) === nextHash || current.query !== next.query) {
             window.history.replaceState(state, '', url);
         } else {

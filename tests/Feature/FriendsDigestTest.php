@@ -11,7 +11,7 @@ it('sends exactly the previous seven days in original addition order and never r
     $owner = socialUser('owner', 'friends');
     socialFriends($viewer, $owner);
     socialRecord($owner, 'Before window', true, '2026-10-12 06:59:59', 1);
-    socialRecord($owner, 'Window start', true, '2026-10-12 07:00:00', 2);
+    socialRecord($owner, 'Window start', true, '2026-10-12 07:00:00', 2)->update(['shared_note' => 'Owner shared note', 'private_note' => 'Owner private note']);
     socialRecord($owner, 'Window end minus one', true, '2026-10-19 06:59:59', 3);
     socialRecord($owner, 'Next week', true, '2026-10-19 07:00:00', 4);
     socialRecord($owner, 'Initial import', false, '2026-10-18 12:00:00', 5);
@@ -19,7 +19,7 @@ it('sends exactly the previous seven days in original addition order and never r
     Mail::assertSent(FriendsWeeklyDigest::class, function (FriendsWeeklyDigest $mail) use ($viewer) {
         expect($mail->records->pluck('payload.displayTitle')->all())->toBe(['Window end minus one', 'Window start']);
         $html = $mail->render();
-        expect($html)->toContain('Window start', '/shelves/', '/settings')->not->toContain('Initial import', 'Before window', 'Next week');
+        expect($html)->toContain('Window start', '/shelves/', '/settings')->not->toContain('Initial import', 'Before window', 'Next week', 'Owner private note');
 
         return $mail->hasTo($viewer->email);
     });

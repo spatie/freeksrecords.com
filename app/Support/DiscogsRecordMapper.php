@@ -29,13 +29,12 @@ class DiscogsRecordMapper
             'artists' => $artists,
             'title' => $basic['title'],
             'displayTitle' => $basic['title'],
-            'edition' => '',
             'year' => $basic['year'] ?? 0,
             'originalYear' => $this->originalYear($basic, $release, $master),
             'addedAt' => $entry['date_added'],
             'label' => $basic['labels'][0]['name'] ?? '',
             'catalogNumber' => $basic['labels'][0]['catno'] ?? '',
-            'format' => '',
+            ...$this->formatMetadata($basic),
             'genres' => $basic['genres'] ?? [],
             'styles' => $basic['styles'] ?? [],
             'cover' => $this->placeholderCover,
@@ -101,6 +100,40 @@ class DiscogsRecordMapper
     public function artistName(string $name): string
     {
         return preg_replace('/ \([0-9]+\)$/', '', $name) ?? $name;
+    }
+
+    /** @param array<string, mixed> $basic
+     * @return array{format: string, edition: string, mediaFormats: list<string>}
+     */
+    public function formatMetadata(array $basic): array
+    {
+        $formats = [];
+        $editions = [];
+        $media = [];
+        foreach ($basic['formats'] ?? [] as $format) {
+            $name = $format['name'] ?? '';
+            $quantity = (int) ($format['qty'] ?? 1);
+            $formats[] = ($quantity > 1 ? $quantity.' × ' : '').$name;
+            if (in_array($name, ['Vinyl', 'CD', 'Cassette'], true)) {
+                $media[] = $name;
+            }
+            $editions = array_merge($editions, $format['descriptions'] ?? [], empty($format['text']) ? [] : [$format['text']]);
+        }
+
+        return ['format' => implode(', ', $formats), 'edition' => implode(', ', array_unique($editions)), 'mediaFormats' => array_values(array_unique($media))];
+    }
+
+    /** @return list<string> */
+    public function mediaFormats(string $description): array
+    {
+        $formats = [];
+        foreach (['Vinyl' => '/\b(?:vinyl|lp|\d+xlp)\b/i', 'CD' => '/\bcd\b/i', 'Cassette' => '/\bcassette\b/i'] as $format => $pattern) {
+            if (preg_match($pattern, $description)) {
+                $formats[] = $format;
+            }
+        }
+
+        return $formats;
     }
 
     /**

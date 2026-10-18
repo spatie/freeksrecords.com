@@ -64,7 +64,7 @@ export default function Welcome({
                         Freek’s records
                         <span className="brand-period">.</span>
                     </a>
-                    <a href="/community">Join the listening circle ↗</a>
+                    <a href={home.url()}>Start your own collection ↗</a>
                 </header>
                 <main id="records">
                     <div className="collection-masthead">

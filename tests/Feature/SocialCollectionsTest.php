@@ -133,7 +133,7 @@ it('shows only the recipient’s currently visible notifications and scopes read
 it('isolates legacy collection copies, snapshot fallback, and all legacy URLs from other owners', function () {
     $owner = socialUser('private');
     $record = socialRecord($owner, 'Never leak me', instance: 2189134863);
-    $this->get('/')->assertOk()->assertDontSee('Never leak me');
+    $this->get('/collection')->assertOk()->assertDontSee('Never leak me');
     $this->getJson('/api/records/2189134863')->assertJsonPath('title', 'Shebang');
     $this->get('/record/2189134863/oren-ambarchi-shebang')->assertOk()->assertDontSee('Never leak me');
     $this->get('/record/2189134863/image.png')->assertRedirect();

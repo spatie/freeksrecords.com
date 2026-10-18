@@ -76,7 +76,10 @@ composer ci:check  # everything above, plus `vp check` and tsc
 
 ## Listening circle
 
-Visit `/community` to join or sign in. Accounts use email/password, inbox verification,
+The homepage welcomes visitors; signed-in collectors go straight to their friends’
+additions, with their own collection and incoming requests alongside. Freek’s original
+record room is at `/collection`; existing record URLs and old root browse fragments
+continue to work. Visit `/community` to learn more or join. Accounts use email/password, inbox verification,
 and password reset. Each profile has a unique handle at `/people/{handle}`.
 
 - New collections default to **Only me**. **Friends** means accepted mutual friends;
@@ -91,6 +94,13 @@ and password reset. Each profile has a unique handle at `/people/{handle}`.
   collection copy. Authors can delete their comments even after losing access; collection
   owners can delete any comment or stop new comments. Existing comments remain visible
   when new comments are disabled. Notifications are in-app, not per-record emails.
+- Discogs imports retain Vinyl, CD and Cassette formats, including mixed bundles.
+  Profile collections can be filtered by format; unknown media stay visible under All.
+  Format metadata refreshes on subsequent syncs without creating new activity.
+- Owners can edit a shared and a private note per collection copy. Shared notes inherit
+  collection privacy; private notes are owner-only and excluded from other viewers,
+  feeds, notifications, digests and legacy APIs. Notes survive syncs; editing them sends
+  no notifications and does not create feed activity.
 - The weekly digest is enabled by default, can be disabled in Settings, and runs Monday
   at 09:00 **Europe/Brussels**. It covers the preceding local seven-day interval,
   including DST changes. No visible friend additions means no email. Sends are synchronous
@@ -133,7 +143,7 @@ an unknowable random password. Do not create a seeded production password.
 Once real mail is configured, run `php artisan social:provision-freek` to send a standard
 single-use password setup link only to that inbox. Then sign in and verify the email.
 On snapshot-only installations, run `records:import-snapshot` before connecting Freek’s
-Discogs account. The original `/`, `/record/...`, API and share-image routes remain public,
+Discogs account. The original shelf at `/collection`, `/record/...`, API and share-image routes remain public,
 anonymous and edge-cacheable, and are always scoped to Freek. His collection remains
 Everyone to honor those permanent public URLs and previously published artwork previews.
 All other profiles and shelf pages are private/no-store, even when publicly visible;

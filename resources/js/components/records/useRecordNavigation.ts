@@ -5,7 +5,7 @@ import { sleeveOrigin } from '@/components/records/recordMotion';
 import type { SleeveOrigin } from '@/components/records/recordMotion';
 
 import type { CollectionRecordSummary } from '@/components/records/types';
-import { home } from '@/routes';
+import { collection } from '@/routes';
 
 function recordFromLocation(): number | null {
     const match = window.location.hash.match(/^#record-(\d+)$/);
@@ -94,7 +94,7 @@ export function useRecordNavigation(
         window.history.replaceState(
             { ...window.history.state, recordCabinet: 'shelf' },
             '',
-            home.url(),
+            collection.url(),
         );
         navigate(null);
     }
@@ -103,7 +103,7 @@ export function useRecordNavigation(
         window.history.replaceState(
             { ...window.history.state, recordCabinet: 'shelf' },
             '',
-            home.url(),
+            collection.url(),
         );
         setIsInitialRecord(false);
         setSelectedId(null);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\DiscogsRecordMapper;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -17,12 +18,54 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $discogs_release_id
  * @property CarbonImmutable $added_at
  * @property array<string, mixed> $payload
+ * @property string|null $shared_note
+ * @property string|null $private_note
  */
 class CollectionRecord extends Model
 {
     public const CREATED_AT = null;
 
     protected $guarded = [];
+
+    protected $hidden = ['private_note'];
+
+    /** @return list<string> */
+    public function formats(): array
+    {
+        return $this->payload['mediaFormats'] ?? app(DiscogsRecordMapper::class)->mediaFormats($this->payload['format'] ?? '');
+    }
+
+    /** @param Builder<CollectionRecord> $query */
+    public function scopeOfFormat(Builder $query, string $format): void
+    {
+        if ($format === '') {
+            return;
+        }
+        // Snapshot upserts can happen after the backfill and bypass model events.
+        $legacyIds = (clone $query)->whereNull('payload->mediaFormats')->get(['id', 'payload'])
+            ->filter(fn (self $record): bool => in_array($format, $record->formats(), true))->modelKeys();
+        $query->where(fn (Builder $query) => $query->whereJsonContains('payload->mediaFormats', $format)->orWhereIn('id', $legacyIds));
+    }
+
+    /** @param array<string, mixed> $basic */
+    public function refreshFormats(array $basic, DiscogsRecordMapper $mapper): bool
+    {
+        if (! array_key_exists('formats', $basic)) {
+            return false;
+        }
+        foreach ($basic['formats'] as $format) {
+            if (empty($format['name'])) {
+                return false;
+            }
+        }
+        $this->payload = array_replace($this->payload, $mapper->formatMetadata($basic));
+        if (! $this->isDirty('payload')) {
+            return false;
+        }
+        $this->save();
+
+        return true;
+    }
 
     /** @return Builder<CollectionRecord> */
     public static function legacy(): Builder

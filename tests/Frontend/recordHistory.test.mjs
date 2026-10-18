@@ -1,13 +1,51 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 import { initializeRecordHistory } from '../../resources/js/lib/record-history.ts';
+
+await test('the landing page preserves legacy shelf fragments but leaves other anchors alone', () => {
+    const blade = readFileSync(
+        new URL(
+            '../../resources/views/social/layout.blade.php',
+            import.meta.url,
+        ),
+        'utf8',
+    );
+    const script = blade.match(/<script>([\s\S]*?)<\/script>/)[1];
+    for (const hash of [
+        '#record-123',
+        '#genre=Blues&q=Live',
+        '#artist=Pink+Floyd',
+        '#decade=1990s',
+        '#q=Live',
+        '#how-it-works',
+        '#main',
+        '#record-nope',
+        '',
+    ]) {
+        let destination = null;
+        runInNewContext(script, {
+            window: {
+                location: {
+                    hash,
+                    replace: (url) => {
+                        destination = url;
+                    },
+                },
+            },
+        });
+        const legacy = /^#record-\d+$|^#(?:genre|artist|decade|q)=/.test(hash);
+        assert.equal(destination, legacy ? `/collection${hash}` : null);
+    }
+});
 
 await test('local record history preserves the shelf while other navigation reaches Inertia', () => {
     const browser = new EventTarget();
     let collectionIsOpen = true;
     let recordIsOpen = false;
-    browser.location = { pathname: '/', hash: '' };
+    browser.location = { pathname: '/collection', hash: '' };
     const events = [];
     globalThis.window = browser;
     globalThis.document = {
@@ -57,6 +95,9 @@ await test('local record history preserves the shelf while other navigation reac
         assert.equal(events.at(-1), 'record');
         events.pop();
         browser.location.pathname = '/';
+        navigate({ recordCabinet: 'shelf' });
+        assert.equal(events.pop(), 'inertia');
+        browser.location.pathname = '/collection';
 
         navigate({ page: { component: 'dashboard' } });
         navigate(null);
