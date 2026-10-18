@@ -19,8 +19,8 @@
         4px 7px 9px #100a0899;
 }
 .catalog-record[data-media-format='CD'] .catalog-record-art {
-    width: 72%;
-    aspect-ratio: 1.1;
+    width: 96%;
+    aspect-ratio: 1.14;
     padding: 3px 3px 3px 9%;
 }
 .catalog-record[data-media-format='CD'] .catalog-record-art::before {
@@ -43,8 +43,8 @@
 .catalog-record[data-media-format='Cassette'] .catalog-record-art {
     display: flex;
     flex-direction: column;
-    width: 46%;
-    aspect-ratio: 0.64;
+    width: 62%;
+    aspect-ratio: 0.62;
     padding: 4px 5px 5px;
 }
 .catalog-record[data-media-format='Cassette'] .catalog-record-art img {
