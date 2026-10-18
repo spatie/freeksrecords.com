@@ -26,6 +26,22 @@
         @endauth
     </nav>
 </header>
+@if(app()->environment('local') && config('services.social_demo') && Route::has('loginLinkLogin'))
+    @php($demoEmails = App\Models\User::query()->whereIn('email', array_keys(config('login-link.demo_users')))->pluck('email'))
+    @if($demoEmails->isNotEmpty())
+        <section class="demo-logins" aria-label="Local demo account switcher">
+            <p><strong>Local demo accounts</strong> · Switch without a password</p>
+            <div class="actions">
+                @foreach(config('login-link.demo_users') as $email => $label)
+                    @if($demoEmails->contains($email))
+                        <x-dynamic-component component="login-link" :email="$email" :label="$label" redirect-url="/feed" class="secondary" />
+                    @endif
+                @endforeach
+            </div>
+            <small>Alex has a full demo shelf. Casey’s collection is private; Jamie’s shelf is empty.</small>
+        </section>
+    @endif
+@endif
 <main id="main" class="page">
     @if(session('status'))<p class="notice" role="status">{{ session('status') }}</p>@endif
     @if($errors->any())<div class="errors" role="alert"><strong>Please check the following:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif

@@ -92,6 +92,23 @@ button:hover,
 .site-header {
     border-bottom: 1px solid #d7d2c5;
 }
+.demo-logins {
+    width: 90%;
+    max-width: 1152px;
+    margin: 24px auto 0;
+    padding: 16px 20px;
+    border: 1px dashed #bdb6a5;
+    border-radius: 4px;
+}
+.demo-logins p {
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+.demo-logins small {
+    display: block;
+    margin-top: 12px;
+    color: #6b695e;
+}
 .brand {
     font-weight: 600;
     font-size: 24px;

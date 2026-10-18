@@ -8,6 +8,45 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 
+it('switches existing local demo accounts without passwords and ignores forged package selectors', function () {
+    app()->detectEnvironment(fn () => 'local');
+    config(['services.social_demo' => true]);
+    $alex = socialUser('alex');
+    $robin = socialUser('robin');
+    $this->get('/login')->assertOk()->assertSeeText('Local demo accounts')->assertSeeText('Alex')->assertSeeText('Robin')->assertDontSeeText('Sam');
+
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/feed');
+    $this->assertAuthenticatedAs($alex);
+    $this->get('/feed')->assertOk();
+
+    $forged = ['key' => User::freek()->id, 'user_attributes' => json_encode(['email' => User::freek()->email]), 'user_model' => 'AnUntrustedModel', 'guard' => 'not-a-guard', 'redirect_url' => 'https://untrusted.example'];
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), [...$forged, 'email' => $robin->email, '_token' => 'demo-login'])->assertRedirect('/feed');
+    $this->assertAuthenticatedAs($robin);
+    $this->get('/feed')->assertOk();
+
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin').'?'.http_build_query($forged), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/feed');
+    $this->assertAuthenticatedAs($alex);
+    $this->get('/feed')->assertOk();
+});
+
+it('does not allow login links for Freek, arbitrary accounts or missing demo accounts', function ($email) {
+    app()->detectEnvironment(fn () => 'local');
+    config(['services.social_demo' => true]);
+    socialUser('outsider');
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $email, '_token' => 'demo-login'])->assertNotFound();
+    $this->assertGuest();
+    $this->assertDatabaseCount('users', 2);
+})->with(['freek@spatie.be', 'outsider@example.test', 'alex@example.test', null, ['alex@example.test']]);
+
+it('hides and disables login links outside explicitly enabled local demos', function (string $environment, bool $enabled) {
+    app()->detectEnvironment(fn () => $environment);
+    config(['services.social_demo' => $enabled]);
+    $alex = socialUser('alex');
+    $this->get('/login')->assertOk()->assertDontSee('Local demo accounts')->assertDontSee('laravel-login-link-login');
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $alex->email, '_token' => 'demo-login'])->assertNotFound();
+    $this->assertGuest();
+})->with([['production', true], ['staging', true], ['testing', true], ['local', false]]);
+
 it('renders account emails with a shared inline layout and a working action link', function (string $notification, string $actionPath) {
     $user = socialUser('mailrecipient');
     $message = $notification === 'verify' ? new VerifyEmail : new ResetPassword('preview-token');
