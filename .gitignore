@@ -27,8 +27,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-/.agents
-/.amp
+/.agents/*
+!/.agents/setup
+/.amp/*
+!/.amp/services.yaml
 /.claude
 /.codex
 /.cloud

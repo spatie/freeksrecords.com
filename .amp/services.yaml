@@ -1,0 +1,36 @@
+services:
+    web:
+        command: >-
+            APP_URL="$PUBLIC_URL" ASSET_URL="$PUBLIC_URL"
+            php artisan serve --host=0.0.0.0 --port="$PORT"
+        port: 8000
+        health: /up
+        env:
+            APP_DEBUG: 'false'
+            MAIL_MAILER: smtp
+            MAIL_HOST: 127.0.0.1
+            MAIL_PORT: '1025'
+            SOCIAL_DEMO_MODE: 'true'
+        portal:
+            title: Freeks Records social preview
+    queue:
+        command: php artisan queue:work --sleep=2 --tries=3 --timeout=7200
+        env:
+            APP_URL: ${services.web.publicURL}
+            MAIL_MAILER: smtp
+            MAIL_HOST: 127.0.0.1
+            MAIL_PORT: '1025'
+    scheduler:
+        command: php artisan schedule:work
+        env:
+            APP_URL: ${services.web.publicURL}
+            MAIL_MAILER: smtp
+            MAIL_HOST: 127.0.0.1
+            MAIL_PORT: '1025'
+    mail:
+        command: mailpit --listen "0.0.0.0:$PORT" --smtp 127.0.0.1:1025 --database storage/app/mailpit.db
+        port: 8025
+        health: /livez
+        review: false
+        portal:
+            title: Freeks Records preview inbox

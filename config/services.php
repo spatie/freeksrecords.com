@@ -2,6 +2,8 @@
 
 return [
 
+    'social_demo' => env('SOCIAL_DEMO_MODE', false),
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -17,6 +19,8 @@ return [
     'discogs' => [
         'username' => env('DISCOGS_USERNAME', 'freekmurze'),
         'token' => env('DISCOGS_TOKEN'),
+        'consumer_key' => env('DISCOGS_CONSUMER_KEY'),
+        'consumer_secret' => env('DISCOGS_CONSUMER_SECRET'),
         'user_agent' => "Freek's Records/1.0 (https://freeksrecords.com)",
     ],
 

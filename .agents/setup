@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+if ! command -v php >/dev/null || ! php -r 'exit(PHP_VERSION_ID >= 80500 ? 0 : 1);'; then
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq ca-certificates curl unzip
+    curl -fsSL https://packages.sury.org/debsuryorg-archive-keyring.deb -o /tmp/freeks-php-keyring.deb
+    sudo dpkg -i /tmp/freeks-php-keyring.deb
+    rm /tmp/freeks-php-keyring.deb
+    echo 'deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ bookworm main' | sudo tee /etc/apt/sources.list.d/php.list >/dev/null
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq php8.5-cli php8.5-sqlite3 php8.5-mbstring php8.5-xml php8.5-curl php8.5-gd php8.5-zip
+fi
+if ! command -v composer >/dev/null; then
+    curl -fsSL https://getcomposer.org/installer -o /tmp/freeks-composer.php
+    curl -fsSL https://composer.github.io/installer.sig -o /tmp/freeks-composer.sig
+    php -r 'if (trim(file_get_contents("/tmp/freeks-composer.sig")) !== hash_file("sha384", "/tmp/freeks-composer.php")) exit(1);'
+    php /tmp/freeks-composer.php --install-dir=/tmp --filename=freeks-composer
+    sudo mv /tmp/freeks-composer /usr/local/bin/composer
+    rm /tmp/freeks-composer.php /tmp/freeks-composer.sig
+fi
+if ! command -v mailpit >/dev/null; then
+    curl -fsSL https://github.com/axllent/mailpit/releases/download/v1.31.6/mailpit-linux-amd64.tar.gz -o /tmp/freeks-mailpit.tar.gz
+    tar -xzf /tmp/freeks-mailpit.tar.gz -C /tmp mailpit
+    sudo install /tmp/mailpit /usr/local/bin/mailpit
+    rm /tmp/mailpit /tmp/freeks-mailpit.tar.gz
+fi
+composer install --no-interaction --prefer-dist
+test -f .env || cp .env.example .env
+if ! rg -q '^APP_KEY=base64:' .env; then php artisan key:generate; fi
+test -f database/database.sqlite || touch database/database.sqlite
+php artisan migrate --force
+npm ci --no-audit --no-fund
+npm run build
+test -L public/storage || php artisan storage:link
+# Synthetic demo data is opt-in: php artisan social:seed-demo
