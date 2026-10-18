@@ -58,51 +58,51 @@ class RecordShareImage
         $accent = $this->color($image, 157, 53, 34);
         $groove = $this->color($image, 53, 54, 45);
 
-        imagefilledrectangle($image, 0, 0, 16, 630, $accent);
-        imagefilledellipse($image, 340, 278, 454, 454, $ink);
+        imagefilledellipse($image, 330, 315, 550, 550, $ink);
 
-        for ($diameter = 444; $diameter > 156; $diameter -= 7) {
-            imageellipse($image, 340, 278, $diameter, $diameter, $groove);
+        for ($diameter = 540; $diameter > 180; $diameter -= 7) {
+            imageellipse($image, 330, 315, $diameter, $diameter, $groove);
         }
 
         $cover = $this->cover($record['cover']);
 
-        imagefilledellipse($image, 340, 278, 144, 144, $cover ? $this->labelColor($image, $cover) : $accent);
-        imagefilledellipse($image, 340, 278, 10, 10, $paper);
-        imagefilledrectangle($image, 48, 180, 412, 544, $this->color($image, 85, 70, 49));
-        imagefilledrectangle($image, 43, 174, 403, 534, $paper);
+        imagefilledellipse($image, 330, 315, 172, 172, $cover ? $this->labelColor($image, $cover) : $paper);
+        imagefilledellipse($image, 330, 315, 10, 10, $ink);
+        imagefilledrectangle($image, 46, 138, 482, 574, $this->color($image, 85, 70, 49, 65));
+        imagefilledrectangle($image, 39, 131, 473, 565, $paper);
 
         if ($cover) {
-            imagecopyresampled($image, $cover, 44, 175, 0, 0, 358, 358, imagesx($cover), imagesy($cover));
+            imagecopyresampled($image, $cover, 40, 132, 0, 0, 432, 432, imagesx($cover), imagesy($cover));
         }
 
         $display = public_path('fonts/barlow-condensed-bold.ttf');
         $body = public_path('fonts/plex-sans-regular.ttf');
 
-        imagettftext($image, 17, 0, 614, 83, $accent, $body, "FREEK'S RECORDS");
-        imageline($image, 614, 108, 1140, 108, $muted);
+        imagettftext($image, 19, 0, 644, 116, $accent, $body, "FREEK'S RECORDS");
+        imageline($image, 644, 143, 1144, 143, $muted);
 
-        $baseline = 162;
-
-        foreach (array_slice($this->wrap($record['artist'], $body, 22, 510), 0, 2) as $line) {
-            imagettftext($image, 22, 0, 614, $baseline, $muted, $body, $line);
-
-            $baseline += 32;
-        }
-
-        [$titleSize, $titleLines] = $this->fitTitle($record['displayTitle'], $display);
-
-        $baseline += 37;
-
-        foreach (array_slice($titleLines, 0, 5) as $line) {
-            imagettftext($image, $titleSize, 0, 612, $baseline, $ink, $display, $line);
-
-            $baseline += (int) round($titleSize * 1.16);
-        }
-
+        $artistLines = $this->wrap($record['artist'], $body, 26, 500, 2);
+        [$titleSize, $titleLines] = $this->fitTitle($record['displayTitle'], $display, 280 - count($artistLines) * 38);
+        $titleLeading = (int) round($titleSize * 1.12);
         $year = $record['originalYear'] ? (string) $record['originalYear'] : '';
+        $blockHeight = count($artistLines) * 38 + count($titleLines) * $titleLeading + ($year === '' ? 0 : 52);
+        $baseline = 202 + (int) ((340 - $blockHeight) / 2);
 
-        imagettftext($image, 18, 0, 614, 543, $accent, $body, $year);
+        foreach ($artistLines as $line) {
+            imagettftext($image, 26, 0, 644, $baseline, $ink, $body, $line);
+
+            $baseline += 38;
+        }
+
+        $baseline += $titleSize - 26;
+
+        foreach ($titleLines as $line) {
+            imagettftext($image, $titleSize, 0, 642, $baseline, $ink, $display, $line);
+
+            $baseline += $titleLeading;
+        }
+
+        imagettftext($image, 24, 0, 644, $baseline - $titleLeading + 52, $accent, $body, $year);
 
         return $this->toJpeg($image);
     }
@@ -128,21 +128,17 @@ class RecordShareImage
     }
 
     /** @return array{0: int, 1: array<int, string>} */
-    protected function fitTitle(string $title, string $font): array
+    protected function fitTitle(string $title, string $font, int $height): array
     {
-        $size = 52;
-        $lines = $this->wrap($title, $font, $size, 520);
+        $size = 62;
+        $lines = $this->wrap($title, $font, $size, 500);
 
-        while (count($lines) > 4) {
-            if ($size <= 28) {
-                break;
-            }
-
+        while ($size > 32 && count($lines) * round($size * 1.12) > $height) {
             $size -= 2;
-            $lines = $this->wrap($title, $font, $size, 520);
+            $lines = $this->wrap($title, $font, $size, 500);
         }
 
-        return [$size, $lines];
+        return [$size, $this->wrap($title, $font, $size, 500, (int) floor($height / round($size * 1.12)))];
     }
 
     protected function toJpeg(GdImage $image): string
@@ -228,33 +224,59 @@ class RecordShareImage
     }
 
     /** @return array<int, string> */
-    protected function wrap(string $text, string $font, int $size, int $width): array
+    protected function wrap(string $text, string $font, int $size, int $width, int $maxLines = PHP_INT_MAX): array
     {
         $lines = [];
         $line = '';
 
         foreach (explode(' ', $text) as $word) {
             $candidate = trim("{$line} {$word}");
-            $box = imagettfbbox($size, 0, $font, $candidate);
 
-            if ($box === false) {
-                throw new RuntimeException('Unable to measure social image text.');
+            if ($line !== '' && $this->textWidth($candidate, $font, $size) > $width) {
+                $lines[] = $line;
+                $line = '';
             }
 
-            if ($line !== '') {
-                if ($width < $box[2] - $box[0]) {
-                    $lines[] = $line;
-                    $line = $word;
+            if ($this->textWidth($word, $font, $size) > $width) {
+                foreach (mb_str_split($word) as $character) {
+                    if ($this->textWidth($line.$character, $font, $size) > $width) {
+                        $lines[] = $line;
+                        $line = '';
+                    }
 
-                    continue;
+                    $line .= $character;
                 }
+
+                continue;
             }
 
-            $line = $candidate;
+            $line = trim("{$line} {$word}");
         }
 
         $lines[] = $line;
 
+        if (count($lines) > $maxLines) {
+            $lines = array_slice($lines, 0, $maxLines);
+            $last = array_pop($lines);
+
+            while ($this->textWidth($last.'…', $font, $size) > $width) {
+                $last = mb_substr($last, 0, -1);
+            }
+
+            $lines[] = rtrim($last).'…';
+        }
+
         return $lines;
+    }
+
+    protected function textWidth(string $text, string $font, int $size): int
+    {
+        $box = imagettfbbox($size, 0, $font, $text);
+
+        if ($box === false) {
+            throw new RuntimeException('Unable to measure social image text.');
+        }
+
+        return $box[2] - $box[0];
     }
 }
