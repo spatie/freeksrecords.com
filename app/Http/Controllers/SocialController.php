@@ -13,20 +13,17 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class SocialController extends Controller
 {
     public function profile(Request $request, User $user): View
     {
         $visible = $user->canViewCollection($request->user());
-        $request->validate(['format' => ['nullable', Rule::in(['Vinyl', 'CD', 'Cassette'])]]);
-        $format = $request->string('format')->toString();
 
         return view('social.profile', [
-            'person' => $user, 'visible' => $visible, 'format' => $format,
+            'person' => $user, 'visible' => $visible,
             'records' => $visible ? app(RecordCollection::class)->profileSummaries(
-                array_values($user->records()->ofFormat($format)->orderByDesc('added_at')->orderByDesc('id')
+                array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')
                     ->get(['id', 'instance_id', 'discogs_release_id', 'added_at', 'payload'])->all()),
             ) : null,
         ]);

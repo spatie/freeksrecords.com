@@ -86,6 +86,7 @@ class RecordCollection
             ]),
             'id' => $copy->discogs_release_id, 'instanceId' => $copy->instance_id,
             'addedAt' => $copy->added_at->toIso8601String(),
+            'mediaFormats' => $copy->formats(),
         ], $copies);
 
         return array_map(

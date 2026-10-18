@@ -18,7 +18,8 @@ it('loads the whole visible shelf with owner-specific social links and only safe
         'private_note' => 'Injected payload secret', 'oauth_token' => 'Injected credential',
     ]]);
     $response = $this->get('/people/shelfowner')->assertOk()
-        ->assertSee('30 records, one at a time.')
+        ->assertSee('30 releases')->assertSee('Shelfowner’s collection')
+        ->assertDontSee('name="format"', false)
         ->assertDontSee('Other owner album')->assertDontSee('Secret personal note')
         ->assertDontSee('Shared detail only')->assertDontSee('Injected payload secret')
         ->assertDontSee('Injected credential')->assertDontSee($owner->email)
@@ -51,10 +52,11 @@ it('enforces the full collection visibility matrix on profiles and record pages'
     $profile = $this->get('/people/owner')->assertOk()->assertSee('Owner')->assertSee('@owner');
     $response = $this->get('/shelves/'.$record->id);
     if ($allowed) {
-        $profile->assertSee('Private Test Album');
+        $profile->assertSee('Private Test Album')->assertSee('1 release');
         $response->assertOk()->assertSee('Private Test Album');
     } else {
-        $profile->assertDontSee('Private Test Album')->assertDontSee('records, one at a time')->assertDontSee($owner->email);
+        $profile->assertDontSee('Private Test Album')->assertDontSee('profile-shelf-data')
+            ->assertDontSee('1 release')->assertDontSee($owner->email);
         $response->assertNotFound();
     }
     expect($profile->headers->get('Cache-Control'))->toContain('no-store', 'private');

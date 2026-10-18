@@ -173,8 +173,18 @@ project’s default branch.
 
 Local-only demo accounts: `alex@example.test`, `robin@example.test`, `sam@example.test`,
 `casey@example.test`, and `jamie@example.test`, all with password `demo-listening-2026`.
-Records, artwork and identities are synthetic, credentials are intentionally public,
-and digests are disabled for demo users. Alex has accepted friends and an incoming
+Identities are synthetic and credentials intentionally public; digests are disabled.
+Shelves contain real releases: Alex 120, Robin 90, Sam 60, Casey 30. Vinyl is sampled
+from the existing 850-release `resources/data/collection.json` snapshot. Eight real
+CD/cassette editions in `resources/data/demo-editions.json` were verified against the
+public Discogs release and master APIs on 2026-10-18 (source URLs and actual format,
+year and track metadata are included). George Harrison, Pink Floyd and Bill Withers
+editions reuse the existing local artwork for the same album, not edition-specific
+packaging; artwork remains its owners’ property. Listening links for these editions
+are honest search links. Seeding and tests need no network or Discogs credentials.
+Recent additions populate activity alongside older initial-import records. Reruns
+preserve edits, dates, notes and interactions, and upgrade only untouched legacy
+synthetic payloads in place. Alex has accepted friends and an incoming
 request from Jamie; Robin shares with friends, Sam with everyone, Casey with only
 themselves. Alex’s own collection includes Vinyl, CD and Cassette releases, shared/private
 notes, a comment and an appreciation, with corresponding in-app notifications. Jamie’s

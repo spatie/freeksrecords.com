@@ -35,18 +35,6 @@ class CollectionRecord extends Model
         return $this->payload['mediaFormats'] ?? app(DiscogsRecordMapper::class)->mediaFormats($this->payload['format'] ?? '');
     }
 
-    /** @param Builder<CollectionRecord> $query */
-    public function scopeOfFormat(Builder $query, string $format): void
-    {
-        if ($format === '') {
-            return;
-        }
-        // Snapshot upserts can happen after the backfill and bypass model events.
-        $legacyIds = (clone $query)->whereNull('payload->mediaFormats')->get(['id', 'payload'])
-            ->filter(fn (self $record): bool => in_array($format, $record->formats(), true))->modelKeys();
-        $query->where(fn (Builder $query) => $query->whereJsonContains('payload->mediaFormats', $format)->orWhereIn('id', $legacyIds));
-    }
-
     /** @param array<string, mixed> $basic */
     public function refreshFormats(array $basic, DiscogsRecordMapper $mapper): bool
     {

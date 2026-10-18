@@ -662,15 +662,44 @@ small,
     margin-top: 20px;
     font-size: 14px;
 }
-.format-filter {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin: 28px 0;
+.collection-page {
+    background: #eae6dc url('/images/paper-grain.png') repeat;
 }
-.format-filter select {
-    width: 180px;
+.collection-page .site-header,
+.collection-page .site-footer,
+.collection-page .page {
+    max-width: 1596px;
+    padding-inline: 48px;
+}
+.collection-page .page {
+    padding-top: 28px;
+}
+.collector-heading {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-bottom: 24px;
+}
+.collector-heading h1 {
+    margin: 0;
+    font-size: clamp(26px, 3vw, 36px);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -1px;
+    overflow-wrap: anywhere;
+}
+.collector-heading p {
+    margin: 0;
+    font-size: 14px;
+    color: #726856;
+}
+@media (max-width: 600px) {
+    .collection-page .site-header,
+    .collection-page .site-footer,
+    .collection-page .page {
+        padding-inline: 20px;
+    }
 }
 nav[aria-label='Pagination Navigation'] {
     margin-top: 32px;

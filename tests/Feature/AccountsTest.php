@@ -4,6 +4,7 @@ use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
@@ -136,24 +137,39 @@ it('provisions Freek only via his reserved inbox without leaking a password or t
     expect(User::freek()->password)->toBe($password);
 });
 
-it('seeds repeatable synthetic local data without touching Freek and refuses production seeding', function () {
+it('seeds repeatable real catalog local data without touching Freek and refuses production seeding', function () {
     Notification::fake();
+    Http::preventStrayRequests();
     app()->detectEnvironment(fn () => 'local');
     $password = User::freek()->password;
     $this->artisan('social:seed-demo')->assertSuccessful();
     $this->artisan('social:seed-demo')->assertSuccessful();
     $this->assertDatabaseCount('users', 6);
-    $this->assertDatabaseCount('collection_records', 12);
+    $this->assertDatabaseCount('collection_records', 300);
     $this->assertDatabaseCount('friendships', 4);
     $this->assertDatabaseCount('social_notifications', 3);
     $this->assertDatabaseCount('comments', 1);
     $this->assertDatabaseCount('appreciations', 1);
     $alex = User::query()->where('handle', 'alex')->firstOrFail();
     expect($alex->friends()->pluck('handle')->sort()->values()->all())->toBe(['casey', 'robin', 'sam'])
-        ->and($alex->records()->get()->map(fn ($record) => $record->formats())->all())->toBe([['Vinyl'], ['CD'], ['Cassette']])
         ->and($alex->records()->where('instance_id', 900030)->firstOrFail()->private_note)->toContain('birthday gift')
         ->and(User::query()->where('handle', 'jamie')->firstOrFail()->records()->count())->toBe(0);
     expect(User::freek()->password)->toBe($password);
+    foreach (['alex' => 120, 'robin' => 90, 'sam' => 60, 'casey' => 30] as $handle => $count) {
+        $records = User::query()->where('handle', $handle)->firstOrFail()->records()->get();
+        expect($records)->toHaveCount($count)
+            ->and($records->pluck('payload.artist')->unique()->count())->toBeGreaterThan(15)
+            ->and($records->where('is_activity', true)->count())->toBeGreaterThan(0)
+            ->and($records->where('is_activity', false)->count())->toBeGreaterThan(0);
+        foreach (['Vinyl', 'CD', 'Cassette'] as $format) {
+            expect($records->contains(fn ($record) => in_array($format, $record->formats(), true)))->toBeTrue();
+        }
+        foreach ($records as $record) {
+            expect($record->payload['id'])->toBe($record->discogs_release_id)
+                ->and(is_file(public_path($record->payload['cover'])))->toBeTrue()
+                ->and($record->payload['tracks'])->not->toBeEmpty();
+        }
+    }
     expect(User::query()->where('handle', 'casey')->first()->visibility)->toBe('only_me');
     Notification::assertNothingSent();
     app()->detectEnvironment(fn () => 'production');

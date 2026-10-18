@@ -10,7 +10,7 @@
     @vite('resources/css/social.css')
     @stack('head')
 </head>
-<body>
+<body class="@yield('body-class')">
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
     <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span> Freek’s records<span class="brand-period">.</span></a>
