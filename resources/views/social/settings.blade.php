@@ -24,7 +24,7 @@
             <input type="hidden" name="digest_enabled" value="0">
             <label class="check"><input type="checkbox" name="digest_enabled" value="1" @checked(old('digest_enabled', $user->digest_enabled))>Send my weekly friends digest</label>
             <small>Mondays at 09:00 Europe/Brussels. No new records, no email. Current friendship and privacy always apply.</small>
-            <button>Save preferences</button>
+            <x-social.button>Save preferences</x-social.button>
         </form>
     </section>
     <section class="panel">
@@ -32,18 +32,18 @@
         @if($user->discogs_token)
             <p>Connected as <strong>{{ $user->discogs_username }}</strong>.</p>
             <p>{{ $user->sync_status ?? 'Ready to import' }}<br><small>Last successful sync: {{ $user->last_synced_at?->timezone('Europe/Brussels')->format('j M Y, H:i') ?? 'Not yet' }}</small></p>
-            <form method="post" action="/discogs/sync">@csrf<button>Sync collection now ↻</button></form>
-            <form class="spaced" method="post" action="/discogs">@csrf @method('delete')<button class="secondary">Disconnect Discogs</button></form>
+            <form method="post" action="/discogs/sync">@csrf<x-social.button>Sync collection now</x-social.button></form>
+            <form class="spaced" method="post" action="/discogs">@csrf @method('delete')<x-social.button variant="secondary">Disconnect Discogs</x-social.button></form>
         @else
             <p>Authorize Freek’s Records on Discogs to import your collection. We never ask for your Discogs password.</p>
-            <form method="post" action="/discogs/connect">@csrf<button>{{ $user->discogs_username ? 'Reconnect Discogs' : 'Connect Discogs' }} ↗</button></form>
+            <form method="post" action="/discogs/connect">@csrf<x-social.button>{{ $user->discogs_username ? 'Reconnect Discogs' : 'Connect Discogs' }}</x-social.button></form>
         @endif
         <p class="muted">Syncs run daily and mirror removals. Historical records in your first import never appear as new additions. You can reconnect the same Discogs account without losing comments.</p>
         @if(app()->environment('local') && config('services.social_demo'))
             <hr class="spaced">
             <h2 class="spaced">Preview tools</h2>
             <p>Enable the weekly digest and save your preferences first. This local-only check uses the last seven days and does not change your weekly send checkpoint.</p>
-            <form method="post" action="/demo/digest">@csrf<button class="secondary">Check my digest preview</button></form>
+            <form method="post" action="/demo/digest">@csrf<x-social.button variant="secondary">Check my digest preview</x-social.button></form>
             <p class="muted spaced">Open the “Freeks Records preview inbox” portal to read captured emails. No messages leave the orb.</p>
         @endif
     </section>

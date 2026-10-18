@@ -29,6 +29,7 @@ export type CollectionBrowserHandle = {
 };
 
 type CollectionBrowserProps = {
+    browseBasePath?: string;
     browse: BrowseState;
     onBrowse: (update: BrowseUpdate) => void;
     onSelect: (record: CollectionRecordSummary) => void;
@@ -49,6 +50,7 @@ function resultsAnnouncement(
 }
 
 export function CollectionBrowser({
+    browseBasePath,
     browse,
     onBrowse,
     onSelect,
@@ -172,6 +174,7 @@ export function CollectionBrowser({
             >
                 {browse.mode !== 'recent' && (
                     <CollectionIndex
+                        browseBasePath={browseBasePath}
                         activeGroup={activeGroup}
                         groups={groups}
                         key={browse.mode}
@@ -194,6 +197,7 @@ export function CollectionBrowser({
                         </div>
                     )}
                     <RecordShelf
+                        browseBasePath={browseBasePath}
                         onArtist={(artist) =>
                             switchCollection({
                                 mode: 'artist',

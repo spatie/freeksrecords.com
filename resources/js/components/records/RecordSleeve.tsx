@@ -3,6 +3,7 @@ import { browseHash } from '@/components/records/browseState';
 import type { CollectionRecordSummary } from '@/components/records/types';
 
 type RecordSleeveProps = {
+    browseBasePath?: string;
     onSelect: () => void;
     onArtist: (artist: string) => void;
     showYear?: boolean;
@@ -11,6 +12,7 @@ type RecordSleeveProps = {
 };
 
 export function RecordSleeve({
+    browseBasePath = '/',
     onSelect,
     onArtist,
     showYear = false,
@@ -64,7 +66,7 @@ export function RecordSleeve({
                                         event.preventDefault();
                                         onArtist(artist);
                                     }}
-                                    href={`/${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
+                                    href={`${browseBasePath}${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
                                 >
                                     {artist}
                                 </a>

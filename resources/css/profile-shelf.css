@@ -1,0 +1,9 @@
+.profile-record-room .record-room {
+    min-height: 0;
+    background: transparent;
+    overflow-x: visible;
+}
+.profile-record-room .record-room::before,
+.profile-record-room .record-room::after {
+    content: none;
+}

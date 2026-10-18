@@ -8,6 +8,26 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 
+it('shows local demo login controls only on the login page', function () {
+    app()->detectEnvironment(fn () => 'local');
+    config(['services.social_demo' => true]);
+    $alex = socialUser('alex');
+
+    $this->get('/login')->assertOk()->assertSeeText('Local demo accounts')->assertSee(route('loginLinkLogin'), false);
+
+    foreach (['/', '/register', '/forgot-password', '/reset-password/preview-token', '/people/alex'] as $path) {
+        $this->get($path)->assertOk()->assertDontSee('demo-logins')->assertDontSee('laravel-login-link-login');
+    }
+
+    $this->actingAs($alex);
+    foreach (['/people/alex', '/feed', '/settings'] as $path) {
+        $this->get($path)->assertOk()->assertDontSee('demo-logins')->assertDontSee('laravel-login-link-login');
+    }
+
+    $alex->update(['email_verified_at' => null]);
+    $this->get('/verify-email')->assertOk()->assertDontSee('demo-logins')->assertDontSee('laravel-login-link-login');
+});
+
 it('switches existing local demo accounts without passwords and ignores forged package selectors', function () {
     app()->detectEnvironment(fn () => 'local');
     config(['services.social_demo' => true]);

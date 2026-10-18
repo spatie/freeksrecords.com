@@ -8,11 +8,12 @@
     <link rel="icon" href="/favicon.svg">
     @fonts
     @vite('resources/css/social.css')
+    @stack('head')
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
-    <a class="brand" href="/">◉ Freek’s records<span>.</span></a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span> Freek’s records<span class="brand-period">.</span></a>
     <nav aria-label="Main navigation">
         @auth
             <a href="/feed" @if(request()->is('feed')) aria-current="page" @endif>Friends’ additions</a>
@@ -20,34 +21,18 @@
             <a href="{{ route('profile', auth()->user()->handle) }}">My collection</a>
             <a href="/notifications">Notifications</a>
             <a href="/settings">Settings</a>
-            <form method="post" action="/logout">@csrf<button class="text-button">Sign out</button></form>
+            <form method="post" action="/logout">@csrf<x-social.button variant="text">Sign out</x-social.button></form>
         @else
-            <a href="{{ route('home') }}#how-it-works">How it works</a><a class="button small" href="/login">Sign in</a>
+            <a href="{{ route('home') }}#how-it-works">How it works</a><x-social.button class="small" href="/login">Sign in</x-social.button>
         @endauth
     </nav>
 </header>
-@if(app()->environment('local') && config('services.social_demo') && Route::has('loginLinkLogin'))
-    @php($demoEmails = App\Models\User::query()->whereIn('email', array_keys(config('login-link.demo_users')))->pluck('email'))
-    @if($demoEmails->isNotEmpty())
-        <section class="demo-logins" aria-label="Local demo account switcher">
-            <p><strong>Local demo accounts</strong> · Switch without a password</p>
-            <div class="actions">
-                @foreach(config('login-link.demo_users') as $email => $label)
-                    @if($demoEmails->contains($email))
-                        <x-dynamic-component component="login-link" :email="$email" :label="$label" redirect-url="/feed" class="secondary" />
-                    @endif
-                @endforeach
-            </div>
-            <small>Alex has a full demo shelf. Casey’s collection is private; Jamie’s shelf is empty.</small>
-        </section>
-    @endif
-@endif
 <main id="main" class="page">
     @if(session('status'))<p class="notice" role="status">{{ session('status') }}</p>@endif
     @if($errors->any())<div class="errors" role="alert"><strong>Please check the following:</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
     @yield('content')
 </main>
-<footer class="site-footer"><span>Good records. Good company.</span><a href="/collection">Back to Freek’s collection ↗</a></footer>
+<footer class="site-footer"><span>Good records. Good company.</span><a href="/collection">Back to Freek’s collection</a></footer>
 @if(request()->is('/', 'feed'))
 <script>
     (() => {

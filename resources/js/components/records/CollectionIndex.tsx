@@ -12,6 +12,7 @@ import { collection } from '@/routes';
 type IndexMode = Exclude<CollectionMode, 'recent'>;
 
 type CollectionIndexProps = {
+    browseBasePath?: string;
     mode: IndexMode;
     query: string;
     groups: CollectionGroup[];
@@ -31,6 +32,7 @@ const labels: Record<IndexMode, { heading: string; plural: string }> = {
  * `key={mode}` so the artist filter resets when switching modes.
  */
 export function CollectionIndex({
+    browseBasePath = collection.url(),
     mode,
     query,
     groups,
@@ -178,7 +180,7 @@ export function CollectionIndex({
                         aria-current={
                             activeGroup === group.name ? 'true' : undefined
                         }
-                        href={`${collection.url()}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`}
+                        href={`${browseBasePath}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`}
                         key={group.name}
                         onClick={(event) => {
                             if (

@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
+use App\Support\RecordCollection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,10 @@ class SocialController extends Controller
 
         return view('social.profile', [
             'person' => $user, 'visible' => $visible, 'format' => $format,
-            'records' => $visible ? $user->records()->ofFormat($format)->orderByDesc('added_at')->orderByDesc('id')->paginate(24) : null,
+            'records' => $visible ? app(RecordCollection::class)->profileSummaries(
+                array_values($user->records()->ofFormat($format)->orderByDesc('added_at')->orderByDesc('id')
+                    ->get(['id', 'instance_id', 'discogs_release_id', 'added_at', 'payload'])->all()),
+            ) : null,
         ]);
     }
 

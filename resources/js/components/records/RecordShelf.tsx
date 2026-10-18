@@ -7,6 +7,7 @@ import { RecordSleeve } from '@/components/records/RecordSleeve';
 import type { CollectionRecordSummary } from '@/components/records/types';
 
 type RecordShelfProps = {
+    browseBasePath?: string;
     groupByYear: boolean;
     showYears?: boolean;
     onMore: () => void;
@@ -19,6 +20,7 @@ type RecordShelfProps = {
 };
 
 export function RecordShelf({
+    browseBasePath,
     groupByYear,
     showYears = false,
     onMore,
@@ -87,6 +89,7 @@ export function RecordShelf({
                         <div className="catalog-grid">
                             {section.records.map((record) => (
                                 <RecordSleeve
+                                    browseBasePath={browseBasePath}
                                     key={record.instanceId}
                                     onSelect={() => onSelect(record)}
                                     onArtist={onArtist}

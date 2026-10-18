@@ -181,8 +181,9 @@ notes, a comment and an appreciation, with corresponding in-app notifications. J
 empty shelf illustrates onboarding. The seeder is idempotent
 and refuses to run outside `APP_ENV=local`. The services configure SMTP to the local
 Mailpit instance; open its generated inbox portal to verify signup and password reset.
-With development dependencies installed, the social pages show Spatie Laravel Login Link
-buttons for switching between these seeded accounts without passwords. The endpoint
+With development dependencies installed, only the login page shows Spatie Laravel Login Link
+buttons for switching between these seeded accounts without passwords. Sign out first
+to return to the login page and switch accounts. The endpoint
 requires both `APP_ENV=local` and `SOCIAL_DEMO_MODE=true`, allows only existing synthetic
 demo accounts, and restricts hosts to loopback and the configured app URL. It never
 creates users or permits switching to Freek’s reserved account. Normal email/password

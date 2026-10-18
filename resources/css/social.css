@@ -9,6 +9,7 @@
     background: #f3f0e8;
     font-family: 'Instrument Sans', sans-serif;
     font-size: 16px;
+    line-height: 1.5;
 }
 * {
     box-sizing: border-box;
@@ -26,7 +27,6 @@ select,
 textarea {
     font: inherit;
 }
-button,
 .button {
     cursor: pointer;
     display: inline-flex;
@@ -36,21 +36,27 @@ button,
     border: 1px solid #292a22;
     background: #292a22;
     color: #fffdf6;
-    border-radius: 4px;
+    border-radius: 6px;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 500;
     transition:
         background 0.15s,
-        color 0.15s;
+        color 0.15s,
+        border-color 0.15s;
 }
-button:hover,
 .button:hover {
-    background: #bb4e2c;
-    border-color: #bb4e2c;
+    background: #45463b;
+    border-color: #45463b;
 }
 .secondary {
     background: transparent;
     color: #292a22;
+    border-color: #c9c2b4;
+}
+.secondary:hover {
+    background: #eae5d9;
+    color: #292a22;
+    border-color: #9d9585;
 }
 .text-button {
     padding: 0;
@@ -93,16 +99,26 @@ button:hover,
     border-bottom: 1px solid #d7d2c5;
 }
 .demo-logins {
-    width: 90%;
-    max-width: 1152px;
+    max-width: 500px;
     margin: 24px auto 0;
-    padding: 16px 20px;
-    border: 1px dashed #bdb6a5;
-    border-radius: 4px;
+    padding: 24px 28px;
+    border: 1px solid #dcd6c9;
+    border-radius: 8px;
+    background: #ede9df;
 }
 .demo-logins p {
     font-size: 14px;
     margin-bottom: 12px;
+}
+.demo-logins .actions {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+.demo-logins .button {
+    width: 100%;
+    padding: 10px 6px;
+    font-size: 13px;
 }
 .demo-logins small {
     display: block;
@@ -110,28 +126,53 @@ button:hover,
     color: #6b695e;
 }
 .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-weight: 600;
     font-size: 24px;
     letter-spacing: -0.8px;
     text-decoration: none;
     white-space: nowrap;
 }
-.brand span,
+.brand-mark {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+        circle,
+        #292a22 0 2px,
+        #515247 2px 3px
+    );
+    position: relative;
+}
+.brand-mark::after {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: #f3f0e8;
+}
+.brand-period {
+    margin-left: -8px;
+}
+.brand .brand-period,
 h1 span {
     color: #bb4e2c;
 }
-nav {
+.site-header nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 20px;
     font-size: 14px;
 }
-nav a {
+.site-header nav a {
     text-decoration: none;
 }
-nav a:hover,
-nav [aria-current] {
+.site-header nav a:hover,
+.site-header nav [aria-current] {
     color: #a53f22;
     text-decoration: underline;
 }
@@ -187,7 +228,8 @@ p {
 .panel {
     background: #faf8f1;
     border: 1px solid #dcd6c9;
-    border-radius: 6px;
+    border-radius: 8px;
+    box-shadow: 0 2px 3px #292a2203;
     padding: 28px;
 }
 .two-columns,
@@ -268,6 +310,13 @@ small,
     margin: 0 auto;
     padding: 40px;
 }
+.auth-panel .stack > .button {
+    justify-self: stretch;
+}
+.auth-panel > p:last-child {
+    margin: 20px 0 0;
+    font-size: 14px;
+}
 .compact {
     font-size: 40px;
     letter-spacing: -1.7px;
@@ -297,6 +346,8 @@ small,
 .record-card {
     min-width: 0;
     border: 1px solid #d7d0c2;
+    border-radius: 8px;
+    overflow: hidden;
     background: #faf8f1;
     box-shadow: 0 3px 8px #292a2209;
 }
@@ -666,8 +717,11 @@ nav[aria-label='Pagination Navigation'] {
     .page {
         padding-top: 32px;
     }
-    nav {
+    .site-header nav {
         gap: 14px;
+    }
+    .demo-logins .actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .two-columns,
     .record-grid {

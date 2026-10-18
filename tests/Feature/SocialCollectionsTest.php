@@ -4,6 +4,39 @@ use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
 
+it('loads the whole visible shelf with owner-specific social links and only safe summary fields', function () {
+    $owner = socialUser('shelfowner', 'everyone');
+    $other = socialUser('othershelf', 'everyone');
+    $overlap = socialRecord($other, 'Other owner album', instance: 1);
+    foreach (range(1, 30) as $instance) {
+        $record = socialRecord($owner, 'Shelf album '.$instance, instance: $instance);
+    }
+    $record->update(['private_note' => 'Secret personal note', 'shared_note' => 'Shared detail only', 'payload' => [
+        ...$record->payload,
+        'title' => '</script><script>alert("shelf")</script>', 'displayTitle' => 'Trimmed album',
+        'artist' => 'Trimmed artist', 'artists' => ['Trimmed artist'],
+        'private_note' => 'Injected payload secret', 'oauth_token' => 'Injected credential',
+    ]]);
+    $response = $this->get('/people/shelfowner')->assertOk()
+        ->assertSee('30 records, one at a time.')
+        ->assertDontSee('Other owner album')->assertDontSee('Secret personal note')
+        ->assertDontSee('Shared detail only')->assertDontSee('Injected payload secret')
+        ->assertDontSee('Injected credential')->assertDontSee($owner->email)
+        ->assertDontSee('</script><script>alert', false);
+    preg_match('/<script id="profile-shelf-data" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $summaries = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
+    expect($summaries)->toHaveCount(30);
+    $copy = $owner->records()->where('instance_id', 1)->firstOrFail();
+    expect(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->toBe('/shelves/'.$copy->id)
+        ->not->toBe('/shelves/'.$overlap->id)
+        ->and($summaries[0]['addedAt'])->toBe($record->added_at->toIso8601String())
+        ->and($summaries[0])->not->toHaveKey('tracks')
+        ->and($summaries[0]['trackTitles'])->toContain($record->payload['tracks'][0]['title']);
+    $this->get(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->assertOk()->assertSee('Shelf album 1');
+    $owner->update(['visibility' => 'only_me']);
+    $this->get('/people/shelfowner')->assertOk()->assertDontSee('profile-shelf-data')->assertDontSee('Trimmed album')->assertDontSee('Shelf album');
+});
+
 it('enforces the full collection visibility matrix on profiles and record pages', function (string $visibility, string $viewerKind, bool $allowed) {
     $owner = socialUser('owner', $visibility);
     $friend = socialUser('friend');
