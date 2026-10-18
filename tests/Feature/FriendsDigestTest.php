@@ -19,13 +19,29 @@ it('sends exactly the previous seven days in original addition order and never r
     Mail::assertSent(FriendsWeeklyDigest::class, function (FriendsWeeklyDigest $mail) use ($viewer) {
         expect($mail->records->pluck('payload.displayTitle')->all())->toBe(['Window end minus one', 'Window start']);
         $html = $mail->render();
-        expect($html)->toContain('Window start', '/shelves/', '/settings')->not->toContain('Initial import', 'Before window', 'Next week', 'Owner private note');
+        expect($html)->toContain('Window start', '/shelves/', '/settings', 'class="inner-body"', 'background-color:', 'See friends’ additions')
+            ->not->toContain('Initial import', 'Before window', 'Next week', 'Owner private note');
 
         return $mail->hasTo($viewer->email);
     });
     Mail::assertSentCount(1);
     $this->artisan('social:send-digests')->assertSuccessful();
     Mail::assertSentCount(1);
+});
+
+it('delivers styled and plain text digests without interpreting collector metadata as markup', function () {
+    $owner = socialUser('emailmetadata', 'everyone');
+    $owner->update(['name' => '[Not a link](https://untrusted.example) <b>Collector</b>']);
+    $record = socialRecord($owner, '<script>alert("title")</script> [Album](https://untrusted.example)');
+    $record->update(['private_note' => 'Never include this private note']);
+    $sent = Mail::mailer('array')->send((new FriendsWeeklyDigest($owner->records()->get()))->to('digest@example.test'));
+    $message = $sent->getSymfonySentMessage()->getOriginalMessage();
+
+    expect(html_entity_decode(strip_tags($message->getHtmlBody())))->toContain($owner->name, $record->payload['displayTitle']);
+    expect($message->getHtmlBody())->toContain('class="inner-body"', '#f5f1e7', '#a64028')
+        ->not->toContain('<script>', '<b>Collector</b>', 'href="https://untrusted.example"', 'Never include this private note');
+    expect($message->getTextBody())->toContain('This week on your friends’ shelves', $owner->name, $record->payload['displayTitle'], '/shelves/'.$record->id, '/settings')
+        ->not->toContain('<p', '<table', 'Never include this private note');
 });
 
 it('rechecks privacy, friendship, preferences and verification at send time and suppresses empty weeks', function () {

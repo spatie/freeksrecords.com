@@ -13,6 +13,8 @@ class FriendsWeeklyDigest extends Mailable
 
     public function build(): self
     {
-        return $this->subject('This week on your friends’ shelves')->view('mail.friends-digest');
+        return $this->subject('This week on your friends’ shelves')
+            ->markdown('mail.friends-digest')
+            ->text('mail.friends-digest-text');
     }
 }

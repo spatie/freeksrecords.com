@@ -8,6 +8,15 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 
+it('renders account emails with a shared inline layout and a working action link', function (string $notification, string $actionPath) {
+    $user = socialUser('mailrecipient');
+    $message = $notification === 'verify' ? new VerifyEmail : new ResetPassword('preview-token');
+    $html = (string) $message->toMail($user)->render();
+
+    expect($html)->toContain(config('app.name'), 'class="inner-body"', '#f5f1e7', '#a64028', 'class="button button-primary"', $actionPath)
+        ->not->toContain('<link rel="stylesheet"');
+})->with([['verify', '/verify-email/'], ['reset', '/reset-password/preview-token']]);
+
 it('registers a private account, verifies the inbox, and authenticates securely', function () {
     Notification::fake();
     $this->post('/register', ['name' => 'New Collector', 'handle' => 'New_Collector', 'email' => 'NEW@example.test', 'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password', 'visibility' => 'everyone', 'email_verified_at' => now(), 'legacy_owner' => true])->assertRedirect('/verify-email');

@@ -1,8 +1,25 @@
-<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>This week on your friends’ shelves</title></head><body>
-<h1>This week on your friends’ shelves</h1>
-<p>A few new records from your listening circle, newest first.</p>
-<ul>@foreach($records as $record)<li><strong>{{ $record->user->name }}</strong> added <a href="{{ route('shelf.record', $record) }}">{{ $record->payload['displayTitle'] }} — {{ $record->payload['artist'] }}</a> ({{ $record->added_at->timezone('Europe/Brussels')->format('j M') }}).</li>@endforeach</ul>
-<p>Only records shared with you at send time are included. Collection access can change later.</p>
-<p><a href="{{ route('settings') }}">Turn off the weekly digest in Settings</a> · Freek’s Records</p>
-</body></html>
+<x-mail::message>
+# Fresh on their shelves.
+
+A few new records from your listening circle, newest first.
+
+@foreach($records as $record)
+<x-mail::panel>
+<p class="record-owner">{{ $record->user->name }} added</p>
+<h2><a href="{{ route('shelf.record', $record) }}">{{ $record->payload['displayTitle'] }}</a></h2>
+<p class="record-meta">{{ $record->payload['artist'] }}@if($record->formats()) · {{ implode(' / ', $record->formats()) }}@endif · {{ $record->added_at->timezone('Europe/Brussels')->format('j M') }}</p>
+</x-mail::panel>
+@endforeach
+
+<x-mail::button :url="route('feed')">
+See friends’ additions
+</x-mail::button>
+
+Good records. Good company.
+
+<x-slot:subcopy>
+Only records shared with you at send time are included. Collection access can change later.
+
+[Turn off the weekly digest in Settings]({{ route('settings') }})
+</x-slot:subcopy>
+</x-mail::message>
