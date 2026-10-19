@@ -17,7 +17,14 @@ function ProfileShelf({ records }: { records: CollectionRecordSummary[] }) {
                 browse={browse}
                 browseBasePath={basePath}
                 onBrowse={changeBrowse}
-                onSelect={(record) => window.location.assign(record.shareUrl)}
+                onSelect={(record) => {
+                    const hash = window.location.hash.slice(1);
+                    window.location.assign(
+                        hash
+                            ? `${record.shareUrl}?browse=${encodeURIComponent(hash)}`
+                            : record.shareUrl,
+                    );
+                }}
                 records={records}
                 transitionRecordId={null}
             />

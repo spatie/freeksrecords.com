@@ -18,7 +18,7 @@ it('loads the whole visible shelf with owner-specific social links and only safe
         'artist' => 'Trimmed artist', 'artists' => ['Trimmed artist'],
         'private_note' => 'Injected payload secret', 'oauth_token' => 'Injected credential',
     ]]);
-    $response = $this->get('/people/shelfowner')->assertOk()
+    $response = $this->get(route('profile', $owner->handle))->assertOk()
         ->assertSee('30 releases')->assertSee('Shelfowner’s collection')
         ->assertDontSee('name="format"', false)
         ->assertDontSee('Other owner album')->assertDontSee('Secret personal note')
@@ -36,7 +36,36 @@ it('loads the whole visible shelf with owner-specific social links and only safe
         ->and($summaries[0]['trackTitles'])->toContain($record->payload['tracks'][0]['title']);
     $this->get(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->assertOk()->assertSee('Shelf album 1');
     $owner->update(['visibility' => 'only_me']);
-    $this->get('/people/shelfowner')->assertOk()->assertDontSee('profile-shelf-data')->assertDontSee('Trimmed album')->assertDontSee('Shelf album');
+    $this->get(route('profile', $owner->handle))->assertOk()->assertDontSee('profile-shelf-data')->assertDontSee('Trimmed album')->assertDontSee('Shelf album');
+});
+
+it('uses root profile URLs while retaining the old profile alias without redirects', function () {
+    $owner = socialUser('canonical_owner', 'everyone');
+    socialRecord($owner, 'Canonical record');
+    expect(route('profile', $owner->handle))->toBe(url('/canonical_owner'));
+    foreach (['/canonical_owner', '/people/canonical_owner'] as $path) {
+        $this->get($path)->assertOk()->assertViewIs('social.profile')->assertSee('Canonical record');
+    }
+    foreach (['/unknown_collector', '/ab', '/InvalidHandle', '/invalid-handle', '/'.str_repeat('a', 31)] as $path) {
+        $this->get($path)->assertNotFound();
+    }
+    foreach (['/login', '/register', '/forgot-password'] as $path) {
+        $this->get($path)->assertOk()->assertViewIs('social.auth');
+    }
+    $this->get('/settings')->assertRedirect('/login');
+    $this->get('/feed')->assertRedirect('/login');
+});
+
+it('preserves shelf browsing context in the record return link without allowing external destinations', function () {
+    $owner = socialUser('browsingcollector', 'everyone');
+    $record = socialRecord($owner);
+    $browse = 'decade=1980s&q=Blue Notes';
+    $this->get('/shelves/'.$record->id.'?'.http_build_query(['browse' => $browse]))
+        ->assertOk()->assertViewHas('collectionUrl', url('/browsingcollector').'#'.$browse);
+    $this->get('/shelves/'.$record->id.'?browse=https://example.com')
+        ->assertOk()->assertViewHas('collectionUrl', url('/browsingcollector').'#https://example.com');
+    $this->get('/shelves/'.$record->id.'?browse[]=invalid')
+        ->assertOk()->assertViewHas('collectionUrl', url('/browsingcollector'));
 });
 
 it('enforces the full collection visibility matrix on profiles and record pages', function (string $visibility, string $viewerKind, bool $allowed) {
@@ -50,7 +79,7 @@ it('enforces the full collection visibility matrix on profiles and record pages'
             'owner' => $owner, 'friend' => $friend, default => $stranger
         });
     }
-    $profile = $this->get('/people/owner')->assertOk()->assertSee('Owner')->assertSee('@owner');
+    $profile = $this->get(route('profile', $owner->handle))->assertOk()->assertSee('Owner')->assertSee('@owner');
     $response = $this->get('/shelves/'.$record->id);
     if ($allowed) {
         $profile->assertSee('Private Test Album')->assertSee('1 release');
@@ -108,6 +137,9 @@ it('prioritizes importing a first collection without empty feed and request clut
         ->assertDontSee('Friend requests')->assertDontSee('View my collection')
         ->assertDontSee('Good records. Good company.')->assertDontSee('Back to Freek’s collection')
         ->assertDontSee('Historical first imports')->assertDontSee('The listening circle / Latest additions');
+    foreach (['/settings', '/newcollector'] as $path) {
+        $this->get($path)->assertSee('Add records')->assertDontSee('Friends’ additions');
+    }
 
     $requester = socialUser('requester');
     Friendship::query()->create([
@@ -118,7 +150,7 @@ it('prioritizes importing a first collection without empty feed and request clut
         ->assertSee('Accept')->assertSee('Decline');
 
     $viewer->update(['discogs_token' => 'test-token', 'sync_status' => 'Syncing']);
-    $this->get('/feed')->assertOk()->assertSee('Syncing')->assertSee('View import status')
+    $this->get('/feed')->assertOk()->assertSee('Syncing')->assertSee('Check progress')
         ->assertDontSee('action="/discogs/connect"', false);
 });
 

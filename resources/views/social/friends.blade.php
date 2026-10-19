@@ -1,8 +1,7 @@
 @extends('social.layout')
 @section('title', 'Your friends')
 @section('content')
-<p class="eyebrow">Good records. Good company.</p><h1>Your listening circle<span>.</span></h1>
-<p class="lede">A friendship starts with a request and an acceptance.</p>
+<x-social.page-heading title="Friends" description="Find someone by username and send a request. Once they accept, you’ll see the records they share with friends." />
 <form class="search" method="get" action="/friends"><label for="find-handle">Find someone by profile handle</label><div class="actions"><input id="find-handle" name="q" value="{{ $query }}" maxlength="30" placeholder="e.g. robin"><x-social.button>Search</x-social.button><a href="/friends">My connections</a></div></form>
 <div class="people-list">
 @forelse($people as $person)
@@ -16,7 +15,7 @@
             @else<span class="badge">Wants to be friends</span><x-social.button name="action" value="accept">Accept</x-social.button><x-social.button variant="secondary" name="action" value="decline">Decline</x-social.button>@endif
         </form>
     </article>
-@empty<section class="empty panel"><h2>{{ $query ? 'No matching handles.' : 'Make room for your people.' }}</h2><p>{{ $query ? 'Try another profile handle.' : 'Search for a friend’s handle above to send your first request.' }}</p></section>@endforelse
+@empty<section class="empty panel"><h2>{{ $query ? 'No matching username' : 'Your first friend starts here' }}</h2><p>{{ $query ? 'Check the spelling and try the exact username.' : 'Search above, or browse a public collection to meet its owner.' }}</p><a href="{{ route('collections') }}">Browse public collections</a></section>@endforelse
 </div>
 {{ $people->links() }}
 @endsection

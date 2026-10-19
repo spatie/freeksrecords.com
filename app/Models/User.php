@@ -32,6 +32,13 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use Notifiable;
 
+    public const RESERVED_HANDLES = [
+        'api', 'build', 'collection', 'collections', 'community', 'demo', 'discogs',
+        'email', 'favicon', 'feed', 'fonts', 'friends', 'images', 'index', 'login', 'logout',
+        'notifications', 'people', 'record', 'register', 'robots', 'settings', 'share',
+        'shelves', 'storage', 'up',
+    ];
+
     protected $guarded = ['id'];
 
     protected $hidden = ['password', 'remember_token', 'email', 'discogs_token', 'discogs_secret'];

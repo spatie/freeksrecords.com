@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\SyncUserCollection;
 use App\Support\DiscogsOAuth;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -77,7 +78,25 @@ class DiscogsConnectionController extends Controller
         }
         SyncUserCollection::dispatch($request->user()->id);
 
-        return redirect('/settings')->with('status', 'Discogs connected. Your collection import is queued. Initial imports do not appear in friends’ feeds.');
+        return redirect('/feed')->with('status', 'Discogs connected. Your collection import is queued.');
+    }
+
+    public function status(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'collectorId' => $user->id,
+            'collectionUrl' => route('profile', $user->handle),
+            'visibility' => match ($user->visibility) {
+                'everyone' => 'Everyone', 'friends' => 'Friends', default => 'Only me',
+            },
+            'connected' => $user->discogs_token !== null,
+            'complete' => $user->collection_imported_at !== null,
+            'count' => $user->records()->count(),
+            'status' => $user->sync_status ?? 'Waiting for the import to start',
+            'failed' => str_starts_with($user->sync_status ?? '', 'Sync failed'),
+        ]);
     }
 
     public function sync(Request $request): RedirectResponse

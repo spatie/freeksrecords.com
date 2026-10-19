@@ -25,7 +25,7 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
         'api.discogs.com/oauth/identity' => Http::response(['username' => 'discogs-owner']),
     ]);
     $this->actingAs($user)->post('/discogs/connect')->assertRedirect('https://www.discogs.com/oauth/authorize?oauth_token=request-token');
-    $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertRedirect('/settings')->assertSessionHasNoErrors();
+    $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertRedirect('/feed')->assertSessionHasNoErrors();
     $fresh = $user->fresh();
     expect($fresh->discogs_username)->toBe('discogs-owner')->and($fresh->discogs_token)->toBe('access-token');
     $stored = DB::table('users')->where('id', $user->id)->first();
@@ -37,6 +37,33 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
     Http::assertSentCount(3);
     $this->delete('/discogs')->assertRedirect();
     expect($user->fresh()->discogs_token)->toBeNull()->and($user->fresh()->discogs_username)->toBe('discogs-owner');
+});
+
+it('reports only the signed-in collector’s import progress through completion and failure', function () {
+    $this->getJson('/discogs/status')->assertUnauthorized();
+    $user = socialUser('importprogress');
+    $user->update(['email_verified_at' => null]);
+    $this->actingAs($user)->getJson('/discogs/status')->assertForbidden();
+    $user->update(['email_verified_at' => now(), 'discogs_token' => 'private-access', 'discogs_secret' => 'private-secret', 'sync_status' => 'Syncing']);
+    socialRecord(socialUser('anotherimporter'), 'Another collector’s private record');
+    socialRecord($user, 'My first record', activity: false);
+    $response = $this->getJson('/discogs/status')->assertOk()
+        ->assertExactJson([
+            'collectorId' => $user->id, 'collectionUrl' => route('profile', $user->handle), 'visibility' => 'Only me',
+            'connected' => true, 'complete' => false, 'count' => 1, 'status' => 'Syncing', 'failed' => false,
+        ])
+        ->assertDontSee('private-access')->assertDontSee('private-secret')->assertDontSee('Another collector');
+    expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
+    $this->get('/feed')->assertOk()->assertSee('Add your records')->assertSee('1 record imported');
+
+    $user->update(['sync_status' => 'Sync failed. Existing records were kept.']);
+    $this->getJson('/discogs/status')->assertJsonPath('failed', true)->assertJsonPath('count', 1);
+    $this->get('/feed')->assertSee('Retry import');
+    $user->update(['handle' => 'renamedcollector', 'visibility' => 'friends', 'sync_status' => 'Up to date', 'collection_imported_at' => now()]);
+    $this->getJson('/discogs/status')->assertJsonPath('complete', true)->assertJsonPath('failed', false)
+        ->assertJsonPath('collectorId', $user->id)->assertJsonPath('collectionUrl', url('/renamedcollector'))
+        ->assertJsonPath('visibility', 'Friends');
+    $this->get('/feed')->assertSee('View my collection')->assertDontSee('data-import-status', false);
 });
 
 it('rejects forged, expired and cross-user callbacks without reaching Discogs', function (string $scenario) {

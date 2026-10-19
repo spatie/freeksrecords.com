@@ -34,7 +34,14 @@ class SocialController extends Controller
     {
         abort_unless($record->user->canViewCollection($request->user()), 404);
 
+        $collectionUrl = route('profile', $record->user->handle);
+        $browse = $request->query('browse');
+        if (is_string($browse) && strlen($browse) <= 1000) {
+            $collectionUrl .= '#'.$browse;
+        }
+
         return view('social.record', [
+            'collectionUrl' => $collectionUrl,
             'record' => $record, 'comments' => $record->comments()->with('user')->oldest('id')->paginate(30),
             'appreciations' => DB::table('appreciations')->where('collection_record_id', $record->id)->count(),
             'appreciated' => $request->user() && DB::table('appreciations')->where('collection_record_id', $record->id)->where('user_id', $request->user()->id)->exists(),

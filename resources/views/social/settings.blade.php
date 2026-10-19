@@ -2,14 +2,14 @@
 @section('title', 'Your preferences')
 @section('content')
 @php($user = auth()->user())
-<p class="eyebrow">Make yourself at home</p><h1>Your preferences<span>.</span></h1>
+<x-social.page-heading title="Settings" />
 <div class="two-columns">
     <section class="panel">
         <h2>Profile & privacy</h2>
         <form class="stack" method="post" action="/settings">
             @csrf @method('patch')
-            <label>Display name<input name="name" value="{{ old('name', $user->name) }}" maxlength="80" required></label>
-            <label>Profile handle<input name="handle" value="{{ old('handle', $user->handle) }}" pattern="[a-zA-Z0-9_]{3,30}" required></label>
+            <x-social.input name="name" label="Display name" :value="$user->name" maxlength="80" required />
+            <x-social.input name="handle" label="Username" :value="$user->handle" pattern="[a-zA-Z0-9_]{3,30}" minlength="3" maxlength="30" :hint="'3–30 letters, numbers or underscores. Your collection: plaat.club/'.$user->handle" required />
             <label>Who can see your collection?
                 <select name="visibility">
                     @foreach(['only_me' => 'Only me', 'friends' => 'Friends', 'everyone' => 'Everyone'] as $value => $label)
@@ -24,11 +24,15 @@
         </form>
     </section>
     <section class="panel">
-        <p class="eyebrow">Connected collection</p><h2>Discogs</h2>
+        <h2>Discogs</h2>
         @if($user->discogs_token)
             <p>Connected as <strong>{{ $user->discogs_username }}</strong>.</p>
-            <p>{{ $user->sync_status ?? 'Ready to import' }}<br><small>Last successful sync: {{ $user->last_synced_at?->timezone('Europe/Brussels')->format('j M Y, H:i') ?? 'Not yet' }}</small></p>
-            <form method="post" action="/discogs/sync">@csrf<x-social.button>Sync collection now</x-social.button></form>
+            @if($user->collection_imported_at === null)
+                <x-social.import-status :user="$user" :count="$user->records()->count()" />
+            @else
+                <p>{{ $user->sync_status ?? 'Ready to import' }}<br><small>Last successful sync: {{ $user->last_synced_at?->timezone('Europe/Brussels')->format('j M Y, H:i') ?? 'Not yet' }}</small></p>
+                <form method="post" action="/discogs/sync">@csrf<x-social.button>Sync collection now</x-social.button></form>
+            @endif
             <form class="spaced" method="post" action="/discogs">@csrf @method('delete')<x-social.button variant="secondary">Disconnect Discogs</x-social.button></form>
         @else
             <p>Connect your Discogs account to import your collection. We never ask for your Discogs password.</p>

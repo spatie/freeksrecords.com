@@ -2,14 +2,16 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\DiscogsConnectionController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
 use App\Http\Middleware\PrivateResponse;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(PrivateResponse::class)->group(function () {
-    Route::view('/community', 'social.intro')->name('community');
-    Route::get('/people/{user:handle}', [SocialController::class, 'profile'])->name('profile');
+    Route::get('/community', [HomeController::class, 'intro'])->name('community');
+    Route::get('/collections', [HomeController::class, 'collections'])->name('collections');
+    Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');
 
     Route::middleware('guest')->group(function () {
@@ -45,8 +47,11 @@ Route::middleware(PrivateResponse::class)->group(function () {
             Route::post('/notifications/read', [SocialController::class, 'readNotifications']);
             Route::post('/discogs/connect', [DiscogsConnectionController::class, 'connect'])->middleware('throttle:6,1');
             Route::get('/discogs/callback', [DiscogsConnectionController::class, 'callback'])->name('discogs.callback');
+            Route::get('/discogs/status', [DiscogsConnectionController::class, 'status'])->name('discogs.status');
             Route::post('/discogs/sync', [DiscogsConnectionController::class, 'sync'])->middleware('throttle:3,60');
             Route::delete('/discogs', [DiscogsConnectionController::class, 'disconnect']);
         });
     });
+
+    Route::get('/{user:handle}', [SocialController::class, 'profile'])->where('user', '[a-z0-9_]{3,30}')->name('profile');
 });

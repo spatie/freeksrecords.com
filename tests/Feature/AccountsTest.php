@@ -85,6 +85,8 @@ it('registers a private account, verifies the inbox, and authenticates securely'
     expect(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
     Notification::assertSentTo($user, VerifyEmail::class);
     $this->get('/feed')->assertRedirect('/verify-email');
+    $this->get('/verify-email')->assertOk()->assertSee($user->email)->assertSee('bring in your records from Discogs')
+        ->assertDontSee('href="/friends"', false)->assertDontSee('href="/settings"', false);
     $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
     $this->get('/feed')->assertOk();
     $this->post('/logout')->assertRedirect('/');
@@ -117,6 +119,22 @@ it('resets passwords through a single-use expiring email token', function () {
     $this->travel(61)->minutes();
     $this->post('/reset-password', [...$data, 'token' => $token])->assertSessionHasErrors('email');
 });
+
+it('reserves top-level routes and assets in registration and settings', function (string $handle) {
+    $this->post('/register', [
+        'name' => 'Collector', 'handle' => strtoupper($handle), 'email' => 'reserved@example.test',
+        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+    ])->assertSessionHasErrors('handle');
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'reserved@example.test']);
+
+    $user = socialUser('validcollector');
+    $this->actingAs($user)->patch('/settings', [
+        'name' => $user->name, 'handle' => strtoupper($handle), 'visibility' => 'everyone',
+        'comments_enabled' => true, 'digest_enabled' => true,
+    ])->assertSessionHasErrors('handle');
+    expect($user->fresh()->handle)->toBe('validcollector');
+})->with(User::RESERVED_HANDLES);
 
 it('updates only allowed profile fields and keeps the legacy collection public', function () {
     $user = socialUser('settings');

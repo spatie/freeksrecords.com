@@ -2,11 +2,11 @@
 @section('title', $record->payload['displayTitle'])
 @section('content')
 @php($payload = $record->payload)
-<p class="eyebrow"><a href="{{ route('profile', $record->user->handle) }}">{{ $record->user->name }}’s shelf</a></p>
+<p class="back-link"><a href="{{ $collectionUrl }}">Back to {{ $record->user->name }}’s collection</a></p>
 <div class="record-detail two-columns">
     <img class="large-cover" src="{{ $payload['cover'] }}" alt="{{ $payload['displayTitle'] }} sleeve" width="600" height="600">
     <section>
-        <p class="eyebrow">{{ $payload['artist'] }}</p><h1 class="record-title">{{ $payload['displayTitle'] }}<span>.</span></h1>
+        <p class="record-artist">{{ $payload['artist'] }}</p><h1 class="record-title">{{ $payload['displayTitle'] }}</h1>
         <p class="lede">{{ $payload['label'] }} · {{ $payload['originalYear'] ?? $payload['year'] }}</p>
         @if($record->formats())<p>Format: {{ implode(' / ', $record->formats()) }}</p>@endif
         <p>Added {{ $record->added_at->timezone('Europe/Brussels')->format('j F Y') }}</p>

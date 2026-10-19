@@ -1,20 +1,22 @@
 @extends('social.layout')
-@php($startingCollection = $collectionCount === 0 && auth()->user()->collection_imported_at === null)
+@php($startingCollection = auth()->user()->collection_imported_at === null && ($collectionCount === 0 || auth()->user()->discogs_token))
 @section('title', $startingCollection ? 'Add your records' : 'Friends’ additions')
 @section('content')
 @if($startingCollection)
-    <section class="hero" aria-labelledby="onboarding-title">
-        <h1 id="onboarding-title">Add your records<span>.</span></h1>
+    <section class="onboarding" aria-labelledby="onboarding-title">
+        <ol class="setup-steps" aria-label="Account setup"><li>Account created</li><li>Email verified</li><li aria-current="step">Import collection</li></ol>
+        <h1 id="onboarding-title">Add your records</h1>
         @if(auth()->user()->discogs_token)
-            <p class="lede">{{ auth()->user()->sync_status ?? 'Discogs is connected.' }}</p>
-            <x-social.button href="/settings">View import status</x-social.button>
+            <x-social.import-status :user="auth()->user()" :count="$collectionCount" />
         @else
-            <p class="lede">Connect Discogs to bring your collection here.</p>
+            <p class="lede">Bring your collection over from Discogs. Your records will appear on your own shelf, ready to browse and share.</p>
             <form method="post" action="/discogs/connect">@csrf<x-social.button>Connect Discogs</x-social.button></form>
+            <p class="onboarding-detail">You’ll approve the connection on Discogs. We never see your password. {{ auth()->user()->visibility === 'only_me' ? 'Only you can see your collection.' : 'Your current sharing preference applies to imported records.' }}</p>
+            <details class="discogs-help"><summary>Don’t have a collection on Discogs yet?</summary><p>Add your vinyl, CDs or cassettes to <a href="https://www.discogs.com/my" target="_blank" rel="noopener noreferrer">your Discogs collection</a>, then come back and connect. Records are added on Discogs, not directly on Plaat Club.</p></details>
         @endif
     </section>
 @else
-    <h1>Friends’ additions<span>.</span></h1>
+    <x-social.page-heading title="Friends’ additions" description="The newest records on your friends’ shelves, in the order they added them." />
 @endif
 @if(!$startingCollection || $records->isNotEmpty() || $incomingRequests->isNotEmpty())
 <div class="feed-layout">
@@ -23,7 +25,7 @@
         <div class="record-grid">
             @forelse($records as $record)@include('social.card', ['showOwner' => true])
             @empty
-                @unless($startingCollection)<section class="empty panel"><h2>Nothing new yet.</h2><x-social.button href="/friends">Find friends</x-social.button></section>@endunless
+                @unless($startingCollection)<section class="empty panel"><h2>Nothing new yet.</h2><p>Accepted friends’ new records appear here. Your first import stays off their feeds.</p><div class="actions"><x-social.button href="/friends">Find friends</x-social.button><a href="{{ route('collections') }}">Browse collections</a></div></section>@endunless
             @endforelse
         </div>
         {{ $records->links() }}

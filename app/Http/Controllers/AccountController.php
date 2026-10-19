@@ -22,10 +22,10 @@ class AccountController extends Controller
         $request->merge(['email' => strtolower($request->string('email')->trim()), 'handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
-            'handle' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', 'unique:users'],
+            'handle' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), 'unique:users'],
             'email' => ['required', 'email', 'max:254', 'unique:users'],
             'password' => ['required', 'confirmed', PasswordRule::min(12)],
-        ]);
+        ], [], ['handle' => 'username']);
         $user = User::query()->create($data);
         event(new Registered($user));
         Auth::login($user);
@@ -59,7 +59,7 @@ class AccountController extends Controller
     {
         $request->fulfill();
 
-        return redirect('/feed')->with('status', 'Email verified. Welcome to the listening circle.');
+        return redirect('/feed')->with('status', 'Email verified. Welcome to Plaat Club.');
     }
 
     public function resend(Request $request): RedirectResponse
@@ -104,10 +104,10 @@ class AccountController extends Controller
         $request->merge(['handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
-            'handle' => ['required', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::unique('users')->ignore($user->id)],
+            'handle' => ['required', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), Rule::unique('users')->ignore($user->id)],
             'visibility' => ['required', Rule::in($user->legacy_owner ? ['everyone'] : ['only_me', 'friends', 'everyone'])],
             'comments_enabled' => ['required', 'boolean'], 'digest_enabled' => ['required', 'boolean'],
-        ]);
+        ], [], ['handle' => 'username']);
         $user->update($data);
 
         return back()->with('status', 'Your preferences have been saved.');
