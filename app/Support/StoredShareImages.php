@@ -34,6 +34,7 @@ class StoredShareImages
     public function recordUrl(array $record): string
     {
         $renderedFields = Arr::only($record, ['cover', 'artist', 'displayTitle', 'originalYear']);
+        $renderedFields['layoutVersion'] = 2;
 
         $path = $this->path("records/{$record['instanceId']}", $renderedFields);
 

@@ -1,6 +1,9 @@
 <?php
 
 use App\Support\RecordCollection;
+use App\Support\RecordShareImage;
+use App\Support\StoredShareImages;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -102,6 +105,97 @@ it('stores a small preview image for a shared record and redirects to it', funct
         ->and($response->headers->get('Location'))->toStartWith(storedShareImageUrl('share/records/2189134863-'));
 
     expectStoredShareImage($response->headers->get('Location'));
+});
+
+it('keeps record artwork prominent and text inside the social preview safe area', function (string $artist, string $title, ?int $year) {
+    $cover = imagecreatetruecolor(32, 32);
+    imagefill($cover, 0, 0, 0x307A90);
+    ob_start();
+    imagejpeg($cover);
+    Storage::disk('public')->put('records/42.jpg', ob_get_clean());
+
+    $bytes = app(RecordShareImage::class)->render([
+        'cover' => Storage::disk('public')->url('records/42.jpg'),
+        'artist' => $artist,
+        'displayTitle' => $title,
+        'originalYear' => $year,
+    ]);
+
+    [$width, $height, $type] = getimagesizefromstring($bytes);
+    expect([$width, $height, $type])->toBe([1200, 630, IMAGETYPE_JPEG])
+        ->and(strlen($bytes))->toBeLessThan(150 * 1024);
+
+    $image = imagecreatefromstring($bytes);
+    $art = imagecolorsforindex($image, imagecolorat($image, 450, 550));
+    $vinyl = imagecolorsforindex($image, imagecolorat($image, 590, 315));
+    $edge = imagecolorsforindex($image, imagecolorat($image, 8, 315));
+
+    expect($art['blue'])->toBeGreaterThan(130)
+        ->and($art['red'])->toBeLessThan(60)
+        ->and($vinyl['red'])->toBeLessThan(70)
+        ->and($edge['green'])->toBeGreaterThan(190);
+
+    $inkBottom = 0;
+    $yearTop = 630;
+    $yearPixels = 0;
+    $overflow = 0;
+
+    for ($y = 160; $y < 630; $y++) {
+        for ($x = 610; $x < 1200; $x++) {
+            $pixel = imagecolorsforindex($image, imagecolorat($image, $x, $y));
+            $isInk = max($pixel['red'], $pixel['green'], $pixel['blue']) < 100;
+            $isAccent = $pixel['red'] > 115 && $pixel['red'] > $pixel['green'] * 1.6 && $pixel['green'] < 110;
+
+            if ($isInk) {
+                $inkBottom = max($inkBottom, $y);
+            }
+
+            if ($isAccent) {
+                $yearTop = min($yearTop, $y);
+                $yearPixels++;
+            }
+
+            if (($isInk || $isAccent) && ($x < 638 || $x > 1150 || $y > 580)) {
+                $overflow++;
+            }
+        }
+    }
+
+    expect($inkBottom)->toBeGreaterThan(250)
+        ->and($overflow)->toBe(0);
+
+    if ($year !== null) {
+        expect($yearPixels)->toBeGreaterThan(100)
+            ->and($yearTop)->toBeGreaterThan($inkBottom + 12)
+            ->and($yearTop)->toBeLessThan(550);
+    } else {
+        expect($yearPixels)->toBe(0);
+    }
+})->with([
+    'short title' => ['Oren Ambarchi', 'Shebang', 2022],
+    'long title' => ['David Bowie', 'The Rise And Fall Of Ziggy Stardust And The Spiders From Mars', 1972],
+    'two-line artist' => ['King Gizzard And The Lizard Wizard', 'Polygondwanaland', 2017],
+    'unbroken title' => ['Björk', str_repeat('Ágætisbyrjun', 12), 1999],
+    'overlong metadata' => [str_repeat('A collaborative artist ensemble ', 8), str_repeat('A very long album title ', 30), 2001],
+    'unknown year' => ['SML', 'How You Been', null],
+]);
+
+it('replaces the old record layout without reusing its immutable image', function () {
+    $record = app(RecordCollection::class)->findSummary(2189134863);
+    $fields = Arr::only($record, ['cover', 'artist', 'displayTitle', 'originalYear']);
+    $oldHash = substr(hash('sha256', json_encode([1, $fields], JSON_THROW_ON_ERROR)), 0, 16);
+    $oldPath = "share/records/2189134863-{$oldHash}.jpg";
+    Storage::disk('public')->put($oldPath, 'old layout');
+
+    $images = app(StoredShareImages::class);
+    $url = $images->recordUrl($record);
+
+    expect($url)->not->toBe(storedShareImageUrl($oldPath))
+        ->and($images->recordUrl($record))->toBe($url)
+        ->and(Storage::disk('public')->allFiles('share/records'))->toHaveCount(2)
+        ->and(Storage::disk('public')->get($oldPath))->toBe('old layout');
+
+    expectStoredShareImage($url);
 });
 
 it('returns 404 for the preview image of an unknown record', function () {
