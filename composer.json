@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "freekmurze/freeksrecords.com",
+    "name": "spatie/plaat.club",
     "type": "project",
-    "description": "Freek's personal record collection.",
+    "description": "Plaat Club, a listening circle for record collectors.",
     "keywords": [
         "laravel",
         "framework"

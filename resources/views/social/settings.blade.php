@@ -40,7 +40,7 @@
             <h2 class="spaced">Preview tools</h2>
             <p>Enable the weekly digest and save your preferences first. This local-only check uses the last seven days and does not change your weekly send checkpoint.</p>
             <form method="post" action="/demo/digest">@csrf<x-social.button variant="secondary">Check my digest preview</x-social.button></form>
-            <p class="muted spaced">Open the “Freeks Records preview inbox” portal to read captured emails. No messages leave the orb.</p>
+            <p class="muted spaced">Open the “Plaat Club preview inbox” portal to read captured emails. No messages leave the orb.</p>
         @endif
     </section>
 </div>

@@ -101,6 +101,7 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
 it('prioritizes importing a first collection without empty feed and request clutter', function () {
     $viewer = socialUser('newcollector');
     $this->actingAs($viewer)->get('/feed')->assertOk()
+        ->assertSee('· Plaat Club</title>', false)->assertSee('Plaat Club<span class="brand-period">', false)
         ->assertSee('Add your records')->assertSee('Connect Discogs')
         ->assertSee('action="/discogs/connect"', false)
         ->assertDontSee('Nothing new yet')->assertDontSee('0 releases')

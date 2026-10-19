@@ -1,10 +1,10 @@
-# Freek's Records
+# Plaat Club
 
-[![tests](https://github.com/freekmurze/freeksrecords.com/actions/workflows/tests.yml/badge.svg)](https://github.com/freekmurze/freeksrecords.com/actions/workflows/tests.yml)
+[![tests](https://github.com/spatie/plaat.club/actions/workflows/tests.yml/badge.svg)](https://github.com/spatie/plaat.club/actions/workflows/tests.yml)
 
-The source of [freeksrecords.com](https://freeksrecords.com), a place to browse my vinyl collection. Records sit on a walnut shelf in a listening corner. Pull one out, read the (slightly worn) sleeve notes, and jump to any track on Spotify or Apple Music.
+The source of [Plaat Club](https://plaat.club), a home for your vinyl, CDs and cassettes. Connect your Discogs collection, share your shelves, and discover what your friends are adding. Pull out a release, read its notes, and jump to any track on Spotify or Apple Music.
 
-The collection is synced from [Discogs](https://www.discogs.com/user/freekmurze/collection). Every record and the collection as a whole get their own shareable URL with a generated social preview image.
+The site started with [Freek’s Discogs collection](https://www.discogs.com/user/freekmurze/collection), which still sits on its original walnut shelves at `/collection`. Its existing record URLs and generated social preview images remain available.
 
 ## Why this exists
 
@@ -39,8 +39,8 @@ Happy browsing!
 ## Running it locally
 
 ```bash
-git clone https://github.com/freekmurze/freeksrecords.com.git
-cd freeksrecords.com
+git clone https://github.com/spatie/plaat.club.git
+cd plaat.club
 composer setup
 composer dev
 ```
@@ -95,7 +95,7 @@ and password reset. Each profile has a unique handle at `/people/{handle}`.
   owners can delete any comment or stop new comments. Existing comments remain visible
   when new comments are disabled. Notifications are in-app, not per-record emails.
 - Discogs imports retain Vinyl, CD and Cassette formats, including mixed bundles.
-  Profile collections can be filtered by format; unknown media stay visible under All.
+  Collection shelves show sleeves, CD cases and cassette cases without a format filter.
   Format metadata refreshes on subsequent syncs without creating new activity.
 - Owners can edit a shared and a private note per collection copy. Shared notes inherit
   collection privacy; private notes are owner-only and excluded from other viewers,
@@ -161,7 +161,7 @@ send external mail, or seed demo credentials automatically.
 php artisan records:import-snapshot
 php artisan social:seed-demo
 amp orb services ensure
-amp orb portal 8000 --title 'Freeks Records social preview'
+amp orb portal 8000 --title 'Plaat Club social preview'
 ```
 
 The supervised services are the web app, database queue worker, Laravel scheduler,
@@ -206,7 +206,9 @@ credentials; missing credentials show an actionable message rather than a fake c
 
 ## Deployment
 
-This site runs on [Laravel Cloud](https://cloud.laravel.com). Every push to `main` is deployed automatically.
+Plaat Club targets [Laravel Cloud](https://cloud.laravel.com). Creating its Cloud application
+does not deploy this feature branch or migrate the original site. Configure deployment
+and the production domain explicitly when the app is ready to launch.
 
 Production needs HTTPS, `APP_DEBUG=false`, `SESSION_SECURE_COOKIE=true`, a working mail
 transport, the queue worker, the scheduler (`schedule:run` every minute), and Discogs OAuth

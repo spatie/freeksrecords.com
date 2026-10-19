@@ -40,7 +40,7 @@ class CollectionPage
             'url' => url($record['shareUrl']),
             'image' => $this->shareImageUrl(
                 fn (): string => $this->shareImages->recordUrl($record),
-                route('recordShareImage', ['instanceId' => $record['instanceId'], 'v' => 4]),
+                route('recordShareImage', ['instanceId' => $record['instanceId'], 'v' => 5]),
             ),
         ];
     }
@@ -49,14 +49,14 @@ class CollectionPage
     protected function socialMeta(): array
     {
         return [
-            'title' => "Freek's records",
+            'title' => 'Plaat Club',
             'description' => "A lifetime of digging, one shelf at a time. Browse Freek's vinyl collection by artist, decade or genre, and find your next favourite record.",
             'url' => route('collection'),
             'image' => $this->shareImageUrl(
                 fn (): string => $this->shareImages->collectionUrl(),
-                route('collectionShareImage', ['v' => 3]),
+                route('collectionShareImage', ['v' => 4]),
             ),
-            'imageAlt' => "Freek's records: a wooden shelf of album sleeves beneath a vintage turntable and speakers",
+            'imageAlt' => 'Plaat Club: a wooden shelf of album sleeves beneath a vintage turntable and speakers',
         ];
     }
 

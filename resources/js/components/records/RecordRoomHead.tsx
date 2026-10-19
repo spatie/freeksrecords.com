@@ -15,7 +15,7 @@ type RecordRoomHeadProps = {
 };
 
 /** Bump together with the `v` query the server adds to shared record images. */
-const recordShareImageVersion = 4;
+const recordShareImageVersion = 5;
 
 function shareImageUrl(
     record: CollectionRecordSummary | null,

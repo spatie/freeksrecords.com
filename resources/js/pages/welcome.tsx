@@ -61,7 +61,7 @@ export default function Welcome({
                 <header className="collection-header">
                     <a className="collection-brand" href={home.url()}>
                         <span aria-hidden="true" className="brand-record" />{' '}
-                        Freek’s records
+                        Plaat Club
                         <span className="brand-period">.</span>
                     </a>
                     <a href={home.url()}>Start your own collection</a>

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
-    <title>@yield('title', 'Listening circle') · Freek’s Records</title>
+    <title>@yield('title', 'Listening circle') · Plaat Club</title>
     <link rel="icon" href="/favicon.svg">
     @fonts
     @vite('resources/css/social.css')
@@ -13,7 +13,7 @@
 <body class="@yield('body-class')">
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
-    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span> Freek’s records<span class="brand-period">.</span></a>
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"></span> Plaat Club<span class="brand-period">.</span></a>
     <nav aria-label="Main navigation">
         @auth
             <a href="/feed" @if(request()->is('feed') && !($startingCollection ?? false)) aria-current="page" @endif>Friends’ additions</a>

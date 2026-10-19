@@ -1,4 +1,4 @@
-This week on your friends’ shelves · Freek’s Records
+This week on your friends’ shelves · Plaat Club
 
 A few new records from your listening circle, newest first.
 

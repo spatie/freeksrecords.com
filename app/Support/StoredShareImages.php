@@ -14,7 +14,7 @@ use RuntimeException;
  */
 class StoredShareImages
 {
-    protected int $version = 1;
+    protected int $version = 2;
 
     public function __construct(
         protected RecordCollection $collection,

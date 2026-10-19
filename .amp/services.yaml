@@ -6,16 +6,20 @@ services:
         port: 8000
         health: /up
         env:
+            APP_NAME: Plaat Club
+            MAIL_FROM_NAME: Plaat Club
             APP_DEBUG: 'false'
             MAIL_MAILER: smtp
             MAIL_HOST: 127.0.0.1
             MAIL_PORT: '1025'
             SOCIAL_DEMO_MODE: 'true'
         portal:
-            title: Freeks Records social preview
+            title: Plaat Club social preview
     queue:
         command: php artisan queue:work --sleep=2 --tries=3 --timeout=7200
         env:
+            APP_NAME: Plaat Club
+            MAIL_FROM_NAME: Plaat Club
             APP_URL: ${services.web.publicURL}
             MAIL_MAILER: smtp
             MAIL_HOST: 127.0.0.1
@@ -23,6 +27,8 @@ services:
     scheduler:
         command: php artisan schedule:work
         env:
+            APP_NAME: Plaat Club
+            MAIL_FROM_NAME: Plaat Club
             APP_URL: ${services.web.publicURL}
             MAIL_MAILER: smtp
             MAIL_HOST: 127.0.0.1
@@ -33,4 +39,4 @@ services:
         health: /livez
         review: false
         portal:
-            title: Freeks Records preview inbox
+            title: Plaat Club preview inbox

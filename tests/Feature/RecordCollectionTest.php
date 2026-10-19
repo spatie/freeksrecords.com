@@ -10,6 +10,8 @@ it('lets guests browse the whole collection without downloading every track link
         ->assertInertia(fn (Assert $page) => $page
             ->component('welcome')
             ->where('sharedRecord', null)
+            ->where('social.title', 'Plaat Club')
+            ->where('social.imageAlt', 'Plaat Club: a wooden shelf of album sleeves beneath a vintage turntable and speakers')
             ->has('collection.records', 850)
             ->where('collection.records.0.artist', 'George Harrison')
             ->where('collection.records.0.originalYear', 1970)
@@ -55,6 +57,7 @@ it('does not route invalid collection copy ids', function () {
 it('renders social metadata for a shared record', function () {
     $this->get(route('recordShare', ['instanceId' => 2189134863, 'slug' => 'oren-ambarchi-shebang']))
         ->assertOk()
+        ->assertSee('property="og:site_name" content="Plaat Club"', false)
         ->assertSee('property="og:title" content="Shebang by Oren Ambarchi"', false)
         ->assertSee('Shebang by Oren Ambarchi (2022), from Freek&#039;s vinyl collection.', false)
         ->assertSee('name="twitter:description"', false)
@@ -126,6 +129,8 @@ it('renders social metadata for the original collection', function () {
     $home = route('collection');
 
     $this->get(route('collection'))
+        ->assertSee('<title>Plaat Club</title>', false)
+        ->assertSee('property="og:site_name" content="Plaat Club"', false)
         ->assertSee('property="og:type" content="website"', false)
         ->assertSee('A lifetime of digging, one shelf at a time.')
         ->assertSee('name="twitter:description"', false)
@@ -143,6 +148,7 @@ it('describes the collection with structured data', function () {
 
     expect($schema['@context'])->toBe('https://schema.org')
         ->and($schema['@type'])->toBe('CollectionPage')
+        ->and($schema['isPartOf']['name'])->toBe('Plaat Club')
         ->and($schema['author']['name'])->toBe('Freek Van der Herten');
 });
 
