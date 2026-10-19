@@ -5,7 +5,7 @@
         <strong data-import-message>{{ $user->sync_status ?? 'Waiting for the import to start' }}</strong>
         <p data-import-count>{{ $count }} {{ Str::plural('record', $count) }} imported</p>
     </div>
-    <p class="muted">Large collections can take a while. You can leave this page; the import continues in the background.</p>
+    <p class="muted" data-import-running>Large collections can take a while. You can leave this page; the import continues in the background.</p>
     <p class="muted">Collection visibility: <span data-import-visibility>{{ match($user->visibility) { 'everyone' => 'Everyone', 'friends' => 'Friends', default => 'Only me' } }}</span>. <a href="/settings">Change visibility</a></p>
     <div class="actions">
         <a class="button" data-import-complete href="{{ route('profile', $user->handle) }}" @if($user->collection_imported_at === null) hidden @endif>View my collection</a>
@@ -34,6 +34,7 @@
                 panel.querySelector('[data-import-visibility]').textContent = state.visibility;
                 panel.querySelector('[data-import-complete]').href = state.collectionUrl;
                 panel.querySelector('[data-import-complete]').hidden = !state.complete;
+                panel.querySelector('[data-import-running]').hidden = state.complete || !state.connected;
                 panel.querySelector('[data-import-refresh]').hidden = state.complete;
                 panel.querySelector('[data-import-retry]').hidden = !state.failed || !state.connected;
                 panel.querySelector('[data-import-error]').hidden = true;
