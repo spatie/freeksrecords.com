@@ -18,12 +18,8 @@
                 </select>
                 <small>{{ $user->legacy_owner ? 'Freek’s original collection stays public to preserve existing links and previews.' : 'Friends means accepted mutual friends. Everyone includes visitors who are not signed in. Private profiles show only your name and handle.' }}</small>
             </label>
-            <input type="hidden" name="comments_enabled" value="0">
-            <label class="check"><input type="checkbox" name="comments_enabled" value="1" @checked(old('comments_enabled', $user->comments_enabled))>Allow comments on my records</label>
-            <small>Switching this off stops new comments. Existing comments remain visible and can be deleted.</small>
-            <input type="hidden" name="digest_enabled" value="0">
-            <label class="check"><input type="checkbox" name="digest_enabled" value="1" @checked(old('digest_enabled', $user->digest_enabled))>Send my weekly friends digest</label>
-            <small>Mondays at 09:00 Europe/Brussels. No new records, no email. Current friendship and privacy always apply.</small>
+            <x-social.switch name="comments_enabled" :checked="old('comments_enabled', $user->comments_enabled)" description="Switching this off stops new comments. Existing comments remain visible and can be deleted.">Allow comments on my records</x-social.switch>
+            <x-social.switch name="digest_enabled" :checked="old('digest_enabled', $user->digest_enabled)" description="Mondays at 09:00 Europe/Brussels. No new records, no email. Current friendship and privacy always apply.">Send my weekly friends digest</x-social.switch>
             <x-social.button>Save preferences</x-social.button>
         </form>
     </section>
@@ -35,10 +31,10 @@
             <form method="post" action="/discogs/sync">@csrf<x-social.button>Sync collection now</x-social.button></form>
             <form class="spaced" method="post" action="/discogs">@csrf @method('delete')<x-social.button variant="secondary">Disconnect Discogs</x-social.button></form>
         @else
-            <p>Authorize Freek’s Records on Discogs to import your collection. We never ask for your Discogs password.</p>
+            <p>Connect your Discogs account to import your collection. We never ask for your Discogs password.</p>
             <form method="post" action="/discogs/connect">@csrf<x-social.button>{{ $user->discogs_username ? 'Reconnect Discogs' : 'Connect Discogs' }}</x-social.button></form>
         @endif
-        <p class="muted">Syncs run daily and mirror removals. Historical records in your first import never appear as new additions. You can reconnect the same Discogs account without losing comments.</p>
+        <p class="muted spaced">Syncs run daily and mirror removals. Historical records in your first import never appear as new additions. You can reconnect the same Discogs account without losing comments.</p>
         @if(app()->environment('local') && config('services.social_demo'))
             <hr class="spaced">
             <h2 class="spaced">Preview tools</h2>

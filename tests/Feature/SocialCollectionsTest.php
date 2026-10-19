@@ -188,15 +188,38 @@ it('shows only the recipient’s currently visible notifications and scopes read
     $record = socialRecord($owner, 'Visible notification album');
     SocialNotification::send($viewer, $owner, 'comment', $record);
     SocialNotification::send($owner, $viewer, 'friend_accepted');
-    $this->actingAs($viewer)->get('/notifications')->assertSee('Visible notification album')->assertDontSee('accepted your friend request');
+    $this->actingAs($viewer)->get('/notifications')->assertRedirect('/feed?notifications=1');
+    $this->get('/settings')->assertSee('popovertarget="notifications-popover"', false);
+    $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertOk()->assertSee('Visible notification album')->assertDontSee('accepted your friend request')
+        ->assertSee('data-unread-count="1"', false)->assertDontSee('<html', false);
     $owner->update(['visibility' => 'only_me']);
-    $this->get('/notifications')->assertDontSee('Visible notification album')->assertDontSee('left a sleeve note');
+    $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertDontSee('Visible notification album')->assertDontSee('commented on your record')
+        ->assertSee('data-unread-count="0"', false)->assertSee('All quiet for now');
     $this->post('/notifications/read')->assertRedirect();
     expect(SocialNotification::query()->whereNotNull('read_at')->count())->toBe(0);
     $owner->update(['visibility' => 'friends']);
-    $this->post('/notifications/read');
+    $this->post('/notifications/read', [], ['X-Requested-With' => 'XMLHttpRequest'])->assertNoContent();
+    $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertSee('Visible notification album')->assertSee('data-unread-count="0"', false);
     expect(SocialNotification::query()->where('user_id', $viewer->id)->first()->read_at)->not->toBeNull()
         ->and(SocialNotification::query()->where('user_id', $owner->id)->first()->read_at)->toBeNull();
+});
+
+it('keeps older notifications accessible in the popover', function () {
+    $viewer = socialUser('viewer');
+    $actor = socialUser('actor');
+    SocialNotification::send($viewer, $actor, 'friend_accepted');
+    foreach (range(1, 15) as $index) {
+        SocialNotification::send($viewer, $actor, 'friend_request');
+    }
+
+    $this->actingAs($viewer)->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertSee('sent you a friend request')->assertDontSee('accepted your friend request')
+        ->assertSee('page=2', false)->assertSee('data-unread-count="16"', false);
+    $this->get('/notifications?page=2', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertSee('accepted your friend request')->assertDontSee('sent you a friend request');
 });
 
 it('isolates legacy collection copies, snapshot fallback, and all legacy URLs from other owners', function () {

@@ -11,6 +11,7 @@ use App\Support\RecordCollection;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
@@ -145,14 +146,25 @@ class SocialController extends Controller
         return back()->with('status', 'Comment deleted.');
     }
 
-    public function notifications(Request $request): View
+    public function notifications(Request $request): View|RedirectResponse
     {
-        return view('social.notifications', ['notifications' => SocialNotification::visibleTo($request->user())->with(['actor', 'record'])->latest('id')->paginate(30)]);
+        if (! $request->ajax()) {
+            return redirect()->route('feed', ['notifications' => 1]);
+        }
+
+        return view('social.notifications', [
+            'notifications' => SocialNotification::visibleTo($request->user())->with(['actor', 'record'])->latest('id')->simplePaginate(15),
+            'unreadCount' => SocialNotification::visibleTo($request->user())->whereNull('read_at')->count(),
+        ]);
     }
 
-    public function readNotifications(Request $request): RedirectResponse
+    public function readNotifications(Request $request): RedirectResponse|Response
     {
         SocialNotification::visibleTo($request->user())->whereNull('read_at')->update(['read_at' => now()]);
+
+        if ($request->ajax()) {
+            return response()->noContent();
+        }
 
         return back()->with('status', 'Notifications marked as read.');
     }

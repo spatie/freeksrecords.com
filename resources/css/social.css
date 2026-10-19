@@ -168,13 +168,149 @@ h1 span {
     gap: 20px;
     font-size: 14px;
 }
-.site-header nav a {
+.site-header nav > a {
     text-decoration: none;
 }
-.site-header nav a:hover,
-.site-header nav [aria-current] {
+.site-header nav > a:not(.button):hover,
+.site-header nav > a:not(.button)[aria-current] {
     color: #a53f22;
     text-decoration: underline;
+}
+.notifications-trigger {
+    anchor-name: --notifications;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+}
+.notifications-trigger:hover,
+.notifications-trigger:has(+ .notifications-popover:popover-open) {
+    color: #a53f22;
+}
+.notification-count {
+    border-radius: 20px;
+    padding: 1px 6px;
+    background: #292a22;
+    color: #fffdf6;
+    font-size: 11px;
+}
+.notifications-popover {
+    position: fixed;
+    inset: 90px 5vw auto auto;
+    margin: 0;
+    padding: 0;
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100dvh - 120px);
+    overflow: hidden;
+    border: 1px solid #d7d0c2;
+    border-radius: 12px;
+    background: #faf8f1;
+    color: #292a22;
+    box-shadow:
+        0 16px 48px #292a2226,
+        0 3px 10px #292a2210;
+}
+.notifications-popover:popover-open {
+    display: flex;
+    flex-direction: column;
+}
+@supports (top: anchor(bottom)) {
+    .notifications-popover {
+        position-anchor: --notifications;
+        top: calc(anchor(bottom) + 16px);
+        right: max(16px, anchor(right));
+        max-height: min(560px, calc(100dvh - anchor(bottom) - 32px));
+    }
+}
+.notifications-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 16px 22px;
+    border-bottom: 1px solid #e2dccf;
+}
+.notifications-heading h2 {
+    margin: 0;
+    font-size: 19px;
+}
+.notifications-close {
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #6b695e;
+    font-size: 24px;
+    cursor: pointer;
+}
+.notifications-close:hover {
+    background: #eae5d9;
+    color: #292a22;
+}
+.notifications-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.notifications-read {
+    padding: 12px 22px;
+    border-bottom: 1px solid #e2dccf;
+    font-size: 12px;
+}
+.notification-item + .notification-item {
+    border-top: 1px solid #e2dccf;
+}
+.notification-item > a {
+    display: flex;
+    align-items: start;
+    gap: 14px;
+    padding: 18px 22px;
+    text-decoration: none;
+}
+.notification-item > a:hover {
+    background: #eeeade;
+}
+.notification-item img,
+.notification-avatar {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+.notification-avatar {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #e4e4d7;
+    font-size: 18px;
+}
+.notification-copy {
+    display: grid;
+    gap: 5px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+.notification-unread {
+    color: #a53f22;
+    font-size: 11px;
+    font-weight: 500;
+}
+.notifications-empty {
+    padding: 24px;
+    margin: 0;
+    color: #6b695e;
+    font-size: 14px;
+}
+.notification-pagination {
+    padding: 16px 22px;
+    border-top: 1px solid #e2dccf;
+}
+.notification-pagination nav {
+    margin: 0;
 }
 .page {
     max-width: 1280px;
@@ -285,6 +421,19 @@ textarea {
     border-radius: 4px;
     color: #292a22;
 }
+select {
+    appearance: none;
+    min-height: 48px;
+    padding: 12px 44px 12px 14px;
+    line-height: 1.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b695e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    cursor: pointer;
+}
+select:hover {
+    border-color: #726b5e;
+}
 textarea {
     resize: vertical;
 }
@@ -295,15 +444,56 @@ small,
     font-weight: 400;
     line-height: 1.6;
 }
-.check {
+.switch-field {
+    display: grid;
+    gap: 8px;
+}
+.switch {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    min-height: 44px;
+    cursor: pointer;
 }
-.check input {
-    width: 18px;
-    height: 18px;
-    accent-color: #bb4e2c;
+.switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.switch-track {
+    flex: none;
+    width: 44px;
+    height: 26px;
+    padding: 3px;
+    border-radius: 20px;
+    background: #8b877b;
+    transition: background 0.15s;
+}
+.switch-track::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fffdf6;
+    box-shadow: 0 1px 3px #292a2230;
+    transition: transform 0.15s;
+}
+.switch input:checked + .switch-track {
+    background: #292a22;
+}
+.switch input:checked + .switch-track::before {
+    transform: translateX(18px);
+}
+.switch input:focus-visible + .switch-track {
+    outline: 3px solid #bb4e2c;
+    outline-offset: 4px;
 }
 .auth-panel {
     max-width: 500px;
@@ -471,12 +661,6 @@ small,
 .comment-body {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-}
-.notification.read {
-    opacity: 0.7;
-}
-.notification p {
-    margin-top: 14px;
 }
 /* A small still life made from our demo sleeves, not a screenshot of a shelf. */
 .landing-hero {
@@ -726,6 +910,9 @@ nav[aria-label='Pagination Navigation'] {
     .feed-sidebar,
     .feed-main .record-grid {
         grid-template-columns: minmax(0, 1fr);
+    }
+    .notifications-popover {
+        right: 16px;
     }
     .landing-hero {
         padding-bottom: 36px;

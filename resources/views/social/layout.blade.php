@@ -19,7 +19,7 @@
             <a href="/feed" @if(request()->is('feed') && !($startingCollection ?? false)) aria-current="page" @endif>Friends’ additions</a>
             <a href="/friends" @if(request()->is('friends')) aria-current="page" @endif>Friends</a>
             <a href="{{ route('profile', auth()->user()->handle) }}">My collection</a>
-            <a href="/notifications">Notifications</a>
+            <x-social.notifications />
             <a href="/settings">Settings</a>
             <form method="post" action="/logout">@csrf<x-social.button variant="text">Sign out</x-social.button></form>
         @else
