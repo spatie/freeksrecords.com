@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
+use App\Models\User;
 use App\Support\Discogs;
 use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
@@ -27,14 +29,20 @@ class SyncDiscogsCollectionCommand extends Command
         RecordCoverImages $images,
         EdgeCache $edgeCache,
     ): int {
-        if (! CollectionRecord::query()->exists()) {
+        if (User::freek()->discogs_token) {
+            SyncUserCollection::dispatch(User::freek()->id);
+
+            return self::SUCCESS;
+        }
+        if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
             $this->call('records:import-snapshot');
         }
 
         $username = config('services.discogs.username');
-        $knownInstanceIds = array_fill_keys(CollectionRecord::query()->pluck('instance_id')->all(), true);
+        $knownInstanceIds = array_fill_keys(CollectionRecord::legacy()->pluck('instance_id')->all(), true);
         $seenInstanceIds = [];
         $imported = 0;
+        $refreshed = 0;
         $failed = 0;
         $page = 1;
 
@@ -53,6 +61,12 @@ class SyncDiscogsCollectionCommand extends Command
                     $seenInstanceIds[] = $entry['instance_id'];
 
                     if (isset($knownInstanceIds[$entry['instance_id']])) {
+                        $known = CollectionRecord::legacy()->where('instance_id', $entry['instance_id'])->first();
+                        if ($known?->refreshFormats($entry['basic_information'], $mapper)) {
+                            $refreshed++;
+                            $collection->flush();
+                        }
+
                         continue;
                     }
 
@@ -71,6 +85,7 @@ class SyncDiscogsCollectionCommand extends Command
                     $record['cover'] = $this->copyCover($record, $images, $mapper);
 
                     $collection->store($record);
+                    CollectionRecord::legacy()->where('instance_id', $record['instanceId'])->update(['is_activity' => true]);
 
                     $knownInstanceIds[$entry['instance_id']] = true;
                     $imported++;
@@ -81,19 +96,20 @@ class SyncDiscogsCollectionCommand extends Command
         } catch (ConnectionException|RequestException $exception) {
             $this->error("Discogs sync interrupted. Imported records are saved; rerun to resume. {$exception->getMessage()}");
 
-            $this->purgeEdgeCacheWhenChanged($edgeCache, $imported);
+            $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $refreshed);
 
             return self::FAILURE;
         }
 
         $removed = $this->removeDeletedRecords($collection, $seenInstanceIds, $response['pagination']['items'] ?? null);
+        User::freek()->update(['collection_imported_at' => now(), 'last_synced_at' => now()]);
 
         $this->call('records:sync-dates');
         $this->call('records:copy-covers');
 
         $this->comment("Imported {$imported} new records, removed {$removed}, skipped {$failed}.");
 
-        $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $removed);
+        $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $removed + $refreshed);
 
         return $failed ? self::FAILURE : self::SUCCESS;
     }
@@ -156,10 +172,6 @@ class SyncDiscogsCollectionCommand extends Command
     /** @param array<int, int> $seenInstanceIds */
     protected function removeDeletedRecords(RecordCollection $collection, array $seenInstanceIds, ?int $expectedCount): int
     {
-        if ($seenInstanceIds === []) {
-            return 0;
-        }
-
         if (count($seenInstanceIds) !== $expectedCount) {
             $this->warn('Discogs returned an incomplete collection, so no records were removed.');
 

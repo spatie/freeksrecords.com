@@ -216,27 +216,6 @@ function configureEdgeCachePurging(): void
     ]);
 }
 
-/** @return array<string, mixed> */
-function discogsCollectionEntry(int $instanceId, int $releaseId): array
-{
-    return [
-        'instance_id' => $instanceId,
-        'date_added' => '2026-10-01T10:00:00-07:00',
-        'basic_information' => [
-            'id' => $releaseId,
-            'master_id' => 999999991,
-            'title' => 'A New Record',
-            'year' => 2026,
-            'artists' => [['name' => 'The Artist']],
-            'labels' => [['name' => 'The Label', 'catno' => 'NEW-1']],
-            'formats' => [['descriptions' => ['LP', 'Reissue']]],
-            'genres' => ['Rock'],
-            'styles' => [],
-            'cover_image' => '',
-        ],
-    ];
-}
-
 /** @param array<int, array<string, mixed>> $entries */
 function discogsCollectionPage(array $entries, ?int $items = null): PromiseInterface
 {

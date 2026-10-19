@@ -1,0 +1,869 @@
+{
+    "provenance": "Public Discogs API verified 2026-10-18; selected CD/cassette editions of albums in collection.json. Artwork reuses the local snapshot sleeve for the same album, not edition-specific packaging. Listening links are generated searches. No marketplace/user data or credentials.",
+    "releases": [
+        {
+            "sourceUrl": "https://api.discogs.com/releases/10367868",
+            "artworkSourceReleaseId": 19772260,
+            "cover": "/images/records/19772260.jpg",
+            "basic_information": {
+                "id": 10367868,
+                "title": "All Things Must Pass",
+                "artists": [
+                    {
+                        "name": "George Harrison"
+                    }
+                ],
+                "year": 1987,
+                "labels": [
+                    {
+                        "name": "Capitol Records",
+                        "catno": "CDP 7 46688 2"
+                    },
+                    {
+                        "name": "Parlophone",
+                        "catno": "CDS 7 46688 8"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "CD",
+                        "qty": "2",
+                        "descriptions": ["Album", "Reissue"]
+                    }
+                ],
+                "genres": ["Rock", "Pop"],
+                "styles": ["Classic Rock"],
+                "master_id": 56036,
+                "cover_image": "/images/records/19772260.jpg"
+            },
+            "release": {
+                "year": 1987,
+                "tracklist": [
+                    {
+                        "position": "1-1",
+                        "type_": "track",
+                        "title": "I'd Have You Anytime",
+                        "duration": "2:59"
+                    },
+                    {
+                        "position": "1-2",
+                        "type_": "track",
+                        "title": "My Sweet Lord",
+                        "duration": "4:41"
+                    },
+                    {
+                        "position": "1-3",
+                        "type_": "track",
+                        "title": "Wah-Wah",
+                        "duration": "5:38"
+                    },
+                    {
+                        "position": "1-4",
+                        "type_": "track",
+                        "title": "Isn't It A Pity (Version One)",
+                        "duration": "7:11"
+                    },
+                    {
+                        "position": "1-5",
+                        "type_": "track",
+                        "title": "What Is Life",
+                        "duration": "4:20"
+                    },
+                    {
+                        "position": "1-6",
+                        "type_": "track",
+                        "title": "If Not For You",
+                        "duration": "3:33"
+                    },
+                    {
+                        "position": "1-7",
+                        "type_": "track",
+                        "title": "Behind That Locked Door",
+                        "duration": "3:08"
+                    },
+                    {
+                        "position": "1-8",
+                        "type_": "track",
+                        "title": "Let It Down",
+                        "duration": "4:57"
+                    },
+                    {
+                        "position": "1-9",
+                        "type_": "track",
+                        "title": "Run Of The Mill",
+                        "duration": "2:53"
+                    },
+                    {
+                        "position": "1-10",
+                        "type_": "track",
+                        "title": "Beware Of Darkness",
+                        "duration": "3:49"
+                    },
+                    {
+                        "position": "1-11",
+                        "type_": "track",
+                        "title": "Apple Scruffs",
+                        "duration": "3:09"
+                    },
+                    {
+                        "position": "1-12",
+                        "type_": "track",
+                        "title": "Ballad Of Sir Frankie Crisp (Let It Roll)",
+                        "duration": "3:54"
+                    },
+                    {
+                        "position": "1-13",
+                        "type_": "track",
+                        "title": "Awaiting On You All",
+                        "duration": "2:50"
+                    },
+                    {
+                        "position": "1-14",
+                        "type_": "track",
+                        "title": "All Things Must Pass",
+                        "duration": "3:26"
+                    },
+                    {
+                        "position": "2-1",
+                        "type_": "track",
+                        "title": "I Dig Love",
+                        "duration": "4:59"
+                    },
+                    {
+                        "position": "2-2",
+                        "type_": "track",
+                        "title": "Art Of Dying",
+                        "duration": ""
+                    },
+                    {
+                        "position": "2-3",
+                        "type_": "track",
+                        "title": "Isn't It A Pity (Version Two)",
+                        "duration": "4:47"
+                    },
+                    {
+                        "position": "2-4",
+                        "type_": "track",
+                        "title": "Hear Me Lord",
+                        "duration": "5:47"
+                    },
+                    {
+                        "position": "2-5",
+                        "type_": "track",
+                        "title": "Out Of The Blue",
+                        "duration": "11:17"
+                    },
+                    {
+                        "position": "2-6",
+                        "type_": "track",
+                        "title": "It's Johnny's Birthday",
+                        "duration": "0:50"
+                    },
+                    {
+                        "position": "2-7",
+                        "type_": "track",
+                        "title": "Plug Me In",
+                        "duration": "3:23"
+                    },
+                    {
+                        "position": "2-8",
+                        "type_": "track",
+                        "title": "I Remember Jeep",
+                        "duration": ""
+                    },
+                    {
+                        "position": "2-9",
+                        "type_": "track",
+                        "title": "Thanks For The Pepperoni",
+                        "duration": ""
+                    }
+                ]
+            },
+            "master": {
+                "year": 1970
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/27505425",
+            "artworkSourceReleaseId": 19772260,
+            "cover": "/images/records/19772260.jpg",
+            "basic_information": {
+                "id": 27505425,
+                "title": "All Things Must Pass",
+                "artists": [
+                    {
+                        "name": "George Harrison"
+                    }
+                ],
+                "year": 1970,
+                "labels": [
+                    {
+                        "name": "Apple Records",
+                        "catno": "TC-STCH 1/2-639"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "Cassette",
+                        "qty": "2",
+                        "descriptions": ["Album", "Stereo"]
+                    }
+                ],
+                "genres": ["Rock", "Pop"],
+                "styles": ["Pop Rock"],
+                "master_id": 56036,
+                "cover_image": "/images/records/19772260.jpg"
+            },
+            "release": {
+                "year": 1970,
+                "tracklist": [
+                    {
+                        "position": "A1",
+                        "type_": "track",
+                        "title": "I'd Have You Anytime",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A2",
+                        "type_": "track",
+                        "title": "My Sweet Lord",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A3",
+                        "type_": "track",
+                        "title": "Wah-Wah",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A4",
+                        "type_": "track",
+                        "title": "Isn't It A Pity (Version One)",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A5",
+                        "type_": "track",
+                        "title": "What Is Life",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B1",
+                        "type_": "track",
+                        "title": "If Not For You",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B2",
+                        "type_": "track",
+                        "title": "Behind That Locked Door",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B3",
+                        "type_": "track",
+                        "title": "Let It Down",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B4",
+                        "type_": "track",
+                        "title": "Run Of The Mill",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B5",
+                        "type_": "track",
+                        "title": "Beware Of Darkness",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B6",
+                        "type_": "track",
+                        "title": "Apple Scruffs",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C1",
+                        "type_": "track",
+                        "title": "Ballad Of Sir Frankie Crisp (Let It Roll)",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C2",
+                        "type_": "track",
+                        "title": "Awaiting On You All",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C3",
+                        "type_": "track",
+                        "title": "All Things Must Pass",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C4",
+                        "type_": "track",
+                        "title": "I Dig Love",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C5",
+                        "type_": "track",
+                        "title": "Art Of Dying",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C6",
+                        "type_": "track",
+                        "title": "Isn't It A Pity (Version Two)",
+                        "duration": ""
+                    },
+                    {
+                        "position": "C7",
+                        "type_": "track",
+                        "title": "Hear Me Lord",
+                        "duration": ""
+                    },
+                    {
+                        "position": "",
+                        "type_": "heading",
+                        "title": "Apple Jam",
+                        "duration": ""
+                    },
+                    {
+                        "position": "D1",
+                        "type_": "track",
+                        "title": "Out Of The Blue",
+                        "duration": ""
+                    },
+                    {
+                        "position": "D2",
+                        "type_": "track",
+                        "title": "It's Johnny's Birthday",
+                        "duration": ""
+                    },
+                    {
+                        "position": "D3",
+                        "type_": "track",
+                        "title": "Plug Me In",
+                        "duration": ""
+                    },
+                    {
+                        "position": "D4",
+                        "type_": "track",
+                        "title": "I Remember Jeep",
+                        "duration": ""
+                    },
+                    {
+                        "position": "D5",
+                        "type_": "track",
+                        "title": "Thanks For The Pepperoni",
+                        "duration": ""
+                    }
+                ]
+            },
+            "master": {
+                "year": 1970
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/5964494",
+            "artworkSourceReleaseId": 495664,
+            "cover": "/images/records/495664.jpg",
+            "basic_information": {
+                "id": 5964494,
+                "title": "Animals",
+                "artists": [
+                    {
+                        "name": "Pink Floyd"
+                    }
+                ],
+                "year": 1985,
+                "labels": [
+                    {
+                        "name": "CBS",
+                        "catno": "CDCBS 81861"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "CD",
+                        "qty": "1",
+                        "descriptions": ["Album", "Reissue"]
+                    }
+                ],
+                "genres": ["Rock"],
+                "styles": ["Psychedelic Rock", "Prog Rock"],
+                "master_id": 10370,
+                "cover_image": "/images/records/495664.jpg"
+            },
+            "release": {
+                "year": 1985,
+                "tracklist": [
+                    {
+                        "position": "1",
+                        "type_": "track",
+                        "title": "Pigs On The Wing (Part One)",
+                        "duration": "1:24"
+                    },
+                    {
+                        "position": "2",
+                        "type_": "track",
+                        "title": "Dogs",
+                        "duration": "17:05"
+                    },
+                    {
+                        "position": "3",
+                        "type_": "track",
+                        "title": "Pigs (Three Different Ones)",
+                        "duration": "11:30"
+                    },
+                    {
+                        "position": "4",
+                        "type_": "track",
+                        "title": "Sheep",
+                        "duration": "10:18"
+                    },
+                    {
+                        "position": "5",
+                        "type_": "track",
+                        "title": "Pigs On The Wing (Part Two)",
+                        "duration": "1:27"
+                    }
+                ]
+            },
+            "master": {
+                "year": 1977
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/12732026",
+            "artworkSourceReleaseId": 495664,
+            "cover": "/images/records/495664.jpg",
+            "basic_information": {
+                "id": 12732026,
+                "title": "Animals",
+                "artists": [
+                    {
+                        "name": "Pink Floyd"
+                    }
+                ],
+                "year": 1977,
+                "labels": [
+                    {
+                        "name": "Harvest",
+                        "catno": "3C 264 98434"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "Cassette",
+                        "qty": "1",
+                        "descriptions": ["Album"]
+                    }
+                ],
+                "genres": ["Rock"],
+                "styles": ["Prog Rock", "Psychedelic Rock"],
+                "master_id": 10370,
+                "cover_image": "/images/records/495664.jpg"
+            },
+            "release": {
+                "year": 1977,
+                "tracklist": [
+                    {
+                        "position": "A1",
+                        "type_": "track",
+                        "title": "Pigs On The Wing (Part One)",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A2",
+                        "type_": "track",
+                        "title": "Dogs",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B1",
+                        "type_": "track",
+                        "title": "Pigs (Three Different Ones)",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B2",
+                        "type_": "track",
+                        "title": "Sheep",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B3",
+                        "type_": "track",
+                        "title": "Pigs On The Wing (Part Two)",
+                        "duration": ""
+                    }
+                ]
+            },
+            "master": {
+                "year": 1977
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/8684443",
+            "artworkSourceReleaseId": 14474203,
+            "cover": "/images/records/14474203.jpg",
+            "basic_information": {
+                "id": 8684443,
+                "title": "Wish You Were Here = 炎 (あなたがここにいてほしい)",
+                "artists": [
+                    {
+                        "name": "Pink Floyd"
+                    }
+                ],
+                "year": 1982,
+                "labels": [
+                    {
+                        "name": "CBS/Sony",
+                        "catno": "35DP 4"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "CD",
+                        "qty": "1",
+                        "descriptions": ["Album", "Reissue"],
+                        "text": "Gold Tinted Top, 2-Track"
+                    }
+                ],
+                "genres": ["Rock"],
+                "styles": ["Prog Rock"],
+                "master_id": 11703,
+                "cover_image": "/images/records/14474203.jpg"
+            },
+            "release": {
+                "year": 1982,
+                "tracklist": [
+                    {
+                        "position": "",
+                        "type_": "index",
+                        "title": "Shine On You Crazy Diamond Part 1-5 / Welcome To The Machine",
+                        "duration": "21:03",
+                        "sub_tracks": [
+                            {
+                                "position": "1.1",
+                                "type_": "track",
+                                "title": "Shine On You Crazy Diamond (Parts 1-5)",
+                                "duration": "13:29"
+                            },
+                            {
+                                "position": "1.2",
+                                "type_": "track",
+                                "title": "Welcome To The Machine",
+                                "duration": "7:34"
+                            }
+                        ]
+                    },
+                    {
+                        "position": "",
+                        "type_": "index",
+                        "title": "Have A Cigar / Wish You Were Here / Shine On You Crazy Diamond Part 6-9",
+                        "duration": "23:10",
+                        "sub_tracks": [
+                            {
+                                "position": "2.1",
+                                "type_": "track",
+                                "title": "Have A Cigar",
+                                "duration": "5:06"
+                            },
+                            {
+                                "position": "2.2",
+                                "type_": "track",
+                                "title": "Wish You Were Here",
+                                "duration": "5:37"
+                            },
+                            {
+                                "position": "2.3",
+                                "type_": "track",
+                                "title": "Shine On You Crazy Diamond (Parts 6-9)",
+                                "duration": "12:27"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "master": {
+                "year": 1975
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/23940530",
+            "artworkSourceReleaseId": 14474203,
+            "cover": "/images/records/14474203.jpg",
+            "basic_information": {
+                "id": 23940530,
+                "title": "Wish You Were Here",
+                "artists": [
+                    {
+                        "name": "Pink Floyd"
+                    }
+                ],
+                "year": 1975,
+                "labels": [
+                    {
+                        "name": "CBS",
+                        "catno": "PC 4651"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "Cassette",
+                        "qty": "1",
+                        "descriptions": ["Album", "Stereo"]
+                    }
+                ],
+                "genres": ["Rock"],
+                "styles": ["Prog Rock"],
+                "master_id": 11703,
+                "cover_image": "/images/records/14474203.jpg"
+            },
+            "release": {
+                "year": 1975,
+                "tracklist": [
+                    {
+                        "position": "A1",
+                        "type_": "track",
+                        "title": "Shine On You Crazy Diamond, Parts I, II, III, IV, V",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A2",
+                        "type_": "track",
+                        "title": "Welcome To The Machine",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B1",
+                        "type_": "track",
+                        "title": "Have A Cigar",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B2",
+                        "type_": "track",
+                        "title": "Wish You Were Here",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B3",
+                        "type_": "track",
+                        "title": "Shine On You Crazy Diamond, Parts VI, VII, VIII, IX",
+                        "duration": ""
+                    }
+                ]
+            },
+            "master": {
+                "year": 1975
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/1561161",
+            "artworkSourceReleaseId": 36912054,
+            "cover": "/images/records/36912054.jpg",
+            "basic_information": {
+                "id": 1561161,
+                "title": "Still Bill",
+                "artists": [
+                    {
+                        "name": "Bill Withers"
+                    }
+                ],
+                "year": 1993,
+                "labels": [
+                    {
+                        "name": "Columbia",
+                        "catno": "982 948 2"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "CD",
+                        "qty": "1",
+                        "descriptions": ["Album", "Reissue"]
+                    }
+                ],
+                "genres": ["Funk / Soul"],
+                "styles": ["Soul"],
+                "master_id": 92896,
+                "cover_image": "/images/records/36912054.jpg"
+            },
+            "release": {
+                "year": 1993,
+                "tracklist": [
+                    {
+                        "position": "1",
+                        "type_": "track",
+                        "title": "Lonely Town, Lonely Street",
+                        "duration": "3:44"
+                    },
+                    {
+                        "position": "2",
+                        "type_": "track",
+                        "title": "Let Me In Your Life",
+                        "duration": "2:39"
+                    },
+                    {
+                        "position": "3",
+                        "type_": "track",
+                        "title": "Who Is He (What Is He To You)",
+                        "duration": "3:12"
+                    },
+                    {
+                        "position": "4",
+                        "type_": "track",
+                        "title": "Use Me",
+                        "duration": "3:45"
+                    },
+                    {
+                        "position": "5",
+                        "type_": "track",
+                        "title": "Lean On Me",
+                        "duration": "4:17"
+                    },
+                    {
+                        "position": "6",
+                        "type_": "track",
+                        "title": "Kissing My Love",
+                        "duration": "3:49"
+                    },
+                    {
+                        "position": "7",
+                        "type_": "track",
+                        "title": "I Don't Know",
+                        "duration": "3:05"
+                    },
+                    {
+                        "position": "8",
+                        "type_": "track",
+                        "title": "Another Day To Run",
+                        "duration": "4:38"
+                    },
+                    {
+                        "position": "9",
+                        "type_": "track",
+                        "title": "I Don't Want You On My Mind",
+                        "duration": "4:35"
+                    },
+                    {
+                        "position": "10",
+                        "type_": "track",
+                        "title": "Take It All In And Check It All Out",
+                        "duration": "2:40"
+                    }
+                ]
+            },
+            "master": {
+                "year": 1972
+            }
+        },
+        {
+            "sourceUrl": "https://api.discogs.com/releases/4538635",
+            "artworkSourceReleaseId": 36912054,
+            "cover": "/images/records/36912054.jpg",
+            "basic_information": {
+                "id": 4538635,
+                "title": "Still Bill",
+                "artists": [
+                    {
+                        "name": "Bill Withers"
+                    }
+                ],
+                "year": 1972,
+                "labels": [
+                    {
+                        "name": "Sussex",
+                        "catno": "SUS M57014"
+                    }
+                ],
+                "formats": [
+                    {
+                        "name": "Cassette",
+                        "qty": "1",
+                        "descriptions": ["Album", "Stereo"],
+                        "text": "Slipcase"
+                    }
+                ],
+                "genres": ["Funk / Soul"],
+                "styles": ["Soul"],
+                "master_id": 92896,
+                "cover_image": "/images/records/36912054.jpg"
+            },
+            "release": {
+                "year": 1972,
+                "tracklist": [
+                    {
+                        "position": "A1",
+                        "type_": "track",
+                        "title": "Kissing My Love",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A2",
+                        "type_": "track",
+                        "title": "I Don't Know",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A3",
+                        "type_": "track",
+                        "title": "Another Day To Run",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A4",
+                        "type_": "track",
+                        "title": "I Don't Want You On My Mind",
+                        "duration": ""
+                    },
+                    {
+                        "position": "A6",
+                        "type_": "track",
+                        "title": "Take It All In And Check It All Out",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B1",
+                        "type_": "track",
+                        "title": "Lonely Town, Lonely Street",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B2",
+                        "type_": "track",
+                        "title": "Let Me In Your Life",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B3",
+                        "type_": "track",
+                        "title": "Who Is He (And What Is He To You)?",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B4",
+                        "type_": "track",
+                        "title": "Use Me",
+                        "duration": ""
+                    },
+                    {
+                        "position": "B5",
+                        "type_": "track",
+                        "title": "Lean On Me",
+                        "duration": ""
+                    }
+                ]
+            },
+            "master": {
+                "year": 1972
+            }
+        }
+    ]
+}

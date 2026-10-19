@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\CollectionRecord;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -22,11 +23,11 @@ class RecordCollection
     /** @return array<int, array<string, mixed>> */
     public function records(): array
     {
-        if (! CollectionRecord::query()->exists()) {
+        if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
             return $this->snapshot();
         }
 
-        return CollectionRecord::query()
+        return CollectionRecord::legacy()
             ->orderByDesc('added_at')
             ->orderByDesc('instance_id')
             ->pluck('payload')
@@ -36,11 +37,11 @@ class RecordCollection
     /** @return array<string, mixed>|null */
     public function find(int $instanceId): ?array
     {
-        if (! CollectionRecord::query()->exists()) {
+        if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
             return collect($this->snapshot())->firstWhere('instanceId', $instanceId);
         }
 
-        return CollectionRecord::query()->find($instanceId)?->payload;
+        return CollectionRecord::legacy()->where('instance_id', $instanceId)->first()?->payload;
     }
 
     /**
@@ -70,6 +71,30 @@ class RecordCollection
         return array_slice($this->summaries(), 0, $count);
     }
 
+    /**
+     * @param  list<CollectionRecord>  $copies
+     * @return list<array<string, mixed>>
+     */
+    public function profileSummaries(array $copies): array
+    {
+        // Never use the legacy owner's cache or serialize an entire model/payload.
+        $records = array_map(fn (CollectionRecord $copy): array => [
+            ...Arr::only($copy->payload, [
+                'artist', 'artists', 'title', 'displayTitle', 'year', 'originalYear',
+                'label', 'format', 'genres', 'styles', 'cover', 'tracks',
+                'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
+            ]),
+            'id' => $copy->discogs_release_id, 'instanceId' => $copy->instance_id,
+            'addedAt' => $copy->added_at->toIso8601String(),
+            'mediaFormats' => $copy->formats(),
+        ], $copies);
+
+        return array_map(
+            fn (array $record, CollectionRecord $copy): array => $this->summary($record, route('shelf.record', $copy, false)),
+            $this->dates->enrich($records), $copies,
+        );
+    }
+
     /** @return array<int, array<string, mixed>> */
     public function snapshot(): array
     {
@@ -86,7 +111,7 @@ class RecordCollection
     public function store(array $record): void
     {
         CollectionRecord::query()->updateOrCreate(
-            ['instance_id' => $record['instanceId']],
+            ['user_id' => User::freek()->id, 'instance_id' => $record['instanceId']],
             $this->attributes($record),
         );
 
@@ -109,7 +134,7 @@ class RecordCollection
             foreach (array_chunk($rows, 100) as $chunk) {
                 CollectionRecord::query()->upsert(
                     $chunk,
-                    ['instance_id'],
+                    ['user_id', 'instance_id'],
                     ['discogs_release_id', 'added_at', 'payload', 'updated_at'],
                 );
             }
@@ -121,7 +146,7 @@ class RecordCollection
     /** @param array<int, int> $instanceIds */
     public function removeAllExcept(array $instanceIds): int
     {
-        $removed = CollectionRecord::query()->whereNotIn('instance_id', $instanceIds)->delete();
+        $removed = CollectionRecord::legacy()->whereNotIn('instance_id', $instanceIds)->delete();
 
         $this->flush();
 
@@ -146,6 +171,7 @@ class RecordCollection
     protected function attributes(array $record): array
     {
         return [
+            'user_id' => User::freek()->id,
             'discogs_release_id' => $record['id'],
             'added_at' => CarbonImmutable::parse($record['addedAt'])->utc()->toDateTimeString(),
             'payload' => $record,
@@ -156,16 +182,18 @@ class RecordCollection
      * @param  array<string, mixed>  $record
      * @return array<string, mixed>
      */
-    protected function summary(array $record): array
+    protected function summary(array $record, ?string $profileUrl = null): array
     {
         $year = $record['originalYear'] ? " ({$record['originalYear']})" : '';
 
         $record['trackTitles'] = array_column($record['tracks'], 'title');
-        $record['shareUrl'] = route('recordShare', [
+        $record['shareUrl'] = $profileUrl ?? route('recordShare', [
             'instanceId' => $record['instanceId'],
             'slug' => $this->slug($record),
         ], false);
-        $record['shareDescription'] = "{$record['displayTitle']} by {$record['artist']}{$year}, from Freek's vinyl collection. Explore the artwork, tracklist and links to listen.";
+        if ($profileUrl === null) {
+            $record['shareDescription'] = "{$record['displayTitle']} by {$record['artist']}{$year}, from Freek's vinyl collection. Explore the artwork, tracklist and links to listen.";
+        }
 
         return Arr::except($record, [
             'tracks',

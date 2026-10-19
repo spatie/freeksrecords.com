@@ -51,7 +51,7 @@ it('enriches pages with stored original dates without overwriting the pressing d
         'pressing_release_date' => '2021-08-06',
     ]);
 
-    $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
+    $this->get(route('collection'))->assertInertia(fn (Assert $page) => $page
         ->where('collection.records.0.originalReleaseDate', '1970-11-27')
         ->where('collection.records.0.originalYear', 1970));
 

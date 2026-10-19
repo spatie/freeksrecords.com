@@ -24,7 +24,7 @@ class RecordShareImage
         imageline($image, 24, 284, 1176, 284, $woodEdge);
         imageline($image, 36, 590, 1164, 590, $woodEdge);
 
-        imagettftext($image, 68, 0, 44, 170, $ink, public_path('fonts/barlow-condensed-bold.ttf'), "Freek's records.");
+        imagettftext($image, 68, 0, 44, 170, $ink, public_path('fonts/barlow-condensed-bold.ttf'), 'Plaat Club.');
 
         $stereo = $this->asset(resource_path('images/listening-corner.png'));
         imagecopyresampled($image, $stereo, 556, 65, 0, 0, 618, 206, imagesx($stereo), imagesy($stereo));
@@ -78,7 +78,7 @@ class RecordShareImage
         $display = public_path('fonts/barlow-condensed-bold.ttf');
         $body = public_path('fonts/plex-sans-regular.ttf');
 
-        imagettftext($image, 19, 0, 644, 116, $accent, $body, "FREEK'S RECORDS");
+        imagettftext($image, 19, 0, 644, 116, $accent, $body, 'Plaat Club');
         imageline($image, 644, 143, 1144, 143, $muted);
 
         $artistLines = $this->wrap($record['artist'], $body, 26, 500, 2);

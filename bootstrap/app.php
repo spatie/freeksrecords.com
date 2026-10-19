@@ -4,11 +4,8 @@ use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Spatie\LaravelFlare\Facades\Flare;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -23,12 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
                 HandleInertiaRequests::class,
                 AddLinkHeadersForPreloadedAssets::class,
             ],
-            remove: [
-                StartSession::class,
-                ShareErrorsFromSession::class,
-                PreventRequestForgery::class,
-            ],
         );
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         Flare::handles($exceptions);

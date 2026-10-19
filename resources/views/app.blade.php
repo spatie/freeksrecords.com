@@ -45,7 +45,7 @@
                 <script data-inertia="structured-data" type="application/ld+json">{!! json_encode($structuredData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) !!}</script>
                 <meta data-inertia="description" name="description" content="{{ $description }}">
                 <meta data-inertia="og:type" property="og:type" content="{{ $shared ? 'music.album' : 'website' }}">
-                <meta data-inertia="og:site_name" property="og:site_name" content="Freek's records">
+                <meta data-inertia="og:site_name" property="og:site_name" content="Plaat Club">
                 <meta data-inertia="og:title" property="og:title" content="{{ $title }}">
                 <meta data-inertia="og:description" property="og:description" content="{{ $description }}">
                 <meta data-inertia="og:url" property="og:url" content="{{ $url }}">

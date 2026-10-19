@@ -12,7 +12,7 @@ import {
     restoreBrowseState,
 } from '@/components/records/browseState';
 import type { BrowseState } from '@/components/records/browseState';
-import { home } from '@/routes';
+import { collection } from '@/routes';
 
 export type BrowseUpdate =
     | Partial<BrowseState>
@@ -24,7 +24,7 @@ const initialBrowse = browseFromHash('');
  * Stores the requested browse state. The active group is derived from it by
  * `collectionView`, so an unknown or missing group never ends up in state.
  */
-export function useBrowseNavigation() {
+export function useBrowseNavigation(basePath = collection.url()) {
     // The server cannot see the hash, so the first render matches the server and the hash is applied before paint.
     const [browse, setBrowse] = useState<BrowseState>(initialBrowse);
     const latest = useRef(browse);
@@ -41,7 +41,7 @@ export function useBrowseNavigation() {
     }, []);
 
     const restore = useEffectEvent(() => {
-        if (window.location.pathname !== home.url()) return;
+        if (window.location.pathname !== basePath.split('?')[0]) return;
         const saved = window.history.state?.recordBrowse as
             | BrowseState
             | undefined;
@@ -58,9 +58,11 @@ export function useBrowseNavigation() {
         const onNavigate = () => restore();
         window.addEventListener('record-cabinet:navigate', onNavigate);
         window.addEventListener('hashchange', onNavigate);
+        window.addEventListener('popstate', onNavigate);
         return () => {
             window.removeEventListener('record-cabinet:navigate', onNavigate);
             window.removeEventListener('hashchange', onNavigate);
+            window.removeEventListener('popstate', onNavigate);
         };
     }, []);
 
@@ -78,7 +80,7 @@ export function useBrowseNavigation() {
         };
         window.history.replaceState(currentState, '', window.location.href);
         const state = { ...currentState, recordBrowse: next };
-        const url = `${home.url()}${nextHash}`;
+        const url = `${basePath}${nextHash}`;
         if (browseHash(current) === nextHash || current.query !== next.query) {
             window.history.replaceState(state, '', url);
         } else {

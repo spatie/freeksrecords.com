@@ -1,0 +1,152 @@
+/* Shared by account emails and the weekly digest; Laravel inlines these styles. */
+body,
+body *:not(html):not(style):not(br):not(tr):not(code) {
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+body {
+    -webkit-text-size-adjust: none;
+    background-color: #f5f1e7;
+    color: #292a22;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    width: 100% !important;
+}
+a {
+    color: #a64028;
+}
+a img {
+    border: none;
+}
+h1 {
+    color: #292a22;
+    font-size: 30px;
+    line-height: 1.2;
+    margin: 0 0 24px;
+    text-align: left;
+}
+h2 {
+    color: #292a22;
+    font-size: 21px;
+    line-height: 1.3;
+    margin: 0 0 8px;
+    text-align: left;
+}
+p,
+ul,
+ol {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: left;
+}
+img {
+    max-width: 100%;
+}
+.wrapper,
+.content,
+.body {
+    background-color: #f5f1e7;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+.header {
+    padding: 36px 16px 28px;
+    text-align: center;
+}
+.header a {
+    color: #292a22;
+    font-size: 23px;
+    font-weight: bold;
+    text-decoration: none;
+}
+.inner-body {
+    background-color: #fffdf7;
+    border: 1px solid #d7d2c5;
+    border-top: 4px solid #a64028;
+    border-radius: 4px;
+    margin: 0 auto;
+    padding: 0;
+    width: 570px;
+}
+.inner-body a {
+    word-break: break-word;
+}
+.content-cell {
+    max-width: 100vw;
+    padding: 32px;
+}
+.action {
+    margin: 28px auto;
+    padding: 0;
+    text-align: center;
+    width: 100%;
+}
+.button {
+    -webkit-text-size-adjust: none;
+    border-radius: 4px;
+    color: #ffffff;
+    display: inline-block;
+    font-size: 16px;
+    font-weight: bold;
+    overflow: hidden;
+    text-decoration: none;
+}
+.button-primary,
+.button-success,
+.button-error {
+    background-color: #a64028;
+    border: 12px solid #a64028;
+    border-left-width: 22px;
+    border-right-width: 22px;
+}
+.panel {
+    border-left: 3px solid #a64028;
+    margin: 24px 0;
+    width: 100%;
+}
+.panel-content {
+    background-color: #f5f1e7;
+    padding: 20px;
+}
+.panel-content h2 a {
+    color: #292a22;
+    text-decoration: none;
+}
+.panel-content .record-owner {
+    color: #6b695e;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+.panel-content .record-meta {
+    color: #6b695e;
+    font-size: 14px;
+    margin-bottom: 0;
+}
+.subcopy {
+    border-top: 1px solid #d7d2c5;
+    margin-top: 28px;
+    padding-top: 24px;
+}
+.subcopy p {
+    color: #6b695e;
+    font-size: 13px;
+}
+.footer {
+    margin: 0 auto;
+    padding: 28px;
+    text-align: center;
+    width: 570px;
+}
+.footer p,
+.footer a {
+    color: #6b695e;
+    font-size: 12px;
+    text-align: center;
+}
+.break-all {
+    word-break: break-all;
+}

@@ -1,8 +1,10 @@
 import { browseHash } from '@/components/records/browseState';
+import '../../../css/record-cases.css';
 
 import type { CollectionRecordSummary } from '@/components/records/types';
 
 type RecordSleeveProps = {
+    browseBasePath?: string;
     onSelect: () => void;
     onArtist: (artist: string) => void;
     showYear?: boolean;
@@ -11,6 +13,7 @@ type RecordSleeveProps = {
 };
 
 export function RecordSleeve({
+    browseBasePath = '/',
     onSelect,
     onArtist,
     showYear = false,
@@ -20,6 +23,7 @@ export function RecordSleeve({
     return (
         <article
             className="catalog-record"
+            data-media-format={record.mediaFormats?.[0]}
             data-record-id={record.instanceId}
             data-selected={transitionRecordId === record.instanceId}
         >
@@ -28,7 +32,7 @@ export function RecordSleeve({
                     className="catalog-record-open"
                     type="button"
                     onClick={onSelect}
-                    aria-label={`Take out ${record.displayTitle} by ${record.artist}`}
+                    aria-label={`Take out ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
                 >
                     <span className="catalog-record-art">
                         <img
@@ -44,6 +48,13 @@ export function RecordSleeve({
                             src={record.cover}
                             width={600}
                         />
+                        {record.mediaFormats?.[0] === 'Cassette' && (
+                            <span className="cassette-inlay" aria-hidden="true">
+                                <strong>{record.artist}</strong>
+                                <span>{record.displayTitle}</span>
+                                <small>Cassette</small>
+                            </span>
+                        )}
                         <span className="cover-gloss" />
                     </span>
                 </button>
@@ -64,7 +75,7 @@ export function RecordSleeve({
                                         event.preventDefault();
                                         onArtist(artist);
                                     }}
-                                    href={`/${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
+                                    href={`${browseBasePath}${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
                                 >
                                     {artist}
                                 </a>

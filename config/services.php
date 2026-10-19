@@ -2,6 +2,8 @@
 
 return [
 
+    'social_demo' => env('SOCIAL_DEMO_MODE', false),
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -17,7 +19,9 @@ return [
     'discogs' => [
         'username' => env('DISCOGS_USERNAME', 'freekmurze'),
         'token' => env('DISCOGS_TOKEN'),
-        'user_agent' => "Freek's Records/1.0 (https://freeksrecords.com)",
+        'consumer_key' => env('DISCOGS_CONSUMER_KEY'),
+        'consumer_secret' => env('DISCOGS_CONSUMER_SECRET'),
+        'user_agent' => 'Plaat Club/1.0 (https://plaat.club)',
     ],
 
     'laravel_cloud' => [
@@ -26,7 +30,7 @@ return [
     ],
 
     'musicbrainz' => [
-        'user_agent' => "Freek's Records/1.0 (https://freeksrecords.com)",
+        'user_agent' => 'Plaat Club/1.0 (https://plaat.club)',
     ],
 
     'postmark' => [

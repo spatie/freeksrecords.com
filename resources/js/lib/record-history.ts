@@ -3,7 +3,7 @@ export function initializeRecordHistory() {
     window.addEventListener('popstate', (event) => {
         if (!document.querySelector('.record-room')) return;
         if (
-            window.location.pathname !== '/' &&
+            window.location.pathname !== '/collection' &&
             !/^\/record\/\d+(?:\/[^/]+)?$/.test(window.location.pathname)
         )
             return;

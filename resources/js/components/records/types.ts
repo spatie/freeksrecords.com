@@ -25,6 +25,7 @@ export type CollectionRecord = {
     label: string;
     catalogNumber: string;
     format: string;
+    mediaFormats?: string[];
     genres: string[];
     styles: string[];
     cover: string;
