@@ -315,7 +315,7 @@
         gap: 4px;
         margin-top: 25px;
         padding-inline: 2px;
-        font-size: 14px;
+        font-size: 16px;
         line-height: 1.5;
         overflow-wrap: anywhere;
     }
@@ -329,7 +329,7 @@
         text-decoration: underline;
     }
     .catalog-record-year {
-        font-size: 14px;
+        font-size: 16px;
     }
     .cabinet-year-heading {
         padding: 24px 25px 0;
@@ -399,11 +399,13 @@
         inset: 85px 0 0;
         overflow-y: auto;
         overscroll-behavior: contain;
-        padding: 10px 5vw 60px;
+        padding: 32px 5vw 60px;
         scrollbar-width: thin;
+        mask-image: linear-gradient(transparent, #000 28px);
     }
     .listening-view.is-moving:not(.is-returning) .listening-scroll {
         overflow: visible;
+        mask-image: none;
     }
     .listening-close {
         position: absolute;
@@ -557,7 +559,7 @@
         display: flex;
         align-items: center;
         gap: 7px;
-        font-size: 16px;
+        font-size: 18px;
     }
     .listening-artist:hover {
         text-decoration: underline;
@@ -578,11 +580,11 @@
         display: flex;
         flex-wrap: wrap;
         gap: 8px 18px;
-        font-size: 15px;
+        font-size: 16px;
     }
     .record-collection-date {
         margin: 14px 0;
-        font-size: 14px;
+        font-size: 16px;
     }
     .album-listen-links {
         display: flex;
@@ -597,7 +599,7 @@
         padding: 10px 12px;
         border: 1px solid #20201666;
         border-radius: 30px;
-        font-size: 14px;
+        font-size: 16px;
         text-decoration: none;
     }
     .album-listen-links a:hover {
@@ -613,26 +615,26 @@
         padding: 0;
         margin: 0;
         list-style: none;
-        max-height: 270px;
-        overflow: auto;
-        scrollbar-width: thin;
+        max-height: none;
+        overflow: visible;
     }
     .listening-tracklist li {
         display: grid;
-        grid-template-columns: 28px minmax(0, 1fr) 42px 34px 34px;
+        grid-template-columns: 30px minmax(0, 1fr) 48px 34px 34px;
         align-items: center;
         gap: 6px;
-        padding: 8px 0;
+        padding: 12px 0;
         border-top: 1px solid #20201633;
-        font-size: 15px;
+        font-size: 18px;
+        line-height: 1.5;
     }
     .track-name small {
         display: block;
-        font-size: 14px;
+        font-size: 16px;
     }
     .track-position,
     .track-duration {
-        font-size: 14px;
+        font-size: 16px;
     }
     .listening-tracklist li > a {
         display: grid;
@@ -657,7 +659,7 @@
         margin-top: 30px;
     }
     .record-social .conversation > .muted {
-        font-size: 14px;
+        font-size: 16px;
     }
     .appreciation .button {
         border-radius: 0;
@@ -783,7 +785,7 @@
             padding-left: 18px;
         }
         .listening-scroll {
-            padding: 0 7vw 45px;
+            padding: 32px 7vw 45px;
         }
         .listening-layout {
             grid-template-columns: 1fr;
@@ -824,9 +826,6 @@
         .record-centre {
             font-size: 7px;
             padding: 9px;
-        }
-        .listening-tracklist ol {
-            max-height: 320px;
         }
     }
     @media (prefers-reduced-motion: reduce) {

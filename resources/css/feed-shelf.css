@@ -45,13 +45,13 @@
 .ticket-who {
     align-self: start;
     padding: 28px 10px 20px 16px;
-    font-size: 14px;
+    font-size: 16px;
     overflow-wrap: anywhere;
 }
 .ticket-who time {
     display: block;
     margin-top: 5px;
-    font-size: 14px;
+    font-size: 16px;
 }
 .ticket-record {
     min-width: 0;
@@ -74,7 +74,7 @@
     overflow-wrap: anywhere;
 }
 .ticket-album {
-    font-size: 16px;
+    font-size: 18px;
     margin-top: 14px;
 }
 .ticket-art {
