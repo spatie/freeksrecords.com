@@ -218,13 +218,11 @@
         font-size: 14px;
     }
     .site-header .main-navigation {
+        position: relative;
         justify-self: start;
         flex-wrap: nowrap;
         gap: 2px;
         padding: 4px;
-        border: 1px solid #d9d1c1;
-        border-radius: 8px;
-        background: #e9e3d680;
     }
     .site-header .main-navigation > a {
         position: relative;
@@ -239,23 +237,26 @@
         font-weight: 500;
     }
     .site-header .main-navigation > a:hover {
-        background: #faf7ef80;
         color: #292a22;
         text-decoration: none;
     }
     .site-header .main-navigation > a[aria-current] {
-        background: #faf8f0;
         color: #983e25;
-        box-shadow: 0 1px 3px #48331b12;
         text-decoration: none;
     }
-    .main-navigation > a[aria-current]::after {
-        content: '';
+    .navigation-indicator {
         position: absolute;
-        inset: auto 18px 0;
+        bottom: 4px;
+        left: 0;
         height: 2px;
         border-radius: 2px 2px 0 0;
         background: #a64028;
+        pointer-events: none;
+    }
+    .navigation-indicator[data-positioned] {
+        transition:
+            transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+            width 320ms cubic-bezier(0.22, 1, 0.36, 1);
     }
     .site-header .guest-navigation {
         grid-column: 2 / -1;
@@ -278,10 +279,10 @@
         max-width: 180px;
         min-width: 0;
         min-height: 44px;
-        border: 1px solid #d7d0c0;
+        border: 1px solid transparent;
         border-radius: 6px;
         padding: 8px 10px;
-        background: #faf8f066;
+        background: transparent;
         color: #55564c;
         cursor: pointer;
     }
@@ -1011,6 +1012,9 @@
         }
     }
     @media (prefers-reduced-motion: reduce) {
+        .navigation-indicator[data-positioned] {
+            transition: none;
+        }
         .record-wall-track {
             animation: none;
         }
