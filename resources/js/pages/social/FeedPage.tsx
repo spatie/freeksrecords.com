@@ -84,7 +84,8 @@ export function FeedPage({
                 </section>
             ) : (
                 <div className="page-heading">
-                    <h1>Friends’ additions</h1>
+                    <p className="page-eyebrow">Friends’ additions</p>
+                    <h1>Fresh on their shelves.</h1>
                 </div>
             )}
             {(!starting ||
@@ -133,12 +134,6 @@ export function FeedPage({
                         {!starting && (
                             <section className="panel">
                                 <h2>My collection</h2>
-                                <p>
-                                    {collectionCount}{' '}
-                                    {collectionCount === 1
-                                        ? 'record'
-                                        : 'records'}
-                                </p>
                                 <Link href={user.profileUrl}>
                                     View my collection
                                 </Link>

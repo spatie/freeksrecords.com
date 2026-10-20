@@ -52,15 +52,17 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     }, [path, user?.id, user?.verified]);
 
     const pageClass =
-        component === 'social/HomePage'
-            ? 'home-page'
-            : component === 'social/AuthPage'
-              ? 'auth-page'
-              : component === 'social/ProfilePage'
-                ? 'collection-page'
-                : component.includes('Privacy') || component.includes('Terms')
-                  ? 'legal-page'
-                  : '';
+        {
+            'social/HomePage': 'home-page',
+            'social/AuthPage': 'auth-page',
+            'social/ProfilePage': 'collection-page',
+            'social/CollectionsPage': 'explore-page',
+            'social/FeedPage': 'feed-page',
+            'social/FriendsPage': 'friends-page',
+            'social/SettingsPage': 'settings-page',
+            'social/PrivacyPage': 'legal-page',
+            'social/TermsPage': 'legal-page',
+        }[component] ?? '';
 
     useEffect(() => {
         if (path !== '/' && path !== '/feed') return;

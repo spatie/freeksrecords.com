@@ -180,9 +180,6 @@ export function CollectionBrowser({
                         key={browse.mode}
                         mode={browse.mode}
                         onGroup={(group) => switchCollection({ group })}
-                        onHeightChange={(height) =>
-                            setBrowserProperty('--index-height', height)
-                        }
                         query={query}
                     />
                 )}

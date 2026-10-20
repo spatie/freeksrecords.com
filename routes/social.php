@@ -30,19 +30,19 @@ Route::middleware(PrivateResponse::class)->group(function () {
 
     Route::middleware('guest')->group(function () {
         Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->middleware('throttle:6,1')->name('google.redirect');
-        Route::get('/register', fn () => Inertia::render('social/AuthPage', ['mode' => 'register', 'artwork' => SocialData::publicArtwork()]))->name('register');
+        Route::get('/register', fn () => Inertia::render('social/AuthPage', ['mode' => 'register', 'artwork' => SocialData::publicArtwork(limit: 12)]))->name('register');
         Route::post('/register', [AccountController::class, 'register'])->middleware('throttle:6,1');
-        Route::get('/login', fn () => Inertia::render('social/AuthPage', ['mode' => 'login', 'artwork' => SocialData::publicArtwork()]))->name('login');
+        Route::get('/login', fn () => Inertia::render('social/AuthPage', ['mode' => 'login', 'artwork' => SocialData::publicArtwork(limit: 12)]))->name('login');
         Route::post('/login', [AccountController::class, 'login'])->middleware('throttle:6,1');
-        Route::get('/forgot-password', fn () => Inertia::render('social/AuthPage', ['mode' => 'forgot', 'artwork' => SocialData::publicArtwork()]))->name('password.request');
+        Route::get('/forgot-password', fn () => Inertia::render('social/AuthPage', ['mode' => 'forgot', 'artwork' => SocialData::publicArtwork(limit: 12)]))->name('password.request');
         Route::post('/forgot-password', [AccountController::class, 'forgot'])->middleware('throttle:6,1');
-        Route::get('/reset-password/{token}', fn (Request $request, string $token) => Inertia::render('social/AuthPage', ['mode' => 'reset', 'artwork' => SocialData::publicArtwork(), 'token' => $token, 'email' => $request->string('email')->toString()]))->name('password.reset');
+        Route::get('/reset-password/{token}', fn (Request $request, string $token) => Inertia::render('social/AuthPage', ['mode' => 'reset', 'artwork' => SocialData::publicArtwork(limit: 12), 'token' => $token, 'email' => $request->string('email')->toString()]))->name('password.reset');
         Route::post('/reset-password', [AccountController::class, 'reset'])->middleware('throttle:6,1');
     });
 
     Route::middleware(['auth', 'auth.session'])->group(function () {
         Route::post('/logout', [AccountController::class, 'logout'])->name('logout');
-        Route::get('/verify-email', fn () => Inertia::render('social/AuthPage', ['mode' => 'verify', 'artwork' => SocialData::publicArtwork()]))->name('verification.notice');
+        Route::get('/verify-email', fn () => Inertia::render('social/AuthPage', ['mode' => 'verify', 'artwork' => SocialData::publicArtwork(limit: 12)]))->name('verification.notice');
         Route::get('/verify-email/{id}/{hash}', [AccountController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
         Route::post('/email/verification-notification', [AccountController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
 

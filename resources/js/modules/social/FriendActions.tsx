@@ -10,9 +10,13 @@ export function FriendActions({
     const form = useForm({ action: '' });
     return (
         <div className="actions">
-            {actions.map((action, index) => (
+            {actions.map((action) => (
                 <button
-                    className={`button ${index ? 'secondary' : ''}`}
+                    className={
+                        action.value === 'unfriend' || action.value === 'cancel'
+                            ? 'text-button'
+                            : `button ${action.value === 'decline' ? 'secondary' : ''}`
+                    }
                     key={action.value}
                     disabled={form.processing}
                     onClick={() => {

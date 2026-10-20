@@ -95,12 +95,12 @@ class SocialData
      * @param  list<string>  $excludeCovers
      * @return list<array{cover: string, title: string, url: string}>
      */
-    public static function publicArtwork(array $excludeCovers = []): array
+    public static function publicArtwork(array $excludeCovers = [], int $limit = 6): array
     {
         return array_values(CollectionRecord::visibleTo(null)
             ->whereNotNull('payload->cover')->where('payload->cover', '!=', '')
             ->whereNotIn('payload->cover', $excludeCovers)
-            ->inRandomOrder()->limit(6)->get(['id', 'payload'])
+            ->inRandomOrder()->limit($limit)->get(['id', 'payload'])
             ->unique('payload.cover')->map(self::artwork(...))->all());
     }
 

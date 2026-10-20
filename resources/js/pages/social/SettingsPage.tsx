@@ -19,10 +19,11 @@ export function SettingsPage() {
         <>
             <Head title="Your preferences" />
             <div className="page-heading">
-                <h1>Settings</h1>
+                <p className="page-eyebrow">Settings</p>
+                <h1>Make it yours.</h1>
             </div>
-            <div className="two-columns">
-                <section className="panel">
+            <div className="settings-layout">
+                <section className="panel settings-sheet">
                     <h2>Profile & privacy</h2>
                     <form
                         className="stack"
@@ -83,7 +84,7 @@ export function SettingsPage() {
                             <small id="visibility-help">
                                 {user.legacyOwner
                                     ? 'Freek’s original collection stays public to preserve existing links and previews.'
-                                    : 'Friends means accepted mutual friends. Everyone includes visitors who are not signed in. Private profiles show only your name and handle.'}
+                                    : 'Friends are mutual. Everyone includes visitors who aren’t signed in.'}
                             </small>
                         </label>
                         <FieldError
@@ -92,7 +93,7 @@ export function SettingsPage() {
                         />
                         <SocialSwitch
                             checked={form.data.comments_enabled}
-                            description="Switching this off stops new comments. Existing comments remain visible and can be deleted."
+                            description="Turning this off stops new comments. Existing comments stay visible."
                             label="Allow comments on my records"
                             name="comments_enabled"
                             onChange={(checked) =>
@@ -101,7 +102,7 @@ export function SettingsPage() {
                         />
                         <SocialSwitch
                             checked={form.data.digest_enabled}
-                            description="Mondays at 09:00 Europe/Brussels, only when there are new records. Includes only records you can currently view."
+                            description="Mondays at 09:00 Brussels time. Only records shared with you; never an empty email."
                             label="Email me my friends’ new records"
                             name="digest_enabled"
                             onChange={(checked) =>
@@ -113,145 +114,155 @@ export function SettingsPage() {
                         </button>
                     </form>
                 </section>
-                <section className="panel" id="discogs">
-                    <h2>Discogs</h2>
-                    {user.discogsConnected ? (
-                        <>
-                            <p>
-                                Connected as{' '}
-                                <strong>{user.discogsUsername}</strong>.
-                            </p>
-                            {!user.importedAt ? (
-                                <ImportStatus user={user} />
+                <div className="settings-connections">
+                    <section className="connection-section" id="discogs">
+                        <h2>Discogs</h2>
+                        {user.discogsConnected ? (
+                            <>
+                                <p>
+                                    Connected as{' '}
+                                    <strong>{user.discogsUsername}</strong>.
+                                </p>
+                                {!user.importedAt ? (
+                                    <ImportStatus user={user} />
+                                ) : (
+                                    <>
+                                        <p>
+                                            {user.syncStatus ??
+                                                'Ready to import'}
+                                            <br />
+                                            <small>
+                                                Last successful sync:{' '}
+                                                {user.lastSyncedAt
+                                                    ? new Intl.DateTimeFormat(
+                                                          'en-GB',
+                                                          {
+                                                              dateStyle:
+                                                                  'medium',
+                                                              timeStyle:
+                                                                  'short',
+                                                              timeZone:
+                                                                  'Europe/Brussels',
+                                                          },
+                                                      ).format(
+                                                          new Date(
+                                                              user.lastSyncedAt,
+                                                          ),
+                                                      )
+                                                    : 'Not yet'}
+                                            </small>
+                                        </p>
+                                        <button
+                                            className="button"
+                                            disabled={connection.processing}
+                                            onClick={() =>
+                                                connection.post('/discogs/sync')
+                                            }
+                                        >
+                                            Sync collection now
+                                        </button>
+                                    </>
+                                )}
+                                <div className="spaced">
+                                    <p>
+                                        Disconnecting stops syncing but keeps
+                                        your records. Reconnect the same Discogs
+                                        account to resume.
+                                    </p>
+                                    <button
+                                        className="button secondary"
+                                        disabled={connection.processing}
+                                        onClick={() =>
+                                            connection.delete('/discogs')
+                                        }
+                                    >
+                                        Disconnect Discogs
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <p>
+                                    Connect your Discogs account to import your
+                                    collection. We never ask for your Discogs
+                                    password.
+                                </p>
+                                <form method="post" action="/discogs/connect">
+                                    <input
+                                        type="hidden"
+                                        name="_token"
+                                        value={csrfToken}
+                                    />
+                                    <button className="button">
+                                        {user.discogsUsername
+                                            ? 'Reconnect Discogs'
+                                            : 'Connect Discogs'}
+                                    </button>
+                                </form>
+                            </>
+                        )}
+                    </section>
+                    {googleEnabled && (
+                        <section
+                            className="connection-section google-settings"
+                            aria-labelledby="google-sign-in-title"
+                        >
+                            <h2 id="google-sign-in-title">Google sign-in</h2>
+                            {user.googleConnected ? (
+                                <>
+                                    <p>
+                                        Sign in with your connected Google
+                                        account.
+                                    </p>
+                                    <p className="muted">
+                                        To set or reset a password, sign out and
+                                        choose “Forgot password?” on the sign-in
+                                        page.
+                                    </p>
+                                </>
                             ) : (
                                 <>
                                     <p>
-                                        {user.syncStatus ?? 'Ready to import'}
-                                        <br />
-                                        <small>
-                                            Last successful sync:{' '}
-                                            {user.lastSyncedAt
-                                                ? new Intl.DateTimeFormat(
-                                                      'en-GB',
-                                                      {
-                                                          dateStyle: 'medium',
-                                                          timeStyle: 'short',
-                                                          timeZone:
-                                                              'Europe/Brussels',
-                                                      },
-                                                  ).format(
-                                                      new Date(
-                                                          user.lastSyncedAt,
-                                                      ),
-                                                  )
-                                                : 'Not yet'}
-                                        </small>
+                                        Use Google to sign in to this account.
+                                        Confirm your current password, then
+                                        choose the Google account for{' '}
+                                        <strong>{user.email}</strong>.
                                     </p>
-                                    <button
-                                        className="button"
-                                        disabled={connection.processing}
-                                        onClick={() =>
-                                            connection.post('/discogs/sync')
-                                        }
+                                    <form
+                                        className="stack"
+                                        method="post"
+                                        action="/settings/google"
                                     >
-                                        Sync collection now
-                                    </button>
+                                        <input
+                                            type="hidden"
+                                            name="_token"
+                                            value={csrfToken}
+                                        />
+                                        <label htmlFor="current_password">
+                                            Current password
+                                            <input
+                                                id="current_password"
+                                                name="current_password"
+                                                type="password"
+                                                autoComplete="current-password"
+                                                required
+                                            />
+                                        </label>
+                                        <button className="button secondary google-button">
+                                            Connect Google
+                                        </button>
+                                    </form>
+                                    <p className="muted spaced">
+                                        Your password will still work. Google
+                                        never gets your Plaat Club password, and
+                                        we don’t access your Gmail or Drive.
+                                    </p>
                                 </>
                             )}
-                            <div className="spaced">
-                                <p>
-                                    Disconnecting stops syncing but keeps your
-                                    records. Reconnect the same Discogs account
-                                    to resume.
-                                </p>
-                                <button
-                                    className="button secondary"
-                                    disabled={connection.processing}
-                                    onClick={() =>
-                                        connection.delete('/discogs')
-                                    }
-                                >
-                                    Disconnect Discogs
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <p>
-                                Connect your Discogs account to import your
-                                collection. We never ask for your Discogs
-                                password.
-                            </p>
-                            <form method="post" action="/discogs/connect">
-                                <input
-                                    type="hidden"
-                                    name="_token"
-                                    value={csrfToken}
-                                />
-                                <button className="button">
-                                    {user.discogsUsername
-                                        ? 'Reconnect Discogs'
-                                        : 'Connect Discogs'}
-                                </button>
-                            </form>
-                        </>
+                        </section>
                     )}
-                </section>
+                </div>
             </div>
-            {googleEnabled && (
-                <section
-                    className="panel spaced google-settings"
-                    aria-labelledby="google-sign-in-title"
-                >
-                    <h2 id="google-sign-in-title">Google sign-in</h2>
-                    {user.googleConnected ? (
-                        <>
-                            <p>Sign in with your connected Google account.</p>
-                            <p className="muted">
-                                To set or reset a password, sign out and choose
-                                “Forgot password?” on the sign-in page.
-                            </p>
-                        </>
-                    ) : (
-                        <>
-                            <p>
-                                Use Google to sign in to this account. Confirm
-                                your current password, then choose the Google
-                                account for <strong>{user.email}</strong>.
-                            </p>
-                            <form
-                                className="stack"
-                                method="post"
-                                action="/settings/google"
-                            >
-                                <input
-                                    type="hidden"
-                                    name="_token"
-                                    value={csrfToken}
-                                />
-                                <label htmlFor="current_password">
-                                    Current password
-                                    <input
-                                        id="current_password"
-                                        name="current_password"
-                                        type="password"
-                                        autoComplete="current-password"
-                                        required
-                                    />
-                                </label>
-                                <button className="button secondary google-button">
-                                    Connect Google
-                                </button>
-                            </form>
-                            <p className="muted spaced">
-                                Your password will still work. Google never gets
-                                your Plaat Club password, and we don’t access
-                                your Gmail or Drive.
-                            </p>
-                        </>
-                    )}
-                </section>
-            )}
         </>
     );
 }

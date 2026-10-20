@@ -10,8 +10,9 @@ export function CollectionsPage({ collectors }: CollectionsProps) {
         <>
             <Head title="Browse collections" />
             <div className="page-heading">
-                <h1>Browse collections</h1>
-                <p>Collections shared publicly by their owners.</p>
+                <p className="page-eyebrow">Explore</p>
+                <h1>Open shelves.</h1>
+                <p>Collections shared with everyone.</p>
             </div>
             <div className="collection-previews">
                 {collectors.data.length ? (

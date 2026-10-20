@@ -26,13 +26,7 @@ export function CollectionPreview({ collector }: { collector: Collector }) {
             >
                 <div className="collection-preview-caption">
                     <h2>{collector.name}</h2>
-                    <p>
-                        @{collector.handle}{' '}
-                        <span>
-                            {collector.recordCount.toLocaleString()}{' '}
-                            {collector.recordCount === 1 ? 'record' : 'records'}
-                        </span>
-                    </p>
+                    <p>@{collector.handle}</p>
                 </div>
             </Link>
         </article>

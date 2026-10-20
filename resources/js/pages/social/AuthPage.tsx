@@ -12,18 +12,18 @@ const titles = {
     login: 'Sign in',
 };
 const welcomes = {
-    register: 'Make room for your records.',
+    register: 'Let ’em in.',
     forgot: 'Let’s get you back in.',
-    reset: 'Choose a new password.',
+    reset: 'A fresh start.',
     verify: 'Check your inbox.',
-    login: 'Good to have you back.',
+    login: 'Welcome back.',
 };
 const introductions = {
-    register: 'Sync your Discogs collection and choose who sees it.',
+    register: 'Bring your Discogs collection. Choose your company.',
     forgot: 'Enter your email address to receive a password reset link.',
     reset: '',
     verify: '',
-    login: '',
+    login: 'Your records. Your people. Your next good find.',
 };
 
 export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
@@ -55,23 +55,23 @@ export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
         <>
             <Head title={titles[mode]} />
             <div className="auth-layout">
+                <HeroArtwork records={artwork} />
                 <section
-                    className="auth-welcome"
-                    aria-labelledby="auth-welcome-title"
+                    className="auth-panel"
+                    aria-labelledby="auth-form-title"
                 >
-                    <h1 id="auth-welcome-title">{welcomes[mode]}</h1>
+                    <div className="auth-slip-heading">
+                        <span>
+                            {mode === 'register' ? 'Membership' : 'Plaat Club'}
+                        </span>
+                        <span className="auth-slip-record" aria-hidden="true" />
+                    </div>
+                    <h1 id="auth-form-title">{welcomes[mode]}</h1>
                     {introductions[mode] && (
                         <p className="auth-introduction">
                             {introductions[mode]}
                         </p>
                     )}
-                    <HeroArtwork records={artwork} />
-                </section>
-                <section
-                    className="auth-panel"
-                    aria-labelledby="auth-form-title"
-                >
-                    <h2 id="auth-form-title">{titles[mode]}</h2>
                     {mode === 'verify' ? (
                         <>
                             <p>
@@ -110,12 +110,6 @@ export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
                         </>
                     ) : (
                         <>
-                            {mode === 'reset' && (
-                                <p className="auth-form-intro">
-                                    Save your new password, then sign in with
-                                    it.
-                                </p>
-                            )}
                             {(mode === 'login' || mode === 'register') &&
                                 googleEnabled && (
                                     <>

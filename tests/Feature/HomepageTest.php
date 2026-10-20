@@ -42,7 +42,8 @@ it('uses only live public records for linked artwork and never falls back to the
         });
     $response = $this->get($path)->assertOk();
     $artwork = collect($response->inertiaProps('artwork'));
-    expect($artwork)->toHaveCount(6)->and($artwork->pluck('cover')->unique())->toHaveCount(6);
+    $expectedCount = $path === '/' ? 6 : 12;
+    expect($artwork)->toHaveCount($expectedCount)->and($artwork->pluck('cover')->unique())->toHaveCount($expectedCount);
     foreach ($artwork as $item) {
         $record = $records->firstWhere('payload.cover', $item['cover']);
         expect($record)->not->toBeNull()
