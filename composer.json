@@ -16,6 +16,7 @@
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
         "league/flysystem-aws-s3-v3": "^3.0",
+        "resend/resend-php": "^1.16",
         "spatie/laravel-flare": "^3.6"
     },
     "require-dev": {
