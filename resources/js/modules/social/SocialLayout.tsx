@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { legacyCollectionUrl } from '@/lib/record-history';
 import { AccountMenu } from '@/modules/social/AccountMenu';
@@ -13,6 +13,41 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     const { props, url, component } = usePage<SocialProps>();
     const user = props.auth.user;
     const path = url.split(/[?#]/)[0];
+    const navigationRef = useRef<HTMLElement>(null);
+    const indicatorRef = useRef<HTMLSpanElement>(null);
+
+    useLayoutEffect(() => {
+        const navigation = navigationRef.current;
+        const indicator = indicatorRef.current;
+        if (!navigation || !indicator) return;
+
+        const positionIndicator = () => {
+            const active = navigation.querySelector('a[aria-current]');
+            indicator.hidden = !active;
+            if (!active) return;
+
+            const link = active.getBoundingClientRect();
+            const nav = navigation.getBoundingClientRect();
+            indicator.style.width = `${link.width - 36}px`;
+            indicator.style.transform = `translateX(${link.left - nav.left - navigation.clientLeft + 18}px)`;
+        };
+
+        positionIndicator();
+        const frame = requestAnimationFrame(() => {
+            indicator.dataset.positioned = 'true';
+        });
+        const observer = new ResizeObserver(positionIndicator);
+        observer.observe(navigation);
+        navigation
+            .querySelectorAll('a')
+            .forEach((link) => observer.observe(link));
+
+        return () => {
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+        };
+    }, [path, user?.id, user?.verified]);
+
     const pageClass =
         component === 'social/HomePage'
             ? 'home-page'
@@ -47,6 +82,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                     <>
                         {user.verified && (
                             <nav
+                                ref={navigationRef}
                                 className="main-navigation"
                                 aria-label="Main navigation"
                             >
@@ -80,6 +116,12 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 >
                                     Explore
                                 </Link>
+                                <span
+                                    ref={indicatorRef}
+                                    className="navigation-indicator"
+                                    aria-hidden="true"
+                                    hidden
+                                />
                             </nav>
                         )}
                         <div className="header-account">
