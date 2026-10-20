@@ -30,7 +30,7 @@ export function RecordDetails({
     const tracks = details?.tracks ?? [];
     const addedDate = collectionAddedDate(record);
     return (
-        <div className="listening-information">
+        <>
             <div className="listening-artists">
                 {record.artists.map((artist) => (
                     <button
@@ -175,6 +175,6 @@ export function RecordDetails({
                     </p>
                 )}
             </div>
-        </div>
+        </>
     );
 }

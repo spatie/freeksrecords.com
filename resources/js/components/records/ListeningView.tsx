@@ -240,7 +240,7 @@ export function ListeningView({
                                 </div>
                             </div>
                         </div>
-                        <div>
+                        <div className="listening-information">
                             <RecordDetails
                                 onArtist={onArtist}
                                 record={record}

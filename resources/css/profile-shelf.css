@@ -9,7 +9,6 @@
 }
 
 .profile-record-room .record-social {
-    padding-left: 24px;
     margin-top: 32px;
 }
 
@@ -23,10 +22,4 @@
 
 .profile-record-room .record-social .panel::after {
     content: none;
-}
-
-@media (max-width: 860px) {
-    .profile-record-room .record-social {
-        padding-left: 0;
-    }
 }
