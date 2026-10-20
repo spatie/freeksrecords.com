@@ -9,7 +9,10 @@ import {
     type ReactNode,
 } from 'react';
 
-import { artworkLabelStyle } from '@/components/records/artworkLabel';
+import {
+    artworkLabelStyle,
+    artworkThemeStyle,
+} from '@/components/records/artworkLabel';
 import type { SleeveOrigin } from '@/components/records/recordMotion';
 import { RecordDetails } from '@/components/records/RecordDetails';
 import type {
@@ -19,6 +22,8 @@ import type {
 import { useRecordTransition } from '@/components/records/useRecordTransition';
 
 type ListeningViewProps = {
+    interactiveSleeve?: boolean;
+    returnOrigin?: () => SleeveOrigin | null;
     instant: boolean;
     onBack: () => void;
     onArtist: (artist: string) => void;
@@ -55,6 +60,8 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 export function ListeningView({
+    interactiveSleeve = false,
+    returnOrigin,
     instant,
     onBack,
     onArtist,
@@ -67,8 +74,10 @@ export function ListeningView({
     const label = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const [shareStatus, setShareStatus] = useState('');
-    const { refs, phase, putAway } = useRecordTransition({
+    const { refs, phase, putAway, toggleVinyl } = useRecordTransition({
         instanceId: record.instanceId,
+        interactiveSleeve,
+        returnOrigin,
         origin,
         instant,
         onSettled: () =>
@@ -223,6 +232,23 @@ export function ListeningView({
                                     <img
                                         alt={`${record.displayTitle} sleeve`}
                                         onLoad={(event) => {
+                                            if (
+                                                interactiveSleeve &&
+                                                dialog.current
+                                            ) {
+                                                for (const [
+                                                    name,
+                                                    value,
+                                                ] of Object.entries(
+                                                    artworkThemeStyle(
+                                                        event.currentTarget,
+                                                    ),
+                                                ))
+                                                    dialog.current.style.setProperty(
+                                                        name,
+                                                        value,
+                                                    );
+                                            }
                                             if (label.current)
                                                 Object.assign(
                                                     label.current.style,
@@ -236,7 +262,21 @@ export function ListeningView({
                                         src={record.cover}
                                         width={600}
                                     />
+                                    {interactiveSleeve && (
+                                        <button
+                                            type="button"
+                                            className="sleeve-pull"
+                                            aria-label="Pull the vinyl out or slide it back in"
+                                            disabled={phase !== 'settled'}
+                                            onClick={toggleVinyl}
+                                        />
+                                    )}
                                 </div>
+                                {interactiveSleeve && (
+                                    <span className="sleeve-pull-hint">
+                                        Click the sleeve. Take a closer look. ↗
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div className="listening-information">

@@ -1,4 +1,6 @@
 import type {
+    CollectionGroup,
+    CollectionMode,
     CollectionRecord,
     CollectionRecordSummary,
 } from '@/components/records/types';
@@ -54,7 +56,7 @@ export type Collector = Person & {
 };
 
 export type RecordArtwork = { cover: string; title: string; url: string };
-export type HomeProps = { collectors: Collector[]; artwork: RecordArtwork[] };
+export type HomeProps = { artwork: RecordArtwork[] };
 export type CollectionsProps = { collectors: Pagination<Collector> };
 export type AuthProps = {
     artwork: RecordArtwork[];
@@ -65,7 +67,11 @@ export type AuthProps = {
 export type ProfileProps = {
     person: Person;
     visible: boolean;
-    records: CollectionRecordSummary[] | null;
+    records: Pagination<
+        CollectionRecordSummary & { section: string; key: string }
+    > | null;
+    groups: CollectionGroup[];
+    browse: { mode: CollectionMode; group: string | null; query: string };
 };
 export type FeedProps = {
     records: Pagination<CollectionRecordSummary>;

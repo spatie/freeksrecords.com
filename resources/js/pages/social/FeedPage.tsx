@@ -3,7 +3,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { FeedShelf } from '@/modules/social/FeedShelf';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { Pagination } from '@/modules/social/Pagination';
-import { ProfileShelf } from '@/modules/social/ProfileShelf';
+import { ImportedShelf } from '@/modules/social/ProfileShelf';
 import type { FeedProps, SocialProps } from '@/modules/social/types';
 
 export function FeedPage({
@@ -47,7 +47,7 @@ export function FeedPage({
                         <>
                             <ImportStatus user={user} />
                             {importRecords.length > 0 && (
-                                <ProfileShelf records={importRecords} />
+                                <ImportedShelf records={importRecords} />
                             )}
                         </>
                     ) : (
@@ -101,7 +101,7 @@ export function FeedPage({
                 </section>
             ) : (
                 <div className="page-heading">
-                    <h1>New records from friends.</h1>
+                    <h1>Friends’ finds.</h1>
                     <p className="lede">
                         The latest additions to your friends’ collections,
                         newest first.

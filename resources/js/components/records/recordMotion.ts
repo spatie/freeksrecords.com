@@ -28,12 +28,27 @@ export function sleeveOrigin(instanceId: number): SleeveOrigin | null {
 export function artworkOrigin(sleeve: HTMLElement): SleeveOrigin | null {
     const bounds = sleeve.getBoundingClientRect();
     if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return null;
-    const matrix = new DOMMatrixReadOnly(getComputedStyle(sleeve).transform);
+    let scale = 1;
+    let rotation = 0;
+    for (
+        let element: HTMLElement | null = sleeve;
+        element;
+        element = element.parentElement
+    ) {
+        const style = getComputedStyle(element);
+        const matrix = new DOMMatrixReadOnly(
+            style.transform === 'none' ? undefined : style.transform,
+        );
+        scale *=
+            Math.hypot(matrix.a, matrix.b) *
+            (style.scale === 'none' ? 1 : parseFloat(style.scale));
+        rotation += (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
+    }
     return {
         x: bounds.left + bounds.width / 2,
         y: bounds.top + bounds.height / 2,
-        width: sleeve.offsetWidth * Math.hypot(matrix.a, matrix.b),
-        rotation: (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI,
+        width: sleeve.offsetWidth * scale,
+        rotation,
     };
 }
 

@@ -16,6 +16,8 @@ export type RecordTransitionPhase = 'moving' | 'settled' | 'returning';
 type RecordTransitionOptions = {
     instanceId: number;
     origin: SleeveOrigin | null;
+    returnOrigin?: () => SleeveOrigin | null;
+    interactiveSleeve?: boolean;
     /** Skip the entrance, for a record the server already rendered in place. */
     instant: boolean;
     onSettled: () => void;
@@ -28,6 +30,8 @@ type RecordTransitionOptions = {
 export function useRecordTransition({
     instanceId,
     origin,
+    returnOrigin,
+    interactiveSleeve = false,
     instant,
     onSettled,
     onReturned,
@@ -39,6 +43,7 @@ export function useRecordTransition({
     const vinyl = useRef<HTMLDivElement>(null);
     const animations = useRef<Animation[]>([]);
     const returning = useRef(false);
+    const pulled = useRef(false);
     const [phase, setPhase] = useState<RecordTransitionPhase>('moving');
     const settle = useEffectEvent(() => {
         if (returning.current) return;
@@ -48,7 +53,12 @@ export function useRecordTransition({
 
     useLayoutEffect(() => {
         if (!stage.current || !sleeve.current || !vinyl.current) return;
-        const duration = instant || prefersReducedMotion() ? 0 : 420;
+        const duration =
+            instant || prefersReducedMotion()
+                ? 0
+                : interactiveSleeve
+                  ? 650
+                  : 420;
         const target = stage.current.getBoundingClientRect();
         const animate = (
             element: HTMLElement | null,
@@ -75,11 +85,14 @@ export function useRecordTransition({
         ]);
         animate(sleeve.current, [
             { transform: 'none' },
-            { transform: sleeveRest },
+            { transform: interactiveSleeve ? 'rotate(-6deg)' : sleeveRest },
         ]);
         animate(
             vinyl.current,
-            [{ transform: 'none' }, { transform: vinylRest }],
+            [
+                { transform: 'none' },
+                { transform: interactiveSleeve ? 'none' : vinylRest },
+            ],
             50,
         );
         animate(surface.current, [{ opacity: 0 }, { opacity: 1 }]);
@@ -95,18 +108,56 @@ export function useRecordTransition({
             animations.current.forEach((animation) => animation.cancel());
             animations.current = [];
         };
-    }, [origin, instant]);
+    }, [origin, instant, interactiveSleeve]);
+
+    function toggleVinyl() {
+        if (phase !== 'settled' || returning.current) return;
+        pulled.current = !pulled.current;
+        for (const [element, transform] of [
+            [
+                sleeve.current,
+                pulled.current
+                    ? 'translate(-8%, 5%) rotate(-9deg)'
+                    : 'rotate(-6deg)',
+            ],
+            [
+                vinyl.current,
+                pulled.current ? 'translateX(43%) rotate(80deg)' : 'none',
+            ],
+        ] as const) {
+            if (!element) continue;
+            animations.current.push(
+                element.animate(
+                    [
+                        { transform: getComputedStyle(element).transform },
+                        { transform },
+                    ],
+                    {
+                        duration: prefersReducedMotion() ? 0 : 650,
+                        easing: restingEase,
+                        fill: 'both',
+                    },
+                ),
+            );
+        }
+    }
 
     async function putAway() {
         if (returning.current) return;
         returning.current = true;
         setPhase('returning');
-        const duration = prefersReducedMotion() ? 0 : 190;
+        const duration = prefersReducedMotion()
+            ? 0
+            : interactiveSleeve
+              ? 500
+              : 190;
         const elements = [stage.current, sleeve.current, vinyl.current];
         const transforms = elements.map((element) =>
             element ? getComputedStyle(element).transform : 'none',
         );
-        const destination = origin ?? sleeveOrigin(instanceId);
+        const destination = returnOrigin
+            ? returnOrigin()
+            : (origin ?? sleeveOrigin(instanceId));
         const target = stage.current;
         const opacityElements = [surface.current, backdrop.current];
         const opacities = opacityElements.map((element) =>
@@ -126,6 +177,7 @@ export function useRecordTransition({
                                 index === 0 && destination && stageBounds
                                     ? originTransform(destination, stageBounds)
                                     : 'none',
+                            opacity: index === 0 && !destination ? 0 : 1,
                         },
                     ],
                     {
@@ -155,5 +207,6 @@ export function useRecordTransition({
         refs: { stage, surface, backdrop, sleeve, vinyl },
         phase,
         putAway,
+        toggleVinyl,
     };
 }

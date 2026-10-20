@@ -8,6 +8,7 @@ use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Notifications\FriendRequest;
+use App\Support\ProfileCollection;
 use App\Support\RecordCollection;
 use App\Support\SocialData;
 use Illuminate\Http\JsonResponse;
@@ -23,13 +24,13 @@ class SocialController extends Controller
     public function profile(Request $request, User $user): InertiaResponse
     {
         $visible = $user->canViewCollection($request->user());
+        $collection = new ProfileCollection($user, $request);
 
         return Inertia::render('social/ProfilePage', [
             'person' => SocialData::person($user), 'visible' => $visible,
-            'records' => $visible ? app(RecordCollection::class)->profileSummaries(
-                array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')
-                    ->get(['id', 'instance_id', 'discogs_release_id', 'added_at', 'payload'])->all()),
-            ) : null,
+            'records' => $visible ? Inertia::scroll(fn () => $collection->records()) : null,
+            'groups' => fn () => $visible ? $collection->groups() : [],
+            'browse' => $collection->state(),
         ]);
     }
 
@@ -58,7 +59,7 @@ class SocialController extends Controller
         return Inertia::render('social/FeedPage', [
             'records' => SocialData::pagination($records, $feedRecords),
             'importRecords' => fn () => $user->discogs_token && ! $user->collection_imported_at
-                ? app(RecordCollection::class)->profileSummaries(array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')->get()->all()))
+                ? app(RecordCollection::class)->profileSummaries(array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')->limit(48)->get()->all()))
                 : [],
             'collectionCount' => $user->records()->count(),
         ]);
