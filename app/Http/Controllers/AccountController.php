@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class AccountController extends Controller
 {
@@ -26,22 +27,6 @@ class AccountController extends Controller
             'email' => ['required', 'email', 'max:254', 'unique:users'],
             'password' => ['required', 'confirmed', PasswordRule::min(12)],
         ], [], ['handle' => 'username']);
-
-        $localPart = Str::before($data['email'], '@');
-        if (blank($data['name'] ?? null)) {
-            $data['name'] = (string) Str::of($localPart)->replaceMatches('/[^\pL\pN]+/u', ' ')->headline()->trim()->substr(0, 80);
-            $data['name'] = $data['name'] ?: 'Collector';
-        }
-
-        if (blank($data['handle'] ?? null)) {
-            $base = (string) Str::of($localPart)->ascii()->lower()->replaceMatches('/[^a-z0-9_]+/', '_')->trim('_')->substr(0, 30);
-            $base = strlen($base) < 3 ? "collector_{$base}" : $base;
-            $data['handle'] = $base;
-
-            while (in_array($data['handle'], User::RESERVED_HANDLES, true) || User::query()->where('handle', $data['handle'])->exists()) {
-                $data['handle'] = Str::substr($base, 0, 21).'_'.Str::lower(Str::random(8));
-            }
-        }
 
         $user = User::query()->create($data);
         event(new Registered($user));
@@ -68,6 +53,7 @@ class AccountController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        Inertia::clearHistory();
 
         return redirect('/');
     }
@@ -120,7 +106,6 @@ class AccountController extends Controller
         $user = $request->user();
         $request->merge(['handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:80'],
             'handle' => ['required', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), Rule::unique('users')->ignore($user->id)],
             'visibility' => ['required', Rule::in($user->legacy_owner ? ['everyone'] : ['only_me', 'friends', 'everyone'])],
             'comments_enabled' => ['required', 'boolean'], 'digest_enabled' => ['required', 'boolean'],

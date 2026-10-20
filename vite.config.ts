@@ -13,10 +13,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/css/social.css',
-                'resources/css/auth.css',
                 'resources/js/app.tsx',
-                'resources/js/profile-shelf.tsx',
-                'resources/js/feed-shelf.tsx',
             ],
             refresh: true,
             fonts: [

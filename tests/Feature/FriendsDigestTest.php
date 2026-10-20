@@ -87,25 +87,20 @@ it('uses Brussels local week boundaries across daylight saving changes', functio
     expect($event->expression)->toBe('0 9 * * 1')->and($event->timezone)->toBe('Europe/Brussels');
 });
 
-it('previews only the local signed-in recipient without advancing checkpoints and rechecks privacy', function () {
+it('previews only the requested local recipient without advancing checkpoints and rechecks privacy', function () {
     Mail::fake();
     app()->detectEnvironment(fn () => 'local');
-    config(['services.social_demo' => true]);
     $viewer = socialUser('viewer');
     $owner = socialUser('owner', 'friends');
     socialFriends($viewer, $owner);
     socialRecord($owner, 'Recent preview record', true, now()->subDay()->toDateTimeString());
-    $this->withSession(['_token' => 'preview-test'])->actingAs($viewer)->post('/demo/digest', ['_token' => 'preview-test'])->assertRedirect();
+    $this->artisan('social:send-digests', ['--preview-for' => $viewer->id])->assertSuccessful();
     Mail::assertSent(FriendsWeeklyDigest::class, fn ($mail) => $mail->hasTo($viewer->email) && $mail->records->count() === 1);
     expect($viewer->fresh()->digest_week)->toBeNull();
     $owner->update(['visibility' => 'only_me']);
-    $this->post('/demo/digest', ['_token' => 'preview-test'])->assertRedirect();
+    $this->artisan('social:send-digests', ['--preview-for' => $viewer->id])->assertSuccessful();
     Mail::assertSentCount(1);
-    config(['services.social_demo' => false]);
-    $this->post('/demo/digest', ['_token' => 'preview-test'])->assertNotFound();
     app()->detectEnvironment(fn () => 'production');
-    config(['services.social_demo' => true]);
-    $this->post('/demo/digest', ['_token' => 'preview-test'])->assertNotFound();
     $this->artisan('social:send-digests', ['--preview-for' => $viewer->id])->assertFailed();
     Mail::assertSentCount(1);
 });

@@ -1,0 +1,130 @@
+.collection-sharing {
+    position: relative;
+    display: inline-block;
+    text-align: left;
+    margin-top: 14px;
+    margin-left: auto;
+}
+.collection-sharing > summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    list-style: none;
+    padding: 7px 12px;
+    border: 1px solid #c9c2b4;
+    border-radius: 30px;
+    background: #fbf8f0;
+    color: #514a3e;
+    font-size: 13px;
+}
+.collection-sharing > summary::-webkit-details-marker {
+    display: none;
+}
+.collection-sharing > summary:hover {
+    background: #eae5d9;
+}
+.collection-sharing :focus-visible {
+    outline: 2px solid #8a613d;
+    outline-offset: 4px;
+}
+.sharing-chevron {
+    flex: none;
+}
+.collection-sharing[open] .sharing-chevron {
+    transform: rotate(180deg);
+}
+.sharing-panel {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(300px, calc(100vw - 40px));
+    padding: 6px;
+    border: 1px solid #c9bfad;
+    border-radius: 10px;
+    background: #fffdf6;
+    box-shadow:
+        0 16px 40px #49372024,
+        0 3px 8px #49372012;
+    color: #292a22;
+}
+.sharing-panel p {
+    margin: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #756d60;
+}
+.sharing-panel fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+.sharing-legend,
+.sharing-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    overflow: hidden;
+}
+.sharing-choice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.sharing-choice:hover {
+    background: #f7f3ea;
+}
+.sharing-choice[aria-pressed='true'] {
+    background: #f0ecdf;
+}
+.sharing-choice:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+.sharing-choice strong {
+    font-size: 14px;
+    font-weight: 500;
+}
+.sharing-choice small {
+    display: block;
+    color: #756d60;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 3px;
+}
+.sharing-feedback {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: #9c3f32;
+}
+.sharing-public {
+    padding: 12px;
+    font-size: 14px;
+}
+.sharing-public p {
+    margin-bottom: 0;
+}
+@media (max-width: 900px) {
+    .collection-sharing {
+        flex-basis: 100%;
+        margin-left: 0;
+    }
+    .collection-sharing > summary {
+        width: auto;
+    }
+    .sharing-panel {
+        right: auto;
+        left: 0;
+    }
+}

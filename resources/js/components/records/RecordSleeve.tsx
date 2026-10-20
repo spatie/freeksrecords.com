@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+
 import { browseHash } from '@/components/records/browseState';
 import '../../../css/record-cases.css';
 
@@ -21,6 +23,7 @@ export function RecordSleeve({
     transitionRecordId,
 }: RecordSleeveProps) {
     const SleeveAction = onSelect ? 'button' : 'a';
+    const OwnerLink = record.owner ? Link : 'a';
 
     return (
         <article
@@ -35,7 +38,7 @@ export function RecordSleeve({
                     type={onSelect ? 'button' : undefined}
                     href={onSelect ? undefined : record.shareUrl}
                     onClick={onSelect}
-                    aria-label={`Take out ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
+                    aria-label={`${record.shareUrl.startsWith('/shelves/') ? 'View' : 'Take out'} ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
                 >
                     <span className="catalog-record-art">
                         <img
@@ -66,7 +69,7 @@ export function RecordSleeve({
                         {record.artists.map((artist, index) => (
                             <span key={artist}>
                                 {index > 0 && ', '}
-                                <a
+                                <OwnerLink
                                     onClick={(event) => {
                                         if (
                                             !onArtist ||
@@ -82,7 +85,7 @@ export function RecordSleeve({
                                     href={`${record.owner?.profileUrl ?? browseBasePath}${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
                                 >
                                     {artist}
-                                </a>
+                                </OwnerLink>
                             </span>
                         ))}
                     </strong>
@@ -94,9 +97,9 @@ export function RecordSleeve({
                     )}
                     {record.owner && (
                         <small className="catalog-record-activity">
-                            <a href={record.owner.profileUrl}>
+                            <Link href={record.owner.profileUrl}>
                                 {record.owner.name}
-                            </a>
+                            </Link>
                             {' · '}
                             <time dateTime={record.addedAt}>
                                 {new Date(record.addedAt).toLocaleDateString(

@@ -15,7 +15,11 @@
         @fonts
 
         @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @if(str_starts_with($page['component'], 'social/'))
+            @vite(['resources/css/social.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @else
+            @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @endif
         {{-- Fallback for when the SSR server is unavailable. With SSR, RecordRoomHead renders these tags. --}}
         <x-inertia::head>
             @if($page['component'] === 'welcome')

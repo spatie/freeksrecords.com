@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -15,6 +16,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string $handle
  * @property string $email
  * @property string $password
+ * @property ?string $google_id
  * @property bool $legacy_owner
  * @property string $visibility
  * @property bool $comments_enabled
@@ -33,15 +35,38 @@ class User extends Authenticatable implements MustVerifyEmail
     use Notifiable;
 
     public const RESERVED_HANDLES = [
-        'api', 'build', 'collection', 'collections', 'community', 'demo', 'discogs',
+        'api', 'auth', 'build', 'collection', 'collections', 'community', 'demo', 'discogs',
         'email', 'favicon', 'feed', 'fonts', 'friends', 'images', 'index', 'login', 'logout',
-        'notifications', 'people', 'record', 'register', 'robots', 'settings', 'share',
-        'shelves', 'storage', 'up',
+        'notifications', 'people', 'privacy', 'record', 'register', 'robots', 'settings', 'share',
+        'shelves', 'storage', 'terms', 'up',
     ];
 
     protected $guarded = ['id'];
 
-    protected $hidden = ['password', 'remember_token', 'email', 'discogs_token', 'discogs_secret'];
+    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'discogs_token', 'discogs_secret'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $user): void {
+            $localPart = Str::before($user->email, '@');
+            if (blank($user->name)) {
+                $user->name = (string) Str::of($localPart)->replaceMatches('/[^\pL\pN]+/u', ' ')->headline()->trim()->substr(0, 80);
+                $user->name = $user->name ?: 'Collector';
+            }
+
+            if (filled($user->handle)) {
+                return;
+            }
+
+            $base = (string) Str::of($localPart)->ascii()->lower()->replaceMatches('/[^a-z0-9_]+/', '_')->trim('_')->substr(0, 30);
+            $base = strlen($base) < 3 ? "collector_{$base}" : $base;
+            $user->handle = $base;
+
+            while (in_array($user->handle, self::RESERVED_HANDLES, true) || self::query()->where('handle', $user->handle)->exists()) {
+                $user->handle = Str::substr($base, 0, 21).'_'.Str::lower(Str::random(8));
+            }
+        });
+    }
 
     protected function casts(): array
     {

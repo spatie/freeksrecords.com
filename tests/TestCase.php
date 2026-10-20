@@ -13,6 +13,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        $this->withoutVite();
+
         $this->temporaryStoragePath = sys_get_temp_dir().'/freeksrecords-tests-'.getmypid();
 
         File::ensureDirectoryExists($this->temporaryStoragePath);

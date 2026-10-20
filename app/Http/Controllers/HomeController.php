@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\RecordCollection;
+use App\Support\SocialData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class HomeController
 {
-    public function __invoke(Request $request): View|RedirectResponse
+    public function __invoke(Request $request): Response|RedirectResponse
     {
         if ($user = $request->user()) {
             return redirect()->route($user->hasVerifiedEmail() ? 'feed' : 'verification.notice');
@@ -20,7 +22,7 @@ class HomeController
         return $this->intro();
     }
 
-    public function intro(): View
+    public function intro(): Response
     {
         $collectors = $this->publicCollectors()->limit(3)->get();
         $previewCovers = $collectors->flatMap(fn (User $collector) => $collector->records->take(4)->pluck('payload.cover'));
@@ -33,12 +35,19 @@ class HomeController
             ->take(24)
             ->values();
 
-        return view('social.intro', compact('collectors', 'heroCovers'));
+        return Inertia::render('social/HomePage', [
+            'collectors' => $collectors->map(SocialData::collector(...))->all(),
+            'heroCovers' => $heroCovers->all(),
+        ]);
     }
 
-    public function collections(): View
+    public function collections(): Response
     {
-        return view('social.collections', ['collectors' => $this->publicCollectors()->paginate(12)]);
+        $collectors = $this->publicCollectors()->paginate(12);
+
+        return Inertia::render('social/CollectionsPage', [
+            'collectors' => SocialData::pagination($collectors, $collectors->getCollection()->map(SocialData::collector(...))->all()),
+        ]);
     }
 
     /** @return Builder<User> */

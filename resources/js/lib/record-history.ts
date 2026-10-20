@@ -1,3 +1,10 @@
+export function legacyCollectionUrl(hash: string): string | null {
+    return /^#record-\d+$/.test(hash) ||
+        /^#(?:genre|artist|decade|q)=/.test(hash)
+        ? `/collection${hash}`
+        : null;
+}
+
 export function initializeRecordHistory() {
     // Register before Inertia so local record navigation preserves the shelf and its scroll position.
     window.addEventListener('popstate', (event) => {
