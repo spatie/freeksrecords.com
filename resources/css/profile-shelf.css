@@ -3,6 +3,9 @@
     background: transparent;
     overflow-x: visible;
 }
+.profile-record-room .record-room:has(.record-focus) {
+    z-index: 50;
+}
 .profile-record-room .record-room::before,
 .profile-record-room .record-room::after {
     content: none;
