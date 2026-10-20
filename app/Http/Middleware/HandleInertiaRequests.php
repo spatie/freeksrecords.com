@@ -13,6 +13,17 @@ class HandleInertiaRequests extends Middleware
 {
     protected $rootView = 'app';
 
+    public function version(Request $request): ?string
+    {
+        $manifest = public_path('build/manifest.json');
+        if (file_exists($manifest)) {
+            // A stable asset origin must not hide a new deployment from open tabs.
+            return hash_file('xxh128', $manifest) ?: null;
+        }
+
+        return parent::version($request);
+    }
+
     /** @return array<string, mixed> */
     public function share(Request $request): array
     {
