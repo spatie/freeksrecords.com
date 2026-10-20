@@ -96,6 +96,78 @@ it('registers a private account, verifies the inbox, and authenticates securely'
     $this->assertAuthenticatedAs($user);
 });
 
+it('registers with only an email and confirmed password and lets the username change in settings', function () {
+    Notification::fake();
+    $this->post('/register', [
+        'email' => ' NEW.COLLECTOR@example.test ',
+        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        'visibility' => 'everyone', 'legacy_owner' => true, 'email_verified_at' => now(),
+    ])->assertRedirect('/verify-email');
+
+    $user = User::query()->where('email', 'new.collector@example.test')->firstOrFail();
+    expect($user->name)->toBe('New Collector')->and($user->handle)->toBe('new_collector')
+        ->and($user->visibility)->toBe('only_me')->and($user->legacy_owner)->toBeFalse()
+        ->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()
+        ->and(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
+    $this->assertAuthenticatedAs($user);
+    Notification::assertSentTo($user, VerifyEmail::class);
+    $this->get('/settings')->assertRedirect('/verify-email');
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
+    $this->patch('/settings', [
+        'name' => 'Chosen Name', 'handle' => ' Chosen_Handle ', 'visibility' => 'only_me',
+        'comments_enabled' => true, 'digest_enabled' => true,
+    ])->assertSessionHasNoErrors();
+    expect($user->fresh()->handle)->toBe('chosen_handle')->and($user->fresh()->name)->toBe('Chosen Name');
+    $this->get('/people/chosen_handle')->assertOk()->assertSee('Chosen Name');
+    $this->patch('/settings', [
+        'name' => '', 'handle' => '', 'visibility' => 'only_me',
+        'comments_enabled' => true, 'digest_enabled' => true,
+    ])->assertSessionHasErrors(['name', 'handle']);
+});
+
+it('generates valid unique usernames from unusual, reserved and long email local parts', function (string $localPart) {
+    Notification::fake();
+    $handles = [];
+
+    foreach (['example.test', 'another.test'] as $domain) {
+        $email = "{$localPart}@{$domain}";
+        $this->post('/register', [
+            'email' => $email, 'name' => ' ', 'handle' => ' ',
+            'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        ])->assertRedirect('/verify-email');
+
+        $user = User::query()->where('email', $email)->firstOrFail();
+        expect($user->handle)->toMatch('/^[a-z0-9_]{3,30}$/')->not->toBeIn(User::RESERVED_HANDLES)
+            ->not->toBe('freek')->and($user->name)->not->toBeEmpty()
+            ->and(mb_strlen($user->name))->toBeLessThanOrEqual(80);
+        $handles[] = $user->handle;
+        $this->post('/logout')->assertRedirect('/');
+    }
+
+    expect($handles[0])->not->toBe($handles[1]);
+})->with(['collector', 'a', '---', 'élodie', '你好', 'freek', 'settings', str_repeat('a', 64)]);
+
+it('keeps validation for explicit profile fields and confirmed passwords during email-first signup', function (array $invalid, array $errors) {
+    $this->post('/register', [
+        'email' => 'collector@example.test',
+        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        ...$invalid,
+    ])->assertSessionHasErrors($errors);
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'collector@example.test']);
+})->with([
+    [['name' => str_repeat('a', 81)], ['name']],
+    [['name' => ['invalid']], ['name']],
+    [['handle' => 'ab'], ['handle']],
+    [['handle' => str_repeat('a', 31)], ['handle']],
+    [['handle' => 'not-valid'], ['handle']],
+    [['handle' => 'freek'], ['handle']],
+    [['email' => ' FREEK@spatie.be '], ['email']],
+    [['password' => 'short', 'password_confirmation' => 'short'], ['password']],
+    [['password_confirmation' => null], ['password']],
+    [['password_confirmation' => 'different-password'], ['password']],
+]);
+
 it('reserves Freek’s identity and rejects duplicate or invalid handles and weak passwords', function () {
     $data = ['name' => 'Someone', 'handle' => 'freek', 'email' => 'other@example.test', 'password' => 'short', 'password_confirmation' => 'short'];
     $this->post('/register', $data)->assertSessionHasErrors(['handle', 'password']);

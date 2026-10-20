@@ -21,11 +21,28 @@ class AccountController extends Controller
     {
         $request->merge(['email' => strtolower($request->string('email')->trim()), 'handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:80'],
-            'handle' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), 'unique:users'],
+            'name' => ['nullable', 'string', 'max:80'],
+            'handle' => ['nullable', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), 'unique:users'],
             'email' => ['required', 'email', 'max:254', 'unique:users'],
             'password' => ['required', 'confirmed', PasswordRule::min(12)],
         ], [], ['handle' => 'username']);
+
+        $localPart = Str::before($data['email'], '@');
+        if (blank($data['name'] ?? null)) {
+            $data['name'] = (string) Str::of($localPart)->replaceMatches('/[^\pL\pN]+/u', ' ')->headline()->trim()->substr(0, 80);
+            $data['name'] = $data['name'] ?: 'Collector';
+        }
+
+        if (blank($data['handle'] ?? null)) {
+            $base = (string) Str::of($localPart)->ascii()->lower()->replaceMatches('/[^a-z0-9_]+/', '_')->trim('_')->substr(0, 30);
+            $base = strlen($base) < 3 ? "collector_{$base}" : $base;
+            $data['handle'] = $base;
+
+            while (in_array($data['handle'], User::RESERVED_HANDLES, true) || User::query()->where('handle', $data['handle'])->exists()) {
+                $data['handle'] = Str::substr($base, 0, 21).'_'.Str::lower(Str::random(8));
+            }
+        }
+
         $user = User::query()->create($data);
         event(new Registered($user));
         Auth::login($user);

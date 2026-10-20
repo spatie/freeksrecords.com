@@ -2,6 +2,7 @@
 
 use App\Models\Friendship;
 use App\Models\User;
+use App\Support\RecordCollection;
 
 it('welcomes visitors with public collections and private response headers', function () {
     $record = socialRecord(User::freek(), 'A real public record');
@@ -18,6 +19,56 @@ it('welcomes visitors with public collections and private response headers', fun
         ->and(route('collection'))->toBe(url('/collection'))
         ->and($response->headers->get('Cache-Control'))->toContain('private', 'no-store')
         ->and($response->headers->get('Cache-Control'))->not->toContain('s-maxage', 'public');
+});
+
+it('decorates the hero with independent bundled artwork without exposing private records or repeating preview covers', function () {
+    $privateOwner = socialUser('hiddenowner');
+    $privateRecord = socialRecord($privateOwner, 'Secret live release');
+    $privateRecord->update(['payload' => [...$privateRecord->payload, 'cover' => '/images/secret-live-cover.jpg']]);
+    $bundledCovers = collect(app(RecordCollection::class)->snapshot())->pluck('cover');
+
+    foreach ([false, true] as $withPublicCollection) {
+        $previewCover = null;
+        if ($withPublicCollection) {
+            $publicOwner = socialUser('openowner', 'everyone');
+            $previewCover = socialRecord($publicOwner, 'Public preview release')->payload['cover'];
+        }
+
+        $response = $this->get('/')->assertOk()
+            ->assertSee('Keep collecting on Discogs. Sync your collection here and choose who gets to see it.')
+            ->assertDontSee('hiddenowner')->assertDontSee('Secret live release')
+            ->assertDontSee('/images/secret-live-cover.jpg', false);
+        $covers = $response->viewData('heroCovers');
+        expect($covers)->toHaveCount(24)
+            ->and($covers->unique())->toHaveCount(24)
+            ->and($response->viewData('collectors'))->toHaveCount($withPublicCollection ? 1 : 0);
+        foreach ($covers as $cover) {
+            expect($cover)->toBeString()
+                ->and($bundledCovers->contains($cover))->toBeTrue()
+                ->and(is_file(public_path($cover)))->toBeTrue()
+                ->and($cover)->not->toBe($previewCover);
+        }
+
+        $document = new DOMDocument;
+        @$document->loadHTML($response->getContent());
+        $xpath = new DOMXPath($document);
+        $wall = '//div[@class="record-wall"]';
+        expect($xpath->query($wall.'[@aria-hidden="true"]'))->toHaveCount(1)
+            ->and($xpath->query($wall.'//img[@alt=""]'))->toHaveCount(48)
+            ->and($xpath->query($wall.'//a | '.$wall.'//button | '.$wall.'//figcaption'))->toHaveCount(0)
+            ->and(trim($xpath->query($wall)->item(0)->textContent))->toBe('')
+            ->and($xpath->query('//button[@class="artwork-toggle" and not(ancestor::*[@aria-hidden="true"])]'))->toHaveCount(1);
+
+        $renderedCovers = collect($xpath->query($wall.'//img'))->map(fn (DOMElement $image) => $image->getAttribute('src'));
+        expect($renderedCovers->unique()->values()->all())->toBe($covers->all());
+        foreach ($covers as $cover) {
+            expect($renderedCovers->filter(fn (string $source) => $source === $cover))->toHaveCount(2);
+        }
+
+        if ($withPublicCollection) {
+            $response->assertSee(route('profile', $publicOwner->handle), false)->assertSee($previewCover, false);
+        }
+    }
 });
 
 it('previews at most three nonempty public collections in handle order with six actual copies each', function () {

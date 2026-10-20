@@ -1,6 +1,12 @@
 @extends('social.layout')
 @php($startingCollection = auth()->user()->collection_imported_at === null && ($collectionCount === 0 || auth()->user()->discogs_token))
 @section('title', $startingCollection ? 'Add your records' : 'Friends’ additions')
+@if($records->isNotEmpty())
+    @push('head')
+        @viteReactRefresh
+        @vite('resources/js/feed-shelf.tsx')
+    @endpush
+@endif
 @section('content')
 @if($startingCollection)
     <section class="onboarding" aria-labelledby="onboarding-title">
@@ -19,15 +25,20 @@
     <x-social.page-heading title="Friends’ additions" description="The newest records on your friends’ shelves, in the order they added them." />
 @endif
 @if(!$startingCollection || $records->isNotEmpty() || $incomingRequests->isNotEmpty())
-<div class="feed-layout">
+<div class="feed-layout {{ $records->isNotEmpty() ? 'feed-cupboard-layout' : '' }}">
     <section aria-label="Friends’ additions" class="feed-main">
         @if($startingCollection && $records->isNotEmpty())<h2>Friends’ additions</h2>@endif
-        <div class="record-grid">
-            @forelse($records as $record)@include('social.card', ['showOwner' => true])
-            @empty
-                @unless($startingCollection)<section class="empty panel"><h2>Nothing new yet.</h2><p>Accepted friends’ new records appear here. Your first import stays off their feeds.</p><div class="actions"><x-social.button href="/friends">Find friends</x-social.button><a href="{{ route('collections') }}">Browse collections</a></div></section>@endunless
-            @endforelse
-        </div>
+        @if($records->isNotEmpty())
+            <div id="feed-shelf" class="feed-record-room profile-record-room"></div>
+            <script id="feed-shelf-data" type="application/json">{!! json_encode($feedRecords, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR) !!}</script>
+            <noscript><ul>
+                @foreach($records as $record)
+                    <li><a href="{{ route('shelf.record', $record) }}">{{ $record->payload['displayTitle'] }}</a> — <a href="{{ route('profile', $record->user->handle) }}">{{ $record->user->name }}</a>, added {{ $record->added_at->timezone('Europe/Brussels')->format('j M Y') }}</li>
+                @endforeach
+            </ul></noscript>
+        @else
+            @unless($startingCollection)<section class="empty panel"><h2>Nothing new yet.</h2><p>Accepted friends’ new records appear here. Your first import stays off their feeds.</p><div class="actions"><x-social.button href="/friends">Find friends</x-social.button><a href="{{ route('collections') }}">Browse collections</a></div></section>@endunless
+        @endif
         {{ $records->links() }}
     </section>
     <aside class="feed-sidebar" aria-label="Your collection and requests">

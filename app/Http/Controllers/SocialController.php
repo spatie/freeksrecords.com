@@ -51,9 +51,23 @@ class SocialController extends Controller
     public function feed(Request $request): View
     {
         $user = $request->user();
+        $records = CollectionRecord::friendActivity($user)->with('user')->paginate(24);
+        $copies = array_values($records->items());
+        $feedRecords = array_map(
+            fn (array $summary, CollectionRecord $record): array => [
+                ...$summary,
+                'owner' => [
+                    'name' => $record->user->name,
+                    'profileUrl' => route('profile', $record->user->handle, false),
+                ],
+            ],
+            app(RecordCollection::class)->profileSummaries($copies),
+            $copies,
+        );
 
         return view('social.feed', [
-            'records' => CollectionRecord::friendActivity($user)->with('user')->paginate(24),
+            'records' => $records,
+            'feedRecords' => $feedRecords,
             'collectionCount' => $user->records()->count(),
             'incomingRequests' => User::query()->whereIn('id', Friendship::query()
                 ->whereNull('accepted_at')->where('requested_by', '!=', $user->id)

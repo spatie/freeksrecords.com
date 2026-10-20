@@ -5,6 +5,51 @@ use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
 
+it('renders only the current authorized feed page with distinct mixed-owner copies and safe attribution', function () {
+    $viewer = socialUser('feedviewer');
+    $first = socialUser('firstfriend', 'friends');
+    $second = socialUser('secondfriend', 'everyone');
+    socialFriends($viewer, $first);
+    socialFriends($viewer, $second);
+    foreach (range(1, 24) as $instance) {
+        socialRecord($first, 'Earlier record '.$instance, date: '2026-10-01 12:00:00', instance: $instance);
+    }
+    $older = socialRecord($first, 'Older shared copy', date: '2026-10-15 12:00:00', instance: 500);
+    $newer = socialRecord($second, 'Newer shared copy', date: '2026-10-16 12:00:00', instance: 500);
+    $second->update(['discogs_token' => 'owner-token-secret']);
+    $newer->update([
+        'private_note' => 'Private feed note', 'shared_note' => 'Detail-only feed note',
+        'payload' => [...$newer->payload, 'oauth_token' => 'Payload token secret', 'private_note' => 'Payload note secret',
+            'title' => '</script><script>alert("feed")</script>'],
+    ]);
+    $hidden = socialUser('hiddenfriend', 'only_me');
+    socialFriends($viewer, $hidden);
+    socialRecord($hidden, 'Hidden feed record');
+    socialRecord($second, 'Initial feed import', activity: false, instance: 501);
+
+    $response = $this->actingAs($viewer)->get('/feed')->assertOk()
+        ->assertSeeInOrder(['Newer shared copy', 'Older shared copy'])
+        ->assertDontSee('Hidden feed record')->assertDontSee('Initial feed import')
+        ->assertDontSee('record-grid')->assertDontSee('record-card')
+        ->assertDontSee('Private feed note')->assertDontSee('Detail-only feed note')
+        ->assertDontSee('Payload token secret')->assertDontSee('Payload note secret')
+        ->assertDontSee('owner-token-secret')->assertDontSee($second->email)
+        ->assertDontSee('</script><script>alert', false);
+    preg_match('/<script id="feed-shelf-data" type="application\/json">(.*?)<\/script>/s', $response->getContent(), $matches);
+    $summaries = json_decode($matches[1], true, flags: JSON_THROW_ON_ERROR);
+    expect($summaries)->toHaveCount(24)
+        ->and(array_column(array_slice($summaries, 0, 2), 'instanceId'))->toBe([500, 500])
+        ->and(array_column(array_slice($summaries, 0, 2), 'shareUrl'))->toBe(['/shelves/'.$newer->id, '/shelves/'.$older->id])
+        ->and($summaries[0]['owner'])->toBe(['name' => $second->name, 'profileUrl' => '/secondfriend'])
+        ->and($summaries[1]['owner'])->toBe(['name' => $first->name, 'profileUrl' => '/firstfriend'])
+        ->and($summaries[0]['addedAt'])->toBe($newer->added_at->toIso8601String())
+        ->and($summaries[0])->not->toHaveKey('tracks');
+    $this->get($summaries[0]['shareUrl'])->assertOk()->assertSee('Newer shared copy');
+    $this->get($summaries[1]['shareUrl'])->assertOk()->assertSee('Older shared copy');
+    $this->get('/feed?page=2')->assertOk()->assertDontSee('Newer shared copy')->assertDontSee('Older shared copy')
+        ->assertViewHas('feedRecords', fn (array $records) => count($records) === 2);
+});
+
 it('loads the whole visible shelf with owner-specific social links and only safe summary fields', function () {
     $owner = socialUser('shelfowner', 'everyone');
     $other = socialUser('othershelf', 'everyone');
