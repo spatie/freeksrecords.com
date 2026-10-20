@@ -106,7 +106,7 @@ export function useRecordTransition({
         const transforms = elements.map((element) =>
             element ? getComputedStyle(element).transform : 'none',
         );
-        const destination = sleeveOrigin(instanceId);
+        const destination = origin ?? sleeveOrigin(instanceId);
         const target = stage.current;
         const opacityElements = [surface.current, backdrop.current];
         const opacities = opacityElements.map((element) =>

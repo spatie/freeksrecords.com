@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 
+import { RecordLink } from '@/modules/social/RecordOverlay';
 import type { Collector } from '@/modules/social/types';
 
 export function CollectionPreview({ collector }: { collector: Collector }) {
@@ -7,7 +8,7 @@ export function CollectionPreview({ collector }: { collector: Collector }) {
         <article className="collection-preview">
             <div className="collection-preview-covers">
                 {collector.records.slice(0, 4).map((record) => (
-                    <Link key={record.url} href={record.url}>
+                    <RecordLink key={record.url} href={record.url}>
                         <img
                             src={record.cover}
                             alt={record.title}
@@ -15,7 +16,7 @@ export function CollectionPreview({ collector }: { collector: Collector }) {
                             width="180"
                             height="180"
                         />
-                    </Link>
+                    </RecordLink>
                 ))}
             </div>
             <Link

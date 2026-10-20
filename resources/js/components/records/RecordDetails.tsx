@@ -6,18 +6,26 @@ import { ArrowUpRight } from 'lucide-react';
 import { useRecordDetails } from '@/components/records/useRecordDetails';
 import { AppleIcon } from '@/components/records/AppleIcon';
 import { SpotifyIcon } from '@/components/records/SpotifyIcon';
-import type { CollectionRecordSummary } from '@/components/records/types';
+import type {
+    CollectionRecord,
+    CollectionRecordSummary,
+} from '@/components/records/types';
 
 export function RecordDetails({
     record: summary,
     onArtist,
     titleId,
+    details: supplied,
 }: {
     record: CollectionRecordSummary;
+    details?: CollectionRecord;
     onArtist: (artist: string) => void;
     titleId: string;
 }) {
-    const { details, error, retry } = useRecordDetails(summary.instanceId);
+    const { details, error, retry } = useRecordDetails(
+        summary.instanceId,
+        supplied,
+    );
     const record = details ?? summary;
     const tracks = details?.tracks ?? [];
     const addedDate = collectionAddedDate(record);

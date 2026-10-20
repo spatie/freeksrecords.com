@@ -28,7 +28,12 @@ it('lets an owner edit and clear notes on only the selected copy without activit
         ->where('record.canEditNotes', true)->where('record.privateNote', 'Paid €20')
         ->where('record.sharedNote', "First line\nSecond line"));
     expect(CollectionRecord::friendActivity($friend)->whereKey($record->id)->exists())->toBeFalse();
-    $this->actingAs($owner)->patch("/shelves/{$record->id}/notes", ['shared_note' => '', 'private_note' => ''])->assertSessionHasNoErrors();
+    $overlay = "/notes_owner?record={$record->id}";
+    $this->actingAs($owner)->from($overlay)->patch("/shelves/{$record->id}/notes", ['shared_note' => '', 'private_note' => ''])
+        ->assertSessionHasNoErrors()->assertRedirect($overlay);
+    $this->get($overlay)->assertInertia(fn (Assert $page) => $page
+        ->component('social/ProfilePage')->where('recordOverlay.record.id', $record->id)
+        ->where('recordOverlay.record.sharedNote', null)->where('recordOverlay.record.privateNote', null));
     expect($record->fresh()->shared_note)->toBeNull()->and($record->fresh()->private_note)->toBeNull();
     $this->assertDatabaseCount('collection_records', 3);
     $this->assertDatabaseCount('social_notifications', 0);

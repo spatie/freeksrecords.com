@@ -37,6 +37,7 @@ export type SocialProps = {
     demoUsers: { email: string; label: string; url: string }[];
     flash: { status: string | null };
     errors: Record<string, string>;
+    recordOverlay: RecordProps | null;
 };
 
 export type Pagination<T> = {

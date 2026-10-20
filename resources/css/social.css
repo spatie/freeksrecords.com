@@ -797,14 +797,6 @@
         margin: 10px 0 0;
         padding-left: 20px;
     }
-    .back-link {
-        font-size: 14px;
-        color: #6b695e;
-    }
-    .record-artist {
-        font-size: 20px;
-        margin-bottom: 12px;
-    }
     .empty {
         grid-column: 1 / -1;
         padding: 44px;
@@ -844,37 +836,6 @@
         padding: 6px 11px;
         background: #e6e9dc;
         white-space: nowrap;
-    }
-    .large-cover {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 1;
-        object-fit: cover;
-        box-shadow: 0 10px 26px #292a2220;
-    }
-    .record-title {
-        font-size: clamp(34px, 4vw, 56px);
-    }
-    .record-detail {
-        gap: 48px;
-    }
-    .tracklist {
-        list-style: none;
-        padding: 0;
-    }
-    .tracklist li {
-        display: flex;
-        gap: 14px;
-        border-top: 1px solid #d7d0c2;
-        padding: 10px 0;
-        font-size: 14px;
-    }
-    .tracklist span {
-        color: #726b5e;
-        min-width: 22px;
-    }
-    .tracklist small {
-        margin-left: auto;
     }
     .conversation {
         max-width: 800px;
@@ -983,11 +944,9 @@
         animation-delay: -2s;
         animation-duration: 10s;
     }
-    .hero-artwork:is(:hover, :focus-within) .floating-sleeve {
+    .hero-artwork:has(a:focus-visible) .floating-sleeve,
+    :scope:has(.record-focus) .floating-sleeve {
         animation-play-state: paused;
-    }
-    .floating-sleeve:has(a:is(:hover, :focus-visible)) {
-        z-index: 1;
     }
     .floating-sleeve a {
         display: block;
@@ -1007,8 +966,8 @@
             transform: translate(0, 0) rotate(var(--sleeve-angle));
         }
         to {
-            transform: translate(4px, -9px)
-                rotate(calc(var(--sleeve-angle) + 2deg));
+            transform: translate(10px, -18px)
+                rotate(calc(var(--sleeve-angle) + 3deg));
         }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -1328,13 +1287,6 @@
         .person-row {
             align-items: start;
             flex-direction: column;
-        }
-        .record-detail {
-            gap: 28px;
-        }
-        .record-detail .large-cover {
-            width: min(100%, 260px);
-            justify-self: center;
         }
     }
 }

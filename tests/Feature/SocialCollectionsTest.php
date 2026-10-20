@@ -113,6 +113,39 @@ it('preserves shelf browsing context in the record return link without allowing 
         ->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionUrl', url('/browsingcollector')));
 });
 
+it('keeps the selected copy and social actions in its own cupboard without exposing owner-only data', function () {
+    $owner = socialUser('modalowner', 'everyone');
+    $viewer = socialUser('modalviewer');
+    $record = socialRecord($owner, 'Selected public copy', instance: 500);
+    socialRecord($viewer, 'Different private copy', instance: 500);
+    $record->update(['private_note' => 'Owner-only modal note', 'shared_note' => 'Shared modal note']);
+    foreach (range(1, 31) as $number) {
+        $record->comments()->create(['user_id' => $viewer->id, 'body' => "Comment {$number}"]);
+    }
+    $url = '/modalowner?'.http_build_query(['record' => $record->id]);
+    $response = $this->actingAs($viewer)->get($url)->assertOk()
+        ->assertDontSee('Different private copy')->assertDontSee('Owner-only modal note')
+        ->assertInertia(fn (Assert $page) => $page->component('social/ProfilePage')
+            ->where('person.id', $owner->id)->has('records', 1)
+            ->where('recordOverlay.record.id', $record->id)
+            ->where('recordOverlay.record.sharedNote', 'Shared modal note')
+            ->missing('recordOverlay.record.privateNote')
+            ->has('recordOverlay.comments.data', 30));
+    $next = $response->inertiaProps('recordOverlay.comments.next_page_url');
+    $this->get($next)->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('social/ProfilePage')->has('recordOverlay.comments.data', 1)
+        ->where('recordOverlay.comments.data.0.body', 'Comment 31'));
+    $this->from($url)->post('/shelves/'.$record->id.'/appreciations')->assertRedirect($url);
+    $this->get($url)->assertInertia(fn (Assert $page) => $page
+        ->where('recordOverlay.appreciations', 1)->where('recordOverlay.appreciated', true));
+    $this->from($url)->post('/shelves/'.$record->id.'/comments', ['body' => 'From the cupboard'])->assertRedirect($url);
+    $this->get($next)->assertInertia(fn (Assert $page) => $page
+        ->has('recordOverlay.comments.data', 2)->where('recordOverlay.comments.data.1.body', 'From the cupboard'));
+    $owner->update(['visibility' => 'only_me']);
+    $this->get($url)->assertNotFound();
+    $this->get($next)->assertNotFound();
+});
+
 it('enforces the full collection visibility matrix on profiles and record pages', function (string $visibility, string $viewerKind, bool $allowed) {
     $owner = socialUser('owner', $visibility);
     $friend = socialUser('friend');
@@ -127,13 +160,23 @@ it('enforces the full collection visibility matrix on profiles and record pages'
     $profile = $this->get(route('profile', $owner->handle))->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('person.name', 'Owner')->where('person.handle', 'owner')->where('visible', $allowed));
     $response = $this->get('/shelves/'.$record->id);
+    $cupboard = $this->get('/owner?record='.$record->id);
+    $elsewhere = $this->get('/collections?record='.$record->id);
     if ($allowed) {
         $profile->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page->has('records', 1));
         $response->assertOk()->assertSee('Private Test Album');
+        $cupboard->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('social/ProfilePage')->has('records', 1)
+            ->where('recordOverlay.record.id', $record->id)
+            ->where('recordOverlay.record.canEditNotes', $viewerKind === 'owner'));
+        $elsewhere->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->component('social/CollectionsPage')->where('recordOverlay.record.id', $record->id));
     } else {
         $profile->assertDontSee('Private Test Album')->assertDontSee($owner->email)
             ->assertInertia(fn (Assert $page) => $page->where('records', null));
         $response->assertNotFound();
+        $cupboard->assertNotFound();
+        $elsewhere->assertNotFound();
     }
     expect($profile->headers->get('Cache-Control'))->toContain('no-store', 'private');
 })->with([

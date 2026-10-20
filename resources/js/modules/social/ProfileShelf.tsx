@@ -1,8 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-
-import cabinetCss from '../../../css/record-cabinet.css?inline';
-import controlsCss from '../../../css/record-controls.css?inline';
-import '../../../css/profile-shelf.css';
+import { useContext } from 'react';
 import {
     browseFromHash,
     browseHash,
@@ -11,14 +8,18 @@ import {
 import { CollectionBrowser } from '@/components/records/CollectionBrowser';
 import type { CollectionRecordSummary } from '@/components/records/types';
 import type { BrowseUpdate } from '@/components/records/useBrowseNavigation';
+import { RecordRoom } from '@/modules/social/RecordRoom';
+import { RecordOverlayContext } from '@/modules/social/RecordOverlay';
+import type { SocialProps } from '@/modules/social/types';
 
 export function ProfileShelf({
     records,
 }: {
     records: CollectionRecordSummary[];
 }) {
-    const page = usePage<{ socialBrowse?: BrowseState }>();
-    const basePath = page.url.split('#')[0];
+    const page = usePage<SocialProps & { socialBrowse?: BrowseState }>();
+    const openRecord = useContext(RecordOverlayContext);
+    const basePath = page.url.split(/[?#]/)[0];
     const hash =
         typeof window === 'undefined'
             ? (page.url.split('#')[1] ?? '')
@@ -47,25 +48,24 @@ export function ProfileShelf({
         else router.push(options);
     }
     return (
-        <div className="profile-record-room">
-            <style>{`@scope (.profile-record-room) { ${cabinetCss}\n${controlsCss} }`}</style>
-            <div className="record-room">
-                <CollectionBrowser
-                    browse={browse}
-                    browseBasePath={basePath}
-                    onBrowse={changeBrowse}
-                    onSelect={(record) => {
-                        const fragment = browseHash(browse).slice(1);
-                        router.visit(
-                            fragment
-                                ? `${record.shareUrl}?browse=${encodeURIComponent(fragment)}`
-                                : record.shareUrl,
-                        );
-                    }}
-                    records={records}
-                    transitionRecordId={null}
-                />
-            </div>
-        </div>
+        <RecordRoom>
+            <CollectionBrowser
+                browse={browse}
+                browseBasePath={basePath}
+                onBrowse={changeBrowse}
+                onSelect={(record) => {
+                    openRecord(
+                        record.shareUrl,
+                        document.querySelector<HTMLElement>(
+                            `[data-record-id="${record.instanceId}"] .catalog-record-open`,
+                        ),
+                    );
+                }}
+                records={records}
+                transitionRecordId={
+                    page.props.recordOverlay?.record.payload.instanceId ?? null
+                }
+            />
+        </RecordRoom>
     );
 }

@@ -18,6 +18,6 @@ class RecordNotesController extends Controller
         ]);
         $record->update($data);
 
-        return to_route('shelf.record', $record)->with('status', 'Owner notes saved.');
+        return back(fallback: route('shelf.record', $record))->with('status', 'Owner notes saved.');
     }
 }

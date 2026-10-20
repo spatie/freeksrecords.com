@@ -6,12 +6,16 @@ import {
     useLayoutEffect,
     useRef,
     useState,
+    type ReactNode,
 } from 'react';
 
 import { artworkLabelStyle } from '@/components/records/artworkLabel';
 import type { SleeveOrigin } from '@/components/records/recordMotion';
 import { RecordDetails } from '@/components/records/RecordDetails';
-import type { CollectionRecordSummary } from '@/components/records/types';
+import type {
+    CollectionRecord,
+    CollectionRecordSummary,
+} from '@/components/records/types';
 import { useRecordTransition } from '@/components/records/useRecordTransition';
 
 type ListeningViewProps = {
@@ -20,6 +24,8 @@ type ListeningViewProps = {
     onArtist: (artist: string) => void;
     origin: SleeveOrigin | null;
     record: CollectionRecordSummary;
+    details?: CollectionRecord;
+    children?: ReactNode;
 };
 
 const focusableSelector = [
@@ -54,6 +60,8 @@ export function ListeningView({
     onArtist,
     origin,
     record,
+    details,
+    children,
 }: ListeningViewProps) {
     const dialog = useRef<HTMLElement>(null);
     const label = useRef<HTMLDivElement>(null);
@@ -73,6 +81,11 @@ export function ListeningView({
     useLayoutEffect(() => {
         dialog.current?.focus({ preventScroll: true });
     }, []);
+
+    useEffect(() => {
+        if (phase === 'settled' && window.location.hash === '#comments')
+            dialog.current?.querySelector('#comments')?.scrollIntoView();
+    }, [phase]);
 
     useEffect(() => {
         if (!shareStatus) return;
@@ -227,11 +240,15 @@ export function ListeningView({
                                 </div>
                             </div>
                         </div>
-                        <RecordDetails
-                            onArtist={onArtist}
-                            record={record}
-                            titleId={titleId}
-                        />
+                        <div>
+                            <RecordDetails
+                                onArtist={onArtist}
+                                record={record}
+                                titleId={titleId}
+                                details={details}
+                            />
+                            {children}
+                        </div>
                     </div>
                 </div>
             </section>

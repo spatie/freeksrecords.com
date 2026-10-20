@@ -54,10 +54,16 @@ it('uses only live public records for linked artwork and never falls back to the
     }
     $link = $artwork->first()['url'];
     $this->get($link)->assertOk();
+    $selected = $records->firstWhere('id', (int) basename($link));
+    $this->get($path.'?record='.$selected->id)->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('recordOverlay.record.id', $selected->id)
+        ->where('recordOverlay.record.payload.displayTitle', $selected->payload['displayTitle'])
+        ->missing('recordOverlay.record.privateNote'));
     foreach (['friends', 'only_me'] as $visibility) {
         $owner->update(['visibility' => $visibility]);
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->has('artwork', 0));
         $this->get($link)->assertNotFound();
+        $this->get($path.'?record='.$selected->id)->assertNotFound();
     }
 })->with(['/', '/login', '/register', '/forgot-password', '/reset-password/test-token', '/verify-email']);
 

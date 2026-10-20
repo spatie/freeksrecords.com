@@ -16,7 +16,10 @@ type DetailsState = {
  * Loads the tracklist for a record. State is tagged with the record it belongs
  * to, so switching records never shows the previous record's details.
  */
-export function useRecordDetails(instanceId: number) {
+export function useRecordDetails(
+    instanceId: number,
+    supplied?: CollectionRecord,
+) {
     const [state, setState] = useState<DetailsState>(() => ({
         instanceId,
         details: null,
@@ -27,9 +30,11 @@ export function useRecordDetails(instanceId: number) {
         state.instanceId === instanceId
             ? state
             : { instanceId, details: null, error: false, attempt: 0 };
-    const details = cachedDetails.get(instanceId) ?? current.details;
+    const details =
+        supplied ?? cachedDetails.get(instanceId) ?? current.details;
 
     useEffect(() => {
+        if (supplied) return;
         if (cachedDetails.has(instanceId)) return;
         const controller = new AbortController();
         void fetch(RecordDetailsController.url(instanceId), {
@@ -61,7 +66,7 @@ export function useRecordDetails(instanceId: number) {
                 }));
             });
         return () => controller.abort();
-    }, [instanceId, current.attempt]);
+    }, [instanceId, current.attempt, supplied]);
 
     function retry() {
         setState({
