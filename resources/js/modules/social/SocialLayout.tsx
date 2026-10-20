@@ -14,6 +14,11 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     const { props, url, component } = usePage<SocialProps>();
     const user = props.auth.user;
     const path = url.split(/[?#]/)[0];
+    const settingUpCollection =
+        user &&
+        !user.importedAt &&
+        (!user.collectionCount || user.discogsConnected);
+    const onboarding = component === 'social/FeedPage' && settingUpCollection;
     const recordOpen =
         component === 'social/RecordPage' || Boolean(props.recordOverlay);
     const navigationRef = useRef<HTMLElement>(null);
@@ -49,7 +54,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             cancelAnimationFrame(frame);
             observer.disconnect();
         };
-    }, [path, user?.id, user?.verified]);
+    }, [path, user?.id, user?.verified, onboarding]);
 
     const pageClass =
         {
@@ -92,9 +97,13 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 aria-label="Main navigation"
                             >
                                 <Link
-                                    href={user.profileUrl}
+                                    href={
+                                        settingUpCollection
+                                            ? '/feed'
+                                            : user.profileUrl
+                                    }
                                     aria-current={
-                                        path === user.profileUrl
+                                        path === user.profileUrl || onboarding
                                             ? 'page'
                                             : undefined
                                     }
@@ -102,9 +111,14 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                     My collection
                                 </Link>
                                 <Link
-                                    href="/feed"
+                                    href={
+                                        settingUpCollection
+                                            ? '/friends'
+                                            : '/feed'
+                                    }
                                     aria-current={
-                                        path === '/feed' || path === '/friends'
+                                        (path === '/feed' && !onboarding) ||
+                                        path === '/friends'
                                             ? 'page'
                                             : undefined
                                     }
@@ -119,7 +133,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                             : undefined
                                     }
                                 >
-                                    Explore
+                                    Public
                                 </Link>
                                 <span
                                     ref={indicatorRef}
@@ -165,7 +179,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 path === '/collections' ? 'page' : undefined
                             }
                         >
-                            Explore
+                            Public
                         </Link>
                         <Link
                             href="/login"
@@ -186,6 +200,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             <RecordOverlay>
                 <main id="main" className="page">
                     {user?.verified &&
+                        !settingUpCollection &&
                         (path === '/feed' || path === '/friends') && (
                             <nav
                                 className="friends-navigation"

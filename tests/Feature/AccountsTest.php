@@ -103,11 +103,11 @@ it('registers a private account, verifies the inbox, and authenticates securely'
     $this->assertAuthenticatedAs($user);
 });
 
-it('registers with only an email and confirmed password and lets the username change in settings', function () {
+it('registers with only an email and password and lets the username change in settings', function () {
     Notification::fake();
     $this->post('/register', [
         'email' => ' NEW.COLLECTOR@example.test ',
-        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        'password' => 'a-long-demo-password',
         'visibility' => 'everyone', 'legacy_owner' => true, 'email_verified_at' => now(),
     ])->assertRedirect('/verify-email');
 
@@ -154,10 +154,10 @@ it('generates valid unique usernames from unusual, reserved and long email local
     expect($handles[0])->not->toBe($handles[1]);
 })->with(['collector', 'a', '---', 'élodie', '你好', 'freek', 'settings', str_repeat('a', 64)]);
 
-it('keeps validation for explicit profile fields and confirmed passwords during email-first signup', function (array $invalid, array $errors) {
+it('keeps validation for explicit profile fields and strong passwords during email-first signup', function (array $invalid, array $errors) {
     $this->post('/register', [
         'email' => 'collector@example.test',
-        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        'password' => 'a-long-demo-password',
         ...$invalid,
     ])->assertSessionHasErrors($errors);
     $this->assertGuest();
@@ -170,9 +170,8 @@ it('keeps validation for explicit profile fields and confirmed passwords during 
     [['handle' => 'not-valid'], ['handle']],
     [['handle' => 'freek'], ['handle']],
     [['email' => ' FREEK@spatie.be '], ['email']],
-    [['password' => 'short', 'password_confirmation' => 'short'], ['password']],
-    [['password_confirmation' => null], ['password']],
-    [['password_confirmation' => 'different-password'], ['password']],
+    [['password' => 'short'], ['password']],
+    [['password' => null], ['password']],
 ]);
 
 it('reserves Freek’s identity and rejects duplicate or invalid handles and weak passwords', function () {

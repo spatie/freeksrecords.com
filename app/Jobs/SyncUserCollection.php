@@ -52,7 +52,7 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
             if (! $user->discogs_token) {
                 return;
             }
-            $user->update(['sync_status' => 'Syncing']);
+            $user->update(['sync_status' => 'Syncing', 'sync_total' => null]);
             $discogs = new Discogs($user);
             $seen = [];
             $page = 1;
@@ -62,6 +62,7 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
                 if (! isset($response['releases'], $response['pagination']['pages'], $response['pagination']['items']) || ! is_array($response['releases'])) {
                     throw new RuntimeException('Incomplete collection response');
                 }
+                $user->update(['sync_total' => $response['pagination']['items']]);
                 foreach ($response['releases'] as $entry) {
                     $instance = $entry['instance_id'];
                     $seen[] = $instance;

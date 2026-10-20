@@ -4,10 +4,12 @@ import { FeedShelf } from '@/modules/social/FeedShelf';
 import { FriendActions } from '@/modules/social/FriendActions';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { Pagination } from '@/modules/social/Pagination';
+import { ProfileShelf } from '@/modules/social/ProfileShelf';
 import type { FeedProps, SocialProps } from '@/modules/social/types';
 
 export function FeedPage({
     collectionCount,
+    importRecords,
     incomingRequests,
     records,
 }: FeedProps) {
@@ -22,17 +24,32 @@ export function FeedPage({
             />
             {starting ? (
                 <section
-                    className="onboarding"
+                    className={
+                        user.discogsConnected
+                            ? 'importing-collection'
+                            : 'onboarding'
+                    }
                     aria-labelledby="onboarding-title"
                 >
-                    <ol className="setup-steps" aria-label="Account setup">
-                        <li>Account created</li>
-                        <li>Email verified</li>
-                        <li aria-current="step">Import collection</li>
-                    </ol>
-                    <h1 id="onboarding-title">Add your records</h1>
+                    {!user.discogsConnected && (
+                        <ol className="setup-steps" aria-label="Account setup">
+                            <li>Account created</li>
+                            <li>Email verified</li>
+                            <li aria-current="step">Import collection</li>
+                        </ol>
+                    )}
+                    <h1 id="onboarding-title">
+                        {user.discogsConnected
+                            ? 'Your collection'
+                            : 'Add your records'}
+                    </h1>
                     {user.discogsConnected ? (
-                        <ImportStatus user={user} />
+                        <>
+                            <ImportStatus user={user} />
+                            {importRecords.length > 0 && (
+                                <ProfileShelf records={importRecords} />
+                            )}
+                        </>
                     ) : (
                         <>
                             <p className="lede">
@@ -88,58 +105,40 @@ export function FeedPage({
                     <h1>Fresh on their shelves.</h1>
                 </div>
             )}
-            {(!starting ||
-                records.data.length > 0 ||
-                incomingRequests.length > 0) && (
+            {!starting && (
                 <div
-                    className={`feed-layout ${records.data.length ? 'feed-cupboard-layout' : ''}`}
+                    className={`feed-layout ${records.data.length || !incomingRequests.length ? 'feed-cupboard-layout' : ''}`}
                 >
                     <section
                         className="feed-main"
                         aria-label="Friends’ additions"
                     >
-                        {starting && records.data.length > 0 && (
-                            <h2>Friends’ additions</h2>
-                        )}
                         {records.data.length ? (
                             <FeedShelf records={records.data} />
                         ) : (
-                            !starting && (
-                                <section className="empty panel">
-                                    <h2>Nothing new yet.</h2>
-                                    <p>
-                                        New records shared by your friends
-                                        appear here.
-                                    </p>
-                                    <div className="actions">
-                                        <Link
-                                            className="button"
-                                            href="/friends"
-                                        >
-                                            Find friends
-                                        </Link>
-                                        <Link href="/collections">
-                                            Browse collections
-                                        </Link>
-                                    </div>
-                                </section>
-                            )
+                            <section className="empty panel">
+                                <h2>Nothing new yet.</h2>
+                                <p>
+                                    New records shared by your friends appear
+                                    here.
+                                </p>
+                                <div className="actions">
+                                    <Link className="button" href="/friends">
+                                        Find friends
+                                    </Link>
+                                    <Link href="/collections">
+                                        Browse collections
+                                    </Link>
+                                </div>
+                            </section>
                         )}
                         <Pagination {...records} />
                     </section>
-                    <aside
-                        className="feed-sidebar"
-                        aria-label="Your collection and requests"
-                    >
-                        {!starting && (
-                            <section className="panel">
-                                <h2>My collection</h2>
-                                <Link href={user.profileUrl}>
-                                    View my collection
-                                </Link>
-                            </section>
-                        )}
-                        {incomingRequests.length > 0 && (
+                    {incomingRequests.length > 0 && (
+                        <aside
+                            className="feed-sidebar"
+                            aria-label="Friend requests"
+                        >
                             <section className="panel">
                                 <h2>Friend requests</h2>
                                 {incomingRequests.map((person) => (
@@ -169,8 +168,8 @@ export function FeedPage({
                                     </div>
                                 ))}
                             </section>
-                        )}
-                    </aside>
+                        </aside>
+                    )}
                 </div>
             )}
         </>

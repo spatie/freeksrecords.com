@@ -94,6 +94,7 @@ class DiscogsConnectionController extends Controller
             'connected' => $user->discogs_token !== null,
             'complete' => $user->collection_imported_at !== null,
             'count' => $user->records()->count(),
+            'total' => $user->sync_total,
             'status' => $user->sync_status ?? 'Waiting for the import to start',
             'failed' => str_starts_with($user->sync_status ?? '', 'Sync failed'),
         ]);

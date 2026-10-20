@@ -1,62 +1,41 @@
-import { Link, router, usePoll } from '@inertiajs/react';
+import { router, usePoll } from '@inertiajs/react';
 
-import type { Viewer } from '@/modules/social/types';
+import type { SocialProps, Viewer } from '@/modules/social/types';
 
 export function ImportStatus({ user }: { user: Viewer }) {
-    usePoll(5000, { only: ['auth', 'collectionCount'] });
+    usePoll(5000, {
+        only: ['auth', 'collectionCount', 'importRecords'],
+        onSuccess: (page) => {
+            const current = (page.props.auth as SocialProps['auth']).user;
+            if (current?.importedAt) router.visit(current.profileUrl);
+        },
+    });
+    const failed = user.syncStatus?.startsWith('Sync failed');
     return (
-        <div className="import-status">
-            <div className="import-progress" role="status">
-                <strong>
-                    {user.importedAt
-                        ? 'Your collection is ready'
-                        : (user.syncStatus ??
-                          'Waiting for the import to start')}
-                </strong>
-                <p>
-                    {user.collectionCount}{' '}
-                    {user.collectionCount === 1 ? 'record' : 'records'} imported
-                </p>
-            </div>
-            {!user.importedAt && (
-                <p className="muted">
-                    Large collections can take a while. You can leave this page;
-                    the import continues in the background.
-                </p>
-            )}
-            <p className="muted">
-                Collection visibility:{' '}
-                {user.visibility === 'everyone'
-                    ? 'Everyone'
-                    : user.visibility === 'friends'
-                      ? 'Friends'
-                      : 'Only me'}
-                . <Link href="/settings">Change visibility</Link>
-            </p>
-            <div className="actions">
-                {user.importedAt && (
-                    <Link className="button" href={user.profileUrl}>
-                        View my collection
-                    </Link>
-                )}
-                {user.syncStatus?.startsWith('Sync failed') && (
-                    <button
-                        className="button secondary"
-                        onClick={() => router.post('/discogs/sync')}
-                    >
-                        Retry import
-                    </button>
-                )}
+        <div
+            className={`import-status ${failed ? 'import-failed' : ''}`}
+            role="status"
+        >
+            <span className="import-label">
+                <span className="import-record" aria-hidden="true" />
+                <strong>{failed ? 'Import paused' : 'Still importing'}</strong>
+            </span>
+            <span className="import-count">
+                {user.collectionCount}
+                {user.syncTotal !== null && ` of ${user.syncTotal}`}{' '}
+                {(user.syncTotal ?? user.collectionCount) === 1
+                    ? 'record'
+                    : 'records'}{' '}
+                imported
+            </span>
+            {failed && (
                 <button
                     className="text-button"
-                    onClick={() =>
-                        router.reload({ only: ['auth', 'collectionCount'] })
-                    }
+                    onClick={() => router.post('/discogs/sync')}
                 >
-                    Check progress
+                    Retry import
                 </button>
-                <Link href="/settings">Connection settings</Link>
-            </div>
+            )}
         </div>
     );
 }

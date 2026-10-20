@@ -485,6 +485,13 @@
     .notification-item > a:hover {
         background: #eeeade;
     }
+    .notification-actions {
+        padding: 0 22px 18px 84px;
+    }
+    .notification-actions .button {
+        padding: 8px 14px;
+        font-size: 14px;
+    }
     .notification-item img,
     .notification-avatar {
         flex: none;
@@ -850,19 +857,68 @@
         margin-top: 14px;
         color: #6b695e;
     }
-    .import-progress {
-        border-block: 1px solid #d7d2c5;
-        padding: 24px 0;
-        margin: 24px 0;
+    .importing-collection > h1 {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: clamp(36px, 5vw, 56px);
+        font-weight: 400;
+        margin: 20px 0;
     }
-    .import-progress strong {
-        font-size: 20px;
-        font-weight: 500;
+    .import-status {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 24px;
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 0 36px;
+        padding: 14px 24px;
+        background: #faf6e8e8;
+        border-left: 3px solid #a64028;
+        box-shadow: 0 5px 12px -7px #4b351555;
+        transform: rotate(-0.5deg);
     }
-    .import-progress p {
+    .import-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: #913f2c;
+    }
+    .import-label strong {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 22px;
+        font-weight: 400;
+    }
+    .import-record {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background:
+            radial-gradient(
+                circle,
+                #faf6e8 0 7%,
+                #a64028 8% 25%,
+                transparent 26%
+            ),
+            repeating-radial-gradient(circle, transparent 0 2px, #fff2 3px 4px),
+            conic-gradient(#292a22 0 45%, #6b695e 50%, #292a22 55%);
+        animation: import-spin 4s linear infinite;
+    }
+    .import-count {
         font-size: 15px;
-        margin: 8px 0 0;
         font-variant-numeric: tabular-nums;
+    }
+    .import-failed .import-record {
+        animation: none;
+    }
+    @keyframes import-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .import-record {
+            animation: none;
+        }
     }
     .compact {
         font-size: 40px;

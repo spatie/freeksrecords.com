@@ -3,9 +3,11 @@ import { useForm } from '@inertiajs/react';
 export function FriendActions({
     actions,
     personId,
+    onSuccess,
 }: {
     actions: { value: string; label: string }[];
     personId: number;
+    onSuccess?: () => void;
 }) {
     const form = useForm({ action: '' });
     return (
@@ -23,6 +25,7 @@ export function FriendActions({
                         form.transform(() => ({ action: action.value }));
                         form.post(`/friends/${personId}`, {
                             preserveScroll: true,
+                            onSuccess,
                         });
                     }}
                 >

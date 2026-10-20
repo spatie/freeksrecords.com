@@ -121,6 +121,7 @@ class SocialData
             'importedAt' => $user->collection_imported_at?->toIso8601String(),
             'lastSyncedAt' => $user->last_synced_at?->toIso8601String(),
             'syncStatus' => $user->sync_status,
+            'syncTotal' => $user->sync_total,
             'collectionCount' => $user->records()->count(),
         ];
     }

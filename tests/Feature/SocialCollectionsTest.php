@@ -412,7 +412,7 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
             ->assertDontSee('injected-note')->assertDontSee('injected-token')->assertDontSee('injected-track-token');
         expect(array_keys($response->json('props.auth.user')))->toBe([
             ...$personKeys, 'email', 'verified', 'visibility', 'legacyOwner', 'commentsEnabled', 'digestEnabled',
-            'googleConnected', 'discogsConnected', 'discogsUsername', 'importedAt', 'lastSyncedAt', 'syncStatus', 'collectionCount',
+            'googleConnected', 'discogsConnected', 'discogsUsername', 'importedAt', 'lastSyncedAt', 'syncStatus', 'syncTotal', 'collectionCount',
         ])->and($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
     }
 

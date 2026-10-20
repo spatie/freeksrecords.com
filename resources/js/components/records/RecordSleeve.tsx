@@ -43,7 +43,6 @@ export function RecordSleeve({
                     <span className="catalog-record-art">
                         <img
                             alt=""
-                            crossOrigin="anonymous"
                             decoding="async"
                             draggable={false}
                             height={600}

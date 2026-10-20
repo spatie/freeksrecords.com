@@ -219,7 +219,7 @@ export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
                                             id="password-error"
                                             message={form.errors.password}
                                         />
-                                        {mode !== 'login' && (
+                                        {mode === 'reset' && (
                                             <label htmlFor="password_confirmation">
                                                 Confirm password
                                                 <input

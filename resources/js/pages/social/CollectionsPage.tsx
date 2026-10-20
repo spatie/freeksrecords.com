@@ -8,10 +8,10 @@ export function CollectionsPage({ collectors }: CollectionsProps) {
     const user = usePage<SocialProps>().props.auth.user;
     return (
         <>
-            <Head title="Browse collections" />
+            <Head title="Public collections" />
             <div className="page-heading">
-                <p className="page-eyebrow">Explore</p>
-                <h1>Open shelves.</h1>
+                <p className="page-eyebrow">Public</p>
+                <h1>Public collections.</h1>
                 <p>Collections shared with everyone.</p>
             </div>
             <div className="collection-previews">

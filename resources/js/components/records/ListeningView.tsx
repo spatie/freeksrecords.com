@@ -221,7 +221,13 @@ export function ListeningView({
                                     ref={refs.sleeve}
                                 >
                                     <img
-                                        crossOrigin="anonymous"
+                                        crossOrigin={
+                                            record.cover.startsWith(
+                                                'https://i.discogs.com/',
+                                            )
+                                                ? undefined
+                                                : 'anonymous'
+                                        }
                                         alt={`${record.displayTitle} sleeve`}
                                         onLoad={(event) => {
                                             if (label.current)

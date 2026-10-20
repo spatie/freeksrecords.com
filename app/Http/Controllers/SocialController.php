@@ -7,6 +7,7 @@ use App\Models\Comment;
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
+use App\Notifications\FriendRequest;
 use App\Support\RecordCollection;
 use App\Support\SocialData;
 use Illuminate\Http\JsonResponse;
@@ -56,6 +57,9 @@ class SocialController extends Controller
 
         return Inertia::render('social/FeedPage', [
             'records' => SocialData::pagination($records, $feedRecords),
+            'importRecords' => fn () => $user->discogs_token && ! $user->collection_imported_at
+                ? app(RecordCollection::class)->profileSummaries(array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')->get()->all()))
+                : [],
             'collectionCount' => $user->records()->count(),
             'incomingRequests' => User::query()->whereIn('id', Friendship::query()
                 ->whereNull('accepted_at')->where('requested_by', '!=', $user->id)
@@ -102,13 +106,13 @@ class SocialController extends Controller
             $friendship = Friendship::query()->where($pair)->first();
             if ($data['action'] === 'request') {
                 if ($friendship === null) {
-                    Friendship::query()->create([...$pair, 'requested_by' => $viewer->id]);
+                    $friendship = Friendship::query()->create([...$pair, 'requested_by' => $viewer->id]);
                     SocialNotification::send($user, $viewer, 'friend_request');
+                    $user->notify(new FriendRequest($friendship->id));
                 }
             } elseif ($data['action'] === 'accept') {
                 abort_unless($friendship && ! $friendship->accepted_at && $friendship->requested_by !== $viewer->id, 403);
-                $friendship->update(['accepted_at' => now()]);
-                SocialNotification::send($user, $viewer, 'friend_accepted');
+                $friendship->respond($viewer, 'accept');
             } else {
                 abort_unless($friendship !== null, 404);
                 abort_unless(match ($data['action']) {
@@ -117,7 +121,11 @@ class SocialController extends Controller
                     'decline' => $friendship->accepted_at === null && $friendship->requested_by !== $viewer->id,
                     default => false,
                 }, 403);
-                $friendship->delete();
+                if ($data['action'] === 'decline') {
+                    $friendship->respond($viewer, 'decline');
+                } else {
+                    $friendship->delete();
+                }
             }
         });
 
@@ -171,6 +179,9 @@ class SocialController extends Controller
         }
 
         $notifications = SocialNotification::visibleTo($request->user())->with(['actor', 'record'])->latest('id')->simplePaginate(15);
+        $pendingSenders = Friendship::query()->whereNull('accepted_at')->where('requested_by', '!=', $request->user()->id)
+            ->where(fn ($query) => $query->where('user_low', $request->user()->id)->orWhere('user_high', $request->user()->id))
+            ->pluck('requested_by');
 
         return response()->json([
             'notifications' => SocialData::pagination($notifications, $notifications->getCollection()->map(fn (SocialNotification $notification) => [
@@ -192,6 +203,7 @@ class SocialController extends Controller
                     ? route('shelf.record', $notification->record, false).($notification->kind === 'comment' ? '#comments' : '')
                     : route('friends', absolute: false),
                 'unread' => $notification->read_at === null,
+                'canRespond' => $notification->kind === 'friend_request' && $pendingSenders->contains($notification->actor_id),
             ])->all()),
             'unreadCount' => SocialNotification::visibleTo($request->user())->whereNull('read_at')->count(),
         ]);
