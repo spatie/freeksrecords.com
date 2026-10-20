@@ -1,6 +1,7 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
 import { FieldError } from '@/modules/social/FieldError';
+import { HeroArtwork } from '@/modules/social/HeroArtwork';
 import type { AuthProps, SocialProps } from '@/modules/social/types';
 
 const titles = {
@@ -25,7 +26,7 @@ const introductions = {
     login: '',
 };
 
-export function AuthPage({ mode, token = '', email = '' }: AuthProps) {
+export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
     const { auth, csrfToken, googleEnabled, demoUsers } =
         usePage<SocialProps>().props;
     const form = useForm({
@@ -64,29 +65,7 @@ export function AuthPage({ mode, token = '', email = '' }: AuthProps) {
                             {introductions[mode]}
                         </p>
                     )}
-                    <div className="auth-sleeves" aria-hidden="true">
-                        {[
-                            '19772260',
-                            '24675032',
-                            '495664',
-                            '28446325',
-                            '36912054',
-                        ].map((cover) => (
-                            <img
-                                key={cover}
-                                src={`/images/records/${cover}.jpg`}
-                                alt=""
-                                width="240"
-                                height="240"
-                                draggable="false"
-                            />
-                        ))}
-                    </div>
-                    {mode === 'register' && (
-                        <p className="auth-reassurance">
-                            Private until you choose to share.
-                        </p>
-                    )}
+                    <HeroArtwork records={artwork} />
                 </section>
                 <section
                     className="auth-panel"

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Support\RecordCollection;
 use App\Support\SocialData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -25,19 +24,14 @@ class HomeController
     public function intro(): Response
     {
         $collectors = $this->publicCollectors()->limit(3)->get();
-        $previewCovers = $collectors->flatMap(fn (User $collector) => $collector->records->take(4)->pluck('payload.cover'));
-        $heroCovers = collect(app(RecordCollection::class)->snapshot())
-            ->pluck('cover')
-            ->filter(fn (string $cover) => str_starts_with($cover, '/images/records/') && is_file(public_path($cover)))
-            ->unique()
-            ->reject(fn (string $cover) => $previewCovers->contains($cover))
-            ->shuffle()
-            ->take(24)
-            ->values();
+        $previewCovers = array_values(array_filter(
+            $collectors->flatMap(fn (User $collector) => $collector->records->take(4)->pluck('payload.cover'))->all(),
+            'is_string',
+        ));
 
         return Inertia::render('social/HomePage', [
             'collectors' => $collectors->map(SocialData::collector(...))->all(),
-            'heroCovers' => $heroCovers->all(),
+            'artwork' => SocialData::publicArtwork($previewCovers),
         ]);
     }
 
@@ -55,7 +49,7 @@ class HomeController
     {
         return User::query()->where('visibility', 'everyone')->has('records')
             ->withCount('records')
-            ->with(['records' => fn ($query) => $query->select(['id', 'user_id', 'payload'])->orderBy('id')->limit(6)])
+            ->with(['records' => fn ($query) => $query->select(['id', 'user_id', 'payload'])->orderByDesc('added_at')->orderByDesc('id')->limit(6)])
             ->orderBy('handle');
     }
 }
