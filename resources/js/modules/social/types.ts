@@ -20,6 +20,7 @@ export type Viewer = Person & {
     commentsEnabled: boolean;
     digestEnabled: boolean;
     googleConnected: boolean;
+    avatarUrl: string | null;
     discogsConnected: boolean;
     discogsUsername: string | null;
     importedAt: string | null;
@@ -70,7 +71,6 @@ export type FeedProps = {
     records: Pagination<CollectionRecordSummary>;
     importRecords: CollectionRecordSummary[];
     collectionCount: number;
-    incomingRequests: Person[];
 };
 export type FriendsProps = {
     query: string;

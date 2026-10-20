@@ -19,7 +19,6 @@ export function SettingsPage() {
         <>
             <Head title="Your preferences" />
             <div className="page-heading">
-                <p className="page-eyebrow">Settings</p>
                 <h1>Make it yours.</h1>
             </div>
             <div className="settings-layout">
@@ -38,7 +37,11 @@ export function SettingsPage() {
                                 id="handle"
                                 name="handle"
                                 aria-invalid={Boolean(form.errors.handle)}
-                                aria-describedby={`handle-help${form.errors.handle ? ' handle-error' : ''}`}
+                                aria-describedby={
+                                    form.errors.handle
+                                        ? 'handle-error'
+                                        : undefined
+                                }
                                 value={form.data.handle}
                                 onChange={(event) =>
                                     form.setData('handle', event.target.value)
@@ -48,10 +51,6 @@ export function SettingsPage() {
                                 maxLength={30}
                                 required
                             />
-                            <small id="handle-help">
-                                3–30 letters, numbers or underscores. Your
-                                collection: plaat.club/{user.handle}
-                            </small>
                         </label>
                         <FieldError
                             id="handle-error"
@@ -93,7 +92,6 @@ export function SettingsPage() {
                         />
                         <SocialSwitch
                             checked={form.data.comments_enabled}
-                            description="Turning this off stops new comments. Existing comments stay visible."
                             label="Allow comments on my records"
                             name="comments_enabled"
                             onChange={(checked) =>
@@ -102,8 +100,7 @@ export function SettingsPage() {
                         />
                         <SocialSwitch
                             checked={form.data.digest_enabled}
-                            description="Mondays at 09:00 Brussels time. Only records shared with you; never an empty email."
-                            label="Email me my friends’ new records"
+                            label="Once a week, email me what my friends have added"
                             name="digest_enabled"
                             onChange={(checked) =>
                                 form.setData('digest_enabled', checked)

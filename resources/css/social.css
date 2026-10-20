@@ -290,10 +290,31 @@
         color: #55564c;
         cursor: pointer;
     }
-    .account-trigger span {
+    .account-name {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    .account-avatar {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        flex: none;
+        overflow: hidden;
+        border-radius: 50%;
+        background: #e8dfcc;
+        color: #67523a;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .account-avatar img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
     .account-trigger svg {
         flex: none;
@@ -343,22 +364,6 @@
     .account-popover button:hover,
     .account-popover [aria-current] {
         background: #eae5d9;
-    }
-    .friends-navigation {
-        display: flex;
-        gap: 24px;
-        margin-bottom: 28px;
-        border-bottom: 1px solid #d7d2c5;
-        font-size: 14px;
-    }
-    .friends-navigation a {
-        padding: 0 0 12px;
-        text-decoration: none;
-        color: #6b695e;
-    }
-    .friends-navigation [aria-current] {
-        color: #a53f22;
-        box-shadow: 0 2px #a53f22;
     }
     .site-header nav > a {
         text-decoration: none;
@@ -1272,47 +1277,10 @@
     }
     .feed-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 270px;
-        gap: 28px;
-        align-items: start;
-    }
-    .feed-cupboard-layout {
         grid-template-columns: minmax(0, 1fr);
     }
-    .feed-cupboard-layout .feed-sidebar {
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-    }
-    .feed-main,
-    .feed-sidebar {
+    .feed-main {
         min-width: 0;
-    }
-    .feed-sidebar {
-        display: grid;
-        gap: 20px;
-        overflow-wrap: anywhere;
-    }
-    .feed-sidebar .panel {
-        padding: 22px 0;
-        border: 0;
-        border-top: 1px solid #a75b4177;
-        border-radius: 0;
-        background: none;
-        box-shadow: none;
-    }
-    .feed-sidebar .panel::after {
-        content: none;
-    }
-    .incoming-request {
-        border-top: 1px solid #d7d2c5;
-        padding-top: 16px;
-        margin-top: 16px;
-    }
-    .incoming-request .actions {
-        gap: 8px;
-    }
-    .incoming-request button {
-        padding: 9px 12px;
-        font-size: 14px;
     }
     .legal-document {
         max-width: 800px;
@@ -1421,12 +1389,6 @@
         .landing-hero {
             gap: 20px;
         }
-        .feed-layout {
-            grid-template-columns: minmax(0, 1fr);
-        }
-        .feed-sidebar {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
         .site-header {
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 12px;
@@ -1494,8 +1456,7 @@
             height: 52px;
         }
         .landing-hero,
-        .collection-previews,
-        .feed-sidebar {
+        .collection-previews {
             grid-template-columns: minmax(0, 1fr);
         }
         .notifications-popover {

@@ -199,31 +199,6 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             </header>
             <RecordOverlay>
                 <main id="main" className="page">
-                    {user?.verified &&
-                        !settingUpCollection &&
-                        (path === '/feed' || path === '/friends') && (
-                            <nav
-                                className="friends-navigation"
-                                aria-label="Friends navigation"
-                            >
-                                <Link
-                                    href="/feed"
-                                    aria-current={
-                                        path === '/feed' ? 'page' : undefined
-                                    }
-                                >
-                                    Additions
-                                </Link>
-                                <Link
-                                    href="/friends"
-                                    aria-current={
-                                        path === '/friends' ? 'page' : undefined
-                                    }
-                                >
-                                    Your friends
-                                </Link>
-                            </nav>
-                        )}
                     {props.flash.status && (
                         <p className="notice" role="status">
                             {props.flash.status}

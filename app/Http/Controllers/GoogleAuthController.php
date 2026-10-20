@@ -67,6 +67,11 @@ class GoogleAuthController extends Controller
                 return redirect($destination)->withErrors(['google' => 'Google must provide a verified email address to continue.']);
             }
 
+            $avatar = $google->getAvatar();
+            if (Validator::make(['avatar' => $avatar], ['avatar' => ['nullable', 'url:https', 'max:2048']])->fails()) {
+                $avatar = null;
+            }
+
             if ($pending['user_id'] !== null) {
                 $user = $request->user()->fresh();
                 if (! $user->hasVerifiedEmail() || ! hash_equals($user->password, $pending['password_hash'])
@@ -76,7 +81,7 @@ class GoogleAuthController extends Controller
                 }
 
                 $updated = User::query()->whereKey($user->id)->where('password', $pending['password_hash'])
-                    ->whereNull('google_id')->update(['google_id' => $googleId]);
+                    ->whereNull('google_id')->update(['google_id' => $googleId, 'google_avatar_url' => $avatar]);
                 if (! $updated) {
                     return redirect('/settings')->withErrors(['google' => 'Your Google connection changed. Please try again.']);
                 }
@@ -100,6 +105,7 @@ class GoogleAuthController extends Controller
                 event(new Registered($user));
             }
 
+            $user->update(['google_avatar_url' => $avatar]);
             Auth::login($user);
             $request->session()->regenerate();
 

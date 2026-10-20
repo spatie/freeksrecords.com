@@ -32,7 +32,7 @@ type CollectionBrowserProps = {
     browseBasePath?: string;
     browse: BrowseState;
     onBrowse: (update: BrowseUpdate) => void;
-    onSelect: (record: CollectionRecordSummary) => void;
+    onSelect: (record: CollectionRecordSummary, source: HTMLElement) => void;
     records: CollectionRecordSummary[];
     transitionRecordId: number | null;
     ref?: Ref<CollectionBrowserHandle>;
@@ -149,9 +149,12 @@ export function CollectionBrowser({
         onBrowse({ query: nextQuery, group: null, visibleCount: 25 });
     }
 
-    function selectRecord(record: CollectionRecordSummary) {
+    function selectRecord(
+        record: CollectionRecordSummary,
+        source: HTMLElement,
+    ) {
         stopAnimation.current?.();
-        onSelect(record);
+        onSelect(record, source);
     }
 
     return (

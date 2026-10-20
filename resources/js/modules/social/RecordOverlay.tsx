@@ -2,7 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     createContext,
     useContext,
-    useEffect,
+    useLayoutEffect,
     useRef,
     useState,
     type ReactNode,
@@ -57,12 +57,18 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
     const source = useRef<HTMLElement | null>(null);
     const opened = Boolean(overlay);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!opened) return;
         const previous = document.body.style.overflow;
+        const artwork =
+            source.current?.querySelector<HTMLElement>('.catalog-record-art') ??
+            source.current;
+        const visibility = artwork?.style.visibility ?? '';
+        if (artwork) artwork.style.visibility = 'hidden';
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = previous;
+            if (artwork) artwork.style.visibility = visibility;
             source.current?.focus({ preventScroll: true });
         };
     }, [opened]);
@@ -88,9 +94,9 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
         const destination = new URL(window.location.href);
         destination.searchParams.delete('record');
         destination.searchParams.delete('commentsPage');
-        router.visit(destination.href, {
-            only: ['recordOverlay'],
-            replace: true,
+        router.replace({
+            url: destination.href,
+            props: (props) => ({ ...props, recordOverlay: null }),
             preserveState: true,
             preserveScroll: true,
         });

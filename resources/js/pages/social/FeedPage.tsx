@@ -1,7 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 
 import { FeedShelf } from '@/modules/social/FeedShelf';
-import { FriendActions } from '@/modules/social/FriendActions';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { Pagination } from '@/modules/social/Pagination';
 import { ProfileShelf } from '@/modules/social/ProfileShelf';
@@ -10,7 +9,6 @@ import type { FeedProps, SocialProps } from '@/modules/social/types';
 export function FeedPage({
     collectionCount,
     importRecords,
-    incomingRequests,
     records,
 }: FeedProps) {
     const { auth, csrfToken } = usePage<SocialProps>().props;
@@ -20,7 +18,9 @@ export function FeedPage({
     return (
         <>
             <Head
-                title={starting ? 'Add your records' : 'Friends’ additions'}
+                title={
+                    starting ? 'Add your records' : 'New records from friends'
+                }
             />
             {starting ? (
                 <section
@@ -101,14 +101,15 @@ export function FeedPage({
                 </section>
             ) : (
                 <div className="page-heading">
-                    <p className="page-eyebrow">Friends’ additions</p>
-                    <h1>Fresh on their shelves.</h1>
+                    <h1>New records from friends.</h1>
+                    <p className="lede">
+                        The latest additions to your friends’ collections,
+                        newest first.
+                    </p>
                 </div>
             )}
             {!starting && (
-                <div
-                    className={`feed-layout ${records.data.length || !incomingRequests.length ? 'feed-cupboard-layout' : ''}`}
-                >
+                <div className="feed-layout">
                     <section
                         className="feed-main"
                         aria-label="Friends’ additions"
@@ -134,42 +135,6 @@ export function FeedPage({
                         )}
                         <Pagination {...records} />
                     </section>
-                    {incomingRequests.length > 0 && (
-                        <aside
-                            className="feed-sidebar"
-                            aria-label="Friend requests"
-                        >
-                            <section className="panel">
-                                <h2>Friend requests</h2>
-                                {incomingRequests.map((person) => (
-                                    <div
-                                        className="incoming-request"
-                                        key={person.id}
-                                    >
-                                        <Link href={person.profileUrl}>
-                                            {person.name}
-                                        </Link>
-                                        <p className="muted">
-                                            @{person.handle}
-                                        </p>
-                                        <FriendActions
-                                            personId={person.id}
-                                            actions={[
-                                                {
-                                                    value: 'accept',
-                                                    label: 'Accept',
-                                                },
-                                                {
-                                                    value: 'decline',
-                                                    label: 'Decline',
-                                                },
-                                            ]}
-                                        />
-                                    </div>
-                                ))}
-                            </section>
-                        </aside>
-                    )}
                 </div>
             )}
         </>

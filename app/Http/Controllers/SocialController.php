@@ -61,10 +61,6 @@ class SocialController extends Controller
                 ? app(RecordCollection::class)->profileSummaries(array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')->get()->all()))
                 : [],
             'collectionCount' => $user->records()->count(),
-            'incomingRequests' => User::query()->whereIn('id', Friendship::query()
-                ->whereNull('accepted_at')->where('requested_by', '!=', $user->id)
-                ->where(fn ($query) => $query->where('user_low', $user->id)->orWhere('user_high', $user->id))
-                ->select('requested_by'))->orderBy('name')->get()->map(SocialData::person(...))->all(),
         ]);
     }
 

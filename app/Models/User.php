@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
  * @property string $email
  * @property string $password
  * @property ?string $google_id
+ * @property ?string $google_avatar_url
  * @property bool $legacy_owner
  * @property string $visibility
  * @property bool $comments_enabled
@@ -44,7 +45,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $guarded = ['id'];
 
-    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'discogs_token', 'discogs_secret'];
+    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'google_avatar_url', 'discogs_token', 'discogs_secret'];
 
     protected static function booted(): void
     {

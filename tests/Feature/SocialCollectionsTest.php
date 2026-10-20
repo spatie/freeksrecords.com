@@ -233,7 +233,7 @@ it('prioritizes importing a first collection without empty feed and request clut
     $this->actingAs($viewer)->get('/feed')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('social/FeedPage')
             ->where('collectionCount', 0)->where('auth.user.discogsConnected', false)
-            ->where('auth.user.importedAt', null)->has('records.data', 0)->has('incomingRequests', 0));
+            ->where('auth.user.importedAt', null)->has('records.data', 0)->missing('incomingRequests'));
     foreach (['/settings', '/newcollector'] as $path) {
         $this->get($path)->assertInertia(fn (Assert $page) => $page
             ->where('auth.user.collectionCount', 0)->where('auth.user.importedAt', null));
@@ -245,7 +245,7 @@ it('prioritizes importing a first collection without empty feed and request clut
         'requested_by' => $requester->id,
     ]);
     $this->get('/feed')->assertInertia(fn (Assert $page) => $page
-        ->where('collectionCount', 0)->has('incomingRequests', 1)->where('incomingRequests.0.id', $requester->id));
+        ->where('collectionCount', 0)->missing('incomingRequests'));
 
     $viewer->update(['discogs_token' => 'test-token', 'sync_status' => 'Syncing']);
     $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
@@ -260,7 +260,7 @@ it('keeps the normal feed after importing even an empty collection', function (b
     $this->actingAs($viewer)->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('collectionCount', $hasRecords ? 1 : 0)->where('auth.user.profileUrl', '/returningcollector')
         ->where('auth.user.importedAt', $viewer->collection_imported_at?->toIso8601String())
-        ->has('records.data', 0)->has('incomingRequests', 0));
+        ->has('records.data', 0)->missing('incomingRequests'));
 })->with([true, false]);
 
 it('orders the feed by original addition date, excludes initial imports, and revokes activity dynamically', function () {
@@ -383,6 +383,7 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
     foreach ([$owner, $viewer] as $person) {
         $person->update([
             'google_id' => 'google-subject-'.$person->id,
+            'google_avatar_url' => 'https://lh3.googleusercontent.com/private-google-photo-'.$person->id,
             'discogs_token' => 'discogs-access-'.$person->id,
             'discogs_secret' => 'discogs-secret-'.$person->id,
             'remember_token' => 'remember-secret-'.$person->id,
@@ -406,13 +407,15 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
         $response = $this->actingAs($viewer)->get($path, $headers)->assertOk()->assertHeader('X-Inertia', 'true');
         $response->assertJsonPath('props.auth.user.email', $viewer->email)
             ->assertJsonPath('props.auth.user.googleConnected', true)->assertJsonPath('props.auth.user.discogsConnected', true)
+            ->assertJsonPath('props.auth.user.avatarUrl', $viewer->google_avatar_url)
+            ->assertDontSee('private-google-photo-'.$owner->id)
             ->assertDontSee($owner->email)->assertDontSee('contract-private-note')
             ->assertDontSee('google-subject-')->assertDontSee('discogs-access-')->assertDontSee('discogs-secret-')
             ->assertDontSee('remember-secret-')->assertDontSee($viewer->password)->assertDontSee($owner->password)
             ->assertDontSee('injected-note')->assertDontSee('injected-token')->assertDontSee('injected-track-token');
         expect(array_keys($response->json('props.auth.user')))->toBe([
             ...$personKeys, 'email', 'verified', 'visibility', 'legacyOwner', 'commentsEnabled', 'digestEnabled',
-            'googleConnected', 'discogsConnected', 'discogsUsername', 'importedAt', 'lastSyncedAt', 'syncStatus', 'syncTotal', 'collectionCount',
+            'googleConnected', 'avatarUrl', 'discogsConnected', 'discogsUsername', 'importedAt', 'lastSyncedAt', 'syncStatus', 'syncTotal', 'collectionCount',
         ])->and($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
     }
 

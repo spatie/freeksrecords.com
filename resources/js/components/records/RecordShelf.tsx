@@ -13,7 +13,7 @@ type RecordShelfProps = {
     onMore: () => void;
     onArtist?: (artist: string) => void;
     onReset: () => void;
-    onSelect?: (record: CollectionRecordSummary) => void;
+    onSelect?: (record: CollectionRecordSummary, source: HTMLElement) => void;
     records: CollectionRecordSummary[];
     transitionRecordId: number | null;
     visibleCount: number;
@@ -97,7 +97,8 @@ export function RecordShelf({
                                     }
                                     onSelect={
                                         onSelect
-                                            ? () => onSelect(record)
+                                            ? (source) =>
+                                                  onSelect(record, source)
                                             : undefined
                                     }
                                     onArtist={onArtist}

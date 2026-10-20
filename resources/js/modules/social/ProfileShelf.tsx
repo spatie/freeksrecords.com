@@ -53,13 +53,8 @@ export function ProfileShelf({
                 browse={browse}
                 browseBasePath={basePath}
                 onBrowse={changeBrowse}
-                onSelect={(record) => {
-                    openRecord(
-                        record.shareUrl,
-                        document.querySelector<HTMLElement>(
-                            `[data-record-id="${record.instanceId}"] .catalog-record-open`,
-                        ),
-                    );
+                onSelect={(record, source) => {
+                    openRecord(record.shareUrl, source);
                 }}
                 records={records}
                 transitionRecordId={
