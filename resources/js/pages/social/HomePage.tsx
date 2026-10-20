@@ -7,29 +7,73 @@ import type { HomeProps } from '@/modules/social/types';
 export function HomePage({ collectors, artwork }: HomeProps) {
     return (
         <>
-            <Head title="A shelf for every record" />
+            <Head title="Your records. In good company." />
             <section className="landing-hero">
                 <div className="landing-copy">
                     <h1>
-                        Good records.
+                        Your records.
                         <br />
-                        Better company.
+                        <em>In good company.</em>
                     </h1>
+                </div>
+                <div className="landing-invitation">
                     <p className="lede">
-                        Keep collecting on Discogs. Sync your collection here
-                        and choose who gets to see it.
+                        Bring your Discogs collection.
+                        <br />
+                        See what your friends bring home.
                     </p>
                     <div className="landing-actions">
                         <Link className="button" href="/register">
-                            Create account
+                            Join the club <span aria-hidden="true">↗</span>
                         </Link>
-                        <Link href="/collections">Browse collections</Link>
+                        <Link href="/collections">Take a look around →</Link>
                     </div>
-                    <p className="landing-note">
-                        Already a member? <Link href="/login">Sign in</Link>
+                    <p className="landing-note">For the love of records.</p>
+                </div>
+                {artwork.length > 0 && (
+                    <div className="landing-records">
+                        <p className="landing-sleeve-note">
+                            A few finds from public collections.
+                            <span aria-hidden="true">↙</span>
+                        </p>
+                        <HeroArtwork records={artwork} />
+                    </div>
+                )}
+            </section>
+            <section
+                className="landing-story"
+                aria-label="How Plaat Club works"
+            >
+                <div>
+                    <span className="landing-step" aria-hidden="true">
+                        01 /
+                    </span>
+                    <h2>Your collection, with a little more soul.</h2>
+                    <p>
+                        Connect Discogs and give your records a home you can
+                        browse, take off the shelf, and get lost in.
                     </p>
                 </div>
-                <HeroArtwork records={artwork} />
+                <div>
+                    <span className="landing-step" aria-hidden="true">
+                        02 /
+                    </span>
+                    <h2>Keep up with the good finds.</h2>
+                    <p>
+                        See the records your friends add, as they add them.
+                        Leave an appreciation. Start a conversation.
+                    </p>
+                </div>
+                <div>
+                    <span className="landing-step" aria-hidden="true">
+                        03 /
+                    </span>
+                    <h2>Let people in. Or keep it yours.</h2>
+                    <p>
+                        Share with everyone, just your friends, or only you.
+                        Your collection. Your call.
+                    </p>
+                </div>
             </section>
             <section
                 className="public-collections"
@@ -38,7 +82,9 @@ export function HomePage({ collectors, artwork }: HomeProps) {
                 <div className="section-heading">
                     <div>
                         <h2 id="collections-title">Public collections</h2>
+                        <p>A good place to find your people.</p>
                     </div>
+                    <Link href="/collections">Browse them all →</Link>
                 </div>
                 <div className="collection-previews">
                     {collectors.length ? (

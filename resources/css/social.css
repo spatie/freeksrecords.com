@@ -1050,41 +1050,163 @@
     }
     .landing-hero {
         display: grid;
-        grid-template-columns: 0.9fr 1.1fr;
-        align-items: center;
-        gap: 72px;
-        padding: 12px 0 72px;
+        grid-template-columns: 1.5fr 1fr;
+        align-items: end;
+        gap: 40px 56px;
+        padding: 8px 0 64px;
     }
     .landing-copy h1 {
         font-family: Georgia, 'Times New Roman', serif;
         color: #913f2c;
-        font-size: clamp(48px, 4.8vw, 70px);
+        font-size: clamp(52px, 6.2vw, 86px);
         font-weight: 400;
-        letter-spacing: -3px;
-        line-height: 1.02;
-        text-wrap: balance;
-        max-width: 9em;
-        margin-bottom: 28px;
+        letter-spacing: -4px;
+        line-height: 1.04;
+        margin: 0;
     }
-    .landing-copy .lede {
+    .landing-copy h1 em {
+        white-space: nowrap;
+        font-weight: inherit;
+    }
+    .landing-invitation {
+        padding: 0 0 6px;
+    }
+    .landing-invitation .lede {
         font-size: 18px;
-        max-width: 33ch;
         color: #55564c;
-        margin-bottom: 28px;
+        line-height: 1.65;
+        margin: 0 0 24px;
     }
     .landing-actions {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 18px 24px;
+        gap: 16px 20px;
+    }
+    .landing-actions .button {
+        gap: 28px;
     }
     .landing-actions > a:not(.button) {
         font-size: 14px;
     }
     .landing-note {
-        margin: 24px 0 0;
-        font-size: 13px;
-        color: #6b695e;
+        margin: 18px 0 0;
+        font:
+            italic 17px Georgia,
+            'Times New Roman',
+            serif;
+        color: #8c6950;
+    }
+    .landing-records {
+        position: relative;
+        grid-column: 1 / -1;
+        margin: 48px -1vw 0;
+        padding: 0 12px;
+        background: radial-gradient(
+            ellipse at 50% 100%,
+            #8057261c,
+            transparent 65%
+        );
+    }
+    .landing-records::after {
+        content: '';
+        position: absolute;
+        left: -4vw;
+        right: -4vw;
+        bottom: -19px;
+        height: 22px;
+        background:
+            linear-gradient(#ebc59080, #20120a88 18%, #8f653924 52%, #160c08b3),
+            url('/images/walnut.webp') center / 1000px auto;
+        box-shadow:
+            0 14px 18px -8px #37251a66,
+            inset 0 1px #dfb47880,
+            inset 0 -1px #160b08;
+        pointer-events: none;
+    }
+    .landing-sleeve-note {
+        position: absolute;
+        right: 20px;
+        top: -56px;
+        color: #8f4e37;
+        font:
+            italic 17px Georgia,
+            'Times New Roman',
+            serif;
+        transform: rotate(2deg);
+    }
+    .landing-sleeve-note span {
+        display: inline-block;
+        margin-left: 12px;
+        font-size: 26px;
+        vertical-align: middle;
+    }
+    .landing-records .hero-artwork {
+        display: flex;
+        align-items: end;
+        gap: 3%;
+        aspect-ratio: auto;
+        margin: 0;
+        padding: 0;
+    }
+    .landing-records .hero-artwork .floating-sleeve {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        width: auto;
+        left: auto;
+        top: auto;
+        transform: rotate(var(--sleeve-angle));
+        transform-origin: center bottom;
+        animation: none;
+        --sleeve-angle: -4deg;
+    }
+    .landing-records .floating-sleeve:nth-child(2n) {
+        --sleeve-angle: 3deg;
+    }
+    .landing-records .floating-sleeve:nth-child(3n) {
+        --sleeve-angle: -2deg;
+    }
+    .landing-records .floating-sleeve a {
+        transition: transform 240ms ease;
+    }
+    .landing-records .floating-sleeve a:focus-visible {
+        outline: 2px solid #913f2c;
+        outline-offset: 5px;
+    }
+    @media (hover: hover) and (pointer: fine) {
+        .landing-records .floating-sleeve a:hover {
+            transform: translateY(-10px);
+        }
+    }
+    .landing-story {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 48px;
+        padding: 34px 0 64px;
+    }
+    .landing-step {
+        display: block;
+        color: #99735a;
+        font-size: 11px;
+        letter-spacing: 2px;
+        margin-bottom: 14px;
+    }
+    .landing-story h2 {
+        font:
+            25px/1.2 Georgia,
+            'Times New Roman',
+            serif;
+        letter-spacing: -0.5px;
+        max-width: 19ch;
+        margin: 0 0 14px;
+    }
+    .landing-story p {
+        font-size: 15px;
+        line-height: 1.7;
+        color: #68685c;
+        max-width: 34ch;
+        margin: 0;
     }
     .hero-artwork {
         position: relative;
@@ -1183,6 +1305,9 @@
         .floating-sleeve {
             animation: none;
         }
+        .landing-records .floating-sleeve a {
+            transition: none;
+        }
     }
     .public-collections {
         border-top: 1px solid #a75b4177;
@@ -1202,6 +1327,9 @@
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 56px 64px;
+    }
+    .public-collections .collection-previews {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     }
     .collection-preview {
         min-width: 0;
@@ -1389,6 +1517,19 @@
         .landing-hero {
             gap: 20px;
         }
+        .landing-copy h1 {
+            font-size: clamp(44px, 6vw, 64px);
+            letter-spacing: -2.5px;
+        }
+        .landing-actions {
+            gap: 12px;
+        }
+        .landing-records .floating-sleeve:nth-child(n + 5) {
+            display: none;
+        }
+        .landing-story {
+            gap: 28px;
+        }
         .site-header {
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 12px;
@@ -1463,16 +1604,55 @@
             right: 16px;
         }
         .landing-hero {
-            padding-bottom: 36px;
+            gap: 24px;
+            padding-bottom: 44px;
         }
         .landing-copy h1 {
-            font-size: clamp(40px, 10.8vw, 56px);
-            letter-spacing: -2px;
-            max-width: 9em;
+            font-size: clamp(36px, 10.2vw, 58px);
+            letter-spacing: -2.2px;
         }
-        .landing-copy .lede {
-            max-width: none;
+        .landing-invitation .lede {
             font-size: 17px;
+            margin-bottom: 20px;
+        }
+        .landing-note {
+            display: none;
+        }
+        .landing-records {
+            margin: 48px 0 0;
+            padding: 0 2px;
+        }
+        .landing-records .floating-sleeve:nth-child(n + 4) {
+            display: none;
+        }
+        .landing-sleeve-note {
+            font-size: 14px;
+            right: 0;
+            top: -48px;
+        }
+        .landing-story {
+            grid-template-columns: 1fr;
+            gap: 28px;
+            padding: 20px 0 36px;
+        }
+        .landing-story h2 {
+            max-width: none;
+            font-size: 23px;
+            margin-bottom: 8px;
+        }
+        .landing-story p {
+            max-width: none;
+        }
+        .landing-step {
+            margin-bottom: 8px;
+        }
+        .public-collections .section-heading {
+            align-items: start;
+            gap: 20px;
+        }
+        .public-collections .section-heading > a {
+            font-size: 13px;
+            white-space: nowrap;
         }
         .hero-artwork {
             margin-top: 20px;
