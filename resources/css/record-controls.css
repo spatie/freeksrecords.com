@@ -937,6 +937,7 @@
 .catalog-record-open {
     display: block;
     width: 100%;
+    appearance: none;
     cursor: pointer;
 }
 .catalog-record-label a {
