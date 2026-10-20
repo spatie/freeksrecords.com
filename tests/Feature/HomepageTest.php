@@ -10,7 +10,8 @@ it('welcomes visitors with public collections and private response headers', fun
     $response = $this->get(route('home'));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page->component('social/HomePage')
-        ->where('collectors.0.covers.0', $record->payload['cover'])
+        ->where('collectors.0.records.0.cover', $record->payload['cover'])
+        ->where('collectors.0.records.0.url', '/shelves/'.$record->id)
         ->where('collectors.0.profileUrl', '/freek'));
 
     expect(route('home'))->toBe(url('/'))
@@ -19,58 +20,68 @@ it('welcomes visitors with public collections and private response headers', fun
         ->and($response->headers->get('Cache-Control'))->not->toContain('s-maxage', 'public');
 });
 
-it('decorates the hero with independent bundled artwork without exposing private records or repeating preview covers', function () {
-    $privateOwner = socialUser('hiddenowner');
-    $privateRecord = socialRecord($privateOwner, 'Secret live release');
-    $privateRecord->update(['payload' => [...$privateRecord->payload, 'cover' => '/images/secret-live-cover.jpg']]);
-    $bundledCovers = collect(app(RecordCollection::class)->snapshot())->pluck('cover');
-
-    foreach ([false, true] as $withPublicCollection) {
-        $previewCover = null;
-        if ($withPublicCollection) {
-            $publicOwner = socialUser('openowner', 'everyone');
-            $previewCover = socialRecord($publicOwner, 'Public preview release')->payload['cover'];
-        }
-
-        $response = $this->get('/')->assertOk()
-            ->assertDontSee('hiddenowner')->assertDontSee('Secret live release')
-            ->assertDontSee('/images/secret-live-cover.jpg', false);
-        $covers = collect($response->inertiaProps('heroCovers'));
-        expect($covers)->toHaveCount(24)
-            ->and($covers->unique())->toHaveCount(24)
-            ->and($response->inertiaProps('collectors'))->toHaveCount($withPublicCollection ? 1 : 0);
-        foreach ($covers as $cover) {
-            expect($cover)->toBeString()
-                ->and($bundledCovers->contains($cover))->toBeTrue()
-                ->and(is_file(public_path($cover)))->toBeTrue()
-                ->and($cover)->not->toBe($previewCover);
-        }
-
-        if ($withPublicCollection) {
-            $response->assertInertia(fn (Assert $page) => $page
-                ->where('collectors.0.profileUrl', '/'.$publicOwner->handle)
-                ->where('collectors.0.covers.0', $previewCover));
-        }
+it('uses only live public records for linked artwork and never falls back to the bundled snapshot', function (string $path) {
+    $friendsOwner = socialUser('friendsonly', 'friends');
+    if ($path === '/verify-email') {
+        $viewer = socialUser('unverifiedviewer');
+        socialFriends($friendsOwner, $viewer);
+        socialRecord($viewer, 'My private album');
+        $this->actingAs($viewer);
     }
-});
+    socialRecord(socialUser('hiddenowner'), 'Private album');
+    socialRecord($friendsOwner, 'Friends-only album');
+    $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->has('artwork', 0));
 
-it('previews at most three nonempty public collections in handle order with six actual copies each', function () {
+    $owner = socialUser('openowner', 'everyone');
+    $records = collect(app(RecordCollection::class)->snapshot())->unique('cover')->take(28)
+        ->values()->map(function (array $payload, int $index) use ($owner) {
+            $record = socialRecord($owner, $payload['displayTitle'], instance: $index + 1);
+            $record->update(['payload' => $payload]);
+
+            return $record;
+        });
+    $response = $this->get($path)->assertOk();
+    $artwork = collect($response->inertiaProps('artwork'));
+    expect($artwork)->toHaveCount(6)->and($artwork->pluck('cover')->unique())->toHaveCount(6);
+    foreach ($artwork as $item) {
+        $record = $records->firstWhere('payload.cover', $item['cover']);
+        expect($record)->not->toBeNull()
+            ->and($item['url'])->toBe('/shelves/'.$record->id)
+            ->and($item['title'])->toBe($record->payload['artist'].' — '.$record->payload['displayTitle']);
+    }
+    if ($path === '/') {
+        expect($artwork->pluck('cover')->intersect($records->slice(24)->pluck('payload.cover')))->toBeEmpty();
+    }
+    $link = $artwork->first()['url'];
+    $this->get($link)->assertOk();
+    foreach (['friends', 'only_me'] as $visibility) {
+        $owner->update(['visibility' => $visibility]);
+        $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->has('artwork', 0));
+        $this->get($link)->assertNotFound();
+    }
+})->with(['/', '/login', '/register', '/forgot-password', '/reset-password/test-token', '/verify-email']);
+
+it('previews at most three nonempty public collections with their latest additions first', function () {
     socialUser('aaaempty', 'everyone');
+    $expected = [];
     foreach (['delta', 'charlie', 'bravo', 'alpha'] as $handle) {
         $owner = socialUser($handle, 'everyone');
-        foreach (range(1, 8) as $instance) {
-            socialRecord($owner, instance: $instance);
+        $records = [];
+        foreach ([3, 7, 1, 9, 5, 7, 2, 4] as $index => $day) {
+            $records[] = socialRecord($owner, date: "2026-10-{$day} 12:00:00", instance: $index + 1);
         }
+        $expected[$handle] = array_map(fn ($index) => '/shelves/'.$records[$index]->id, [3, 5, 1, 4, 7, 0]);
     }
 
     $collectors = $this->get('/')->assertOk()->inertiaProps('collectors');
     expect(array_column($collectors, 'handle'))->toBe(['alpha', 'bravo', 'charlie']);
     foreach ($collectors as $collector) {
-        $owner = User::query()->findOrFail($collector['id']);
         expect($collector['recordCount'])->toBe(8)
-            ->and($collector['covers'])->toBe($owner->records()->orderBy('id')->limit(6)->get()->pluck('payload.cover')->all())
-            ->and(array_keys($collector))->toBe(['id', 'name', 'handle', 'profileUrl', 'recordCount', 'covers']);
+            ->and(array_column($collector['records'], 'url'))->toBe($expected[$collector['handle']])
+            ->and(array_keys($collector))->toBe(['id', 'name', 'handle', 'profileUrl', 'recordCount', 'records']);
     }
+    $this->get('/collections')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('collectors.data.0.records', $collectors[0]['records']));
 });
 
 it('paginates public collections alphabetically without including empty shelves', function () {
@@ -97,7 +108,7 @@ it('removes collections and their artwork from discovery immediately when privac
 
     foreach (['/', '/collections'] as $path) {
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where($path === '/' ? 'collectors.0.covers.0' : 'collectors.data.0.covers.0', '/images/discovery-only-cover.jpg'));
+            ->where($path === '/' ? 'collectors.0.records.0.cover' : 'collectors.data.0.records.0.cover', '/images/discovery-only-cover.jpg'));
     }
     $owner->update(['visibility' => $visibility]);
     foreach (['/', '/collections'] as $path) {
@@ -105,7 +116,7 @@ it('removes collections and their artwork from discovery immediately when privac
             ->assertInertia(function (Assert $page) use ($path): void {
                 $page->has($path === '/' ? 'collectors' : 'collectors.data', 0);
                 if ($path === '/') {
-                    $page->where('heroCovers', fn ($covers) => ! $covers->contains('/images/discovery-only-cover.jpg'));
+                    $page->has('artwork', 0);
                 }
             });
     }

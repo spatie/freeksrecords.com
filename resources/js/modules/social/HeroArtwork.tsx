@@ -1,53 +1,24 @@
-import { useState } from 'react';
+import { Link } from '@inertiajs/react';
 
-export function HeroArtwork({ covers }: { covers: string[] }) {
-    const [paused, setPaused] = useState(false);
+import type { RecordArtwork } from '@/modules/social/types';
+
+export function HeroArtwork({ records }: { records: RecordArtwork[] }) {
+    if (!records.length) return null;
+
     return (
-        <div
-            className="hero-artwork"
-            data-artwork-state={paused ? 'paused' : 'running'}
-        >
-            <div className="record-wall" aria-hidden="true">
-                <div className="record-wall-columns">
-                    {Array.from(
-                        { length: Math.ceil(covers.length / 8) },
-                        (_, column) => (
-                            <div className="record-wall-column" key={column}>
-                                <div className="record-wall-track">
-                                    {[0, 1].map((copy) => (
-                                        <div
-                                            className="record-wall-group"
-                                            key={copy}
-                                        >
-                                            {covers
-                                                .slice(
-                                                    column * 8,
-                                                    column * 8 + 8,
-                                                )
-                                                .map((cover, index) => (
-                                                    <img
-                                                        key={index}
-                                                        src={cover}
-                                                        alt=""
-                                                        width="180"
-                                                        height="180"
-                                                    />
-                                                ))}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ),
-                    )}
+        <div className="hero-artwork">
+            {records.map((record) => (
+                <div className="floating-sleeve" key={record.url}>
+                    <Link href={record.url}>
+                        <img
+                            src={record.cover}
+                            alt={record.title}
+                            width="240"
+                            height="240"
+                        />
+                    </Link>
                 </div>
-            </div>
-            <button
-                className="artwork-toggle"
-                type="button"
-                onClick={() => setPaused(!paused)}
-            >
-                {paused ? 'Resume artwork' : 'Pause artwork'}
-            </button>
+            ))}
         </div>
     );
 }

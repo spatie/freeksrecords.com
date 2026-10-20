@@ -36,7 +36,6 @@
         );
     }
     .panel,
-    .auth-panel,
     .onboarding,
     .legal-document {
         position: relative;
@@ -48,7 +47,6 @@
             #f1e8d5;
     }
     .panel::after,
-    .auth-panel::after,
     .onboarding::after,
     .legal-document::after {
         content: '';
@@ -705,7 +703,7 @@
         font-size: 13px;
         margin: 0;
     }
-    input[aria-invalid] {
+    input[aria-invalid='true'] {
         border-color: #94371f;
     }
     .auth-links {
@@ -932,94 +930,93 @@
         color: #6b695e;
     }
     .hero-artwork {
+        position: relative;
         min-width: 0;
-        text-align: right;
+        aspect-ratio: 1.12;
+        isolation: isolate;
     }
-    .record-wall {
-        height: 440px;
-        overflow: hidden;
-        mask-image: linear-gradient(
-            to bottom,
-            transparent,
-            #000 10%,
-            #000 86%,
-            transparent
-        );
+    .floating-sleeve {
+        --sleeve-angle: -10deg;
+        position: absolute;
+        width: 33%;
+        left: 3%;
+        top: 23%;
+        transform: rotate(var(--sleeve-angle));
+        animation: sleeve-drift 9s ease-in-out infinite alternate;
     }
-    .record-wall-columns {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-        margin-inline: 10px;
-        transform-origin: 50% 220px;
-        transform: rotate(-5deg) scale(1.08);
+    .floating-sleeve:nth-child(2) {
+        --sleeve-angle: 8deg;
+        width: 29%;
+        left: 37%;
+        top: 2%;
+        animation-delay: -4s;
+        animation-duration: 11s;
     }
-    .record-wall-column {
-        min-width: 0;
+    .floating-sleeve:nth-child(3) {
+        --sleeve-angle: 11deg;
+        width: 35%;
+        left: 61%;
+        top: 37%;
+        animation-delay: -7s;
+        animation-duration: 13s;
     }
-    .record-wall-column:nth-child(2) {
-        transform: translateY(-52px);
+    .floating-sleeve:nth-child(4) {
+        --sleeve-angle: -5deg;
+        width: 34%;
+        left: 22%;
+        top: 50%;
+        animation-delay: -3s;
+        animation-duration: 12s;
     }
-    .record-wall-column:nth-child(3) {
-        transform: translateY(-24px);
+    .floating-sleeve:nth-child(5) {
+        --sleeve-angle: 3deg;
+        width: 24%;
+        left: 1%;
+        top: 73%;
+        animation-delay: -6s;
     }
-    .record-wall-track {
-        animation: sleeve-scroll 64s linear infinite;
+    .floating-sleeve:nth-child(6) {
+        --sleeve-angle: -8deg;
+        width: 23%;
+        left: 69%;
+        top: 76%;
+        animation-delay: -2s;
+        animation-duration: 10s;
+    }
+    .hero-artwork:is(:hover, :focus-within) .floating-sleeve {
         animation-play-state: paused;
     }
-    .record-wall-column:nth-child(2) .record-wall-track {
-        animation-direction: reverse;
-        animation-duration: 72s;
+    .floating-sleeve:has(a:is(:hover, :focus-visible)) {
+        z-index: 1;
     }
-    .record-wall-column:nth-child(3) .record-wall-track {
-        animation-duration: 80s;
+    .floating-sleeve a {
+        display: block;
     }
-    .hero-artwork[data-artwork-state='running'] .record-wall-track {
-        animation-play-state: running;
-    }
-    .record-wall-group {
-        display: grid;
-        gap: 12px;
-        padding-bottom: 12px;
-    }
-    .record-wall-group img {
+    .floating-sleeve img {
         display: block;
         width: 100%;
         height: auto;
         aspect-ratio: 1;
         object-fit: cover;
-        box-shadow: 0 3px 8px #292a221c;
+        box-shadow:
+            0 18px 22px -14px #292a2266,
+            0 2px 5px #292a2226;
     }
-    .artwork-toggle {
-        margin-top: 12px;
-        padding: 8px 12px;
-        border: 1px solid #c9c2b4;
-        border-radius: 4px;
-        background: transparent;
-        color: #55564c;
-        font-size: 12px;
-        cursor: pointer;
-    }
-    .artwork-toggle:hover {
-        background: #eae5d9;
-    }
-    @keyframes sleeve-scroll {
+    @keyframes sleeve-drift {
         from {
-            transform: translateY(0);
+            transform: translate(0, 0) rotate(var(--sleeve-angle));
         }
         to {
-            transform: translateY(-50%);
+            transform: translate(4px, -9px)
+                rotate(calc(var(--sleeve-angle) + 2deg));
         }
     }
     @media (prefers-reduced-motion: reduce) {
         .navigation-indicator[data-positioned] {
             transition: none;
         }
-        .record-wall-track {
+        .floating-sleeve {
             animation: none;
-        }
-        .artwork-toggle {
-            display: none;
         }
     }
     .public-collections {
@@ -1034,7 +1031,7 @@
     .collection-previews {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 32px;
+        gap: 44px 48px;
     }
     .collection-preview {
         min-width: 0;
@@ -1046,16 +1043,43 @@
     .collection-preview-covers {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 8px;
-        padding: 18px;
-        background: #e4dfd3;
+        align-items: center;
+        padding: 16px 6px 12px;
+        isolation: isolate;
+    }
+    .collection-preview-covers > a {
+        display: block;
+        position: relative;
+        transform: translateY(4px) rotate(-5deg);
+        transition: transform 180ms ease;
+    }
+    .collection-preview-covers > a:nth-child(2) {
+        transform: translateY(-4px) rotate(2deg);
+    }
+    .collection-preview-covers > a:nth-child(3) {
+        transform: translateY(3px) rotate(-3deg);
+    }
+    .collection-preview-covers > a:nth-child(4) {
+        transform: translateY(-3px) rotate(4deg);
+    }
+    .collection-preview-covers > a:is(:hover, :focus-visible) {
+        z-index: 1;
+        transform: translateY(-8px) rotate(0);
     }
     .collection-preview-covers img {
         width: 100%;
         height: auto;
         aspect-ratio: 1;
         object-fit: cover;
-        box-shadow: 0 2px 4px #292a2226;
+        display: block;
+        box-shadow:
+            0 8px 12px -6px #292a2240,
+            0 1px 3px #292a2233;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .collection-preview-covers > a {
+            transition: none;
+        }
     }
     .collection-preview-caption {
         padding-top: 16px;
@@ -1278,17 +1302,6 @@
         }
         .hero-artwork {
             margin-top: 20px;
-        }
-        .record-wall {
-            height: 310px;
-        }
-        .record-wall-columns {
-            gap: 8px;
-            transform-origin: 50% 155px;
-        }
-        .record-wall-group {
-            gap: 8px;
-            padding-bottom: 8px;
         }
         .collection-visibility {
             width: 100%;

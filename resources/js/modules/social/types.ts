@@ -47,12 +47,14 @@ export type Pagination<T> = {
 
 export type Collector = Person & {
     recordCount: number;
-    covers: string[];
+    records: RecordArtwork[];
 };
 
-export type HomeProps = { collectors: Collector[]; heroCovers: string[] };
+export type RecordArtwork = { cover: string; title: string; url: string };
+export type HomeProps = { collectors: Collector[]; artwork: RecordArtwork[] };
 export type CollectionsProps = { collectors: Pagination<Collector> };
 export type AuthProps = {
+    artwork: RecordArtwork[];
     mode: 'login' | 'register' | 'forgot' | 'reset' | 'verify';
     token?: string;
     email?: string;

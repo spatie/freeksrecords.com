@@ -4,7 +4,7 @@ import { CollectionPreview } from '@/modules/social/CollectionPreview';
 import { HeroArtwork } from '@/modules/social/HeroArtwork';
 import type { HomeProps } from '@/modules/social/types';
 
-export function HomePage({ collectors, heroCovers }: HomeProps) {
+export function HomePage({ collectors, artwork }: HomeProps) {
     return (
         <>
             <Head title="A shelf for every record" />
@@ -27,7 +27,7 @@ export function HomePage({ collectors, heroCovers }: HomeProps) {
                         Already a member? <Link href="/login">Sign in</Link>
                     </p>
                 </div>
-                <HeroArtwork covers={heroCovers} />
+                <HeroArtwork records={artwork} />
             </section>
             <section
                 className="public-collections"
@@ -37,7 +37,6 @@ export function HomePage({ collectors, heroCovers }: HomeProps) {
                     <div>
                         <h2 id="collections-title">Public collections</h2>
                     </div>
-                    <Link href="/collections">All public collections</Link>
                 </div>
                 <div className="collection-previews">
                     {collectors.length ? (

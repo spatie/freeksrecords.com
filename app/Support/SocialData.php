@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\CollectionRecord;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\Paginator;
 
@@ -24,8 +25,32 @@ class SocialData
         return [
             ...self::person($user),
             'recordCount' => $user->records_count,
-            'covers' => $user->records->pluck('payload.cover')->filter()->values()->all(),
+            'records' => $user->records->filter(fn (CollectionRecord $record) => filled($record->payload['cover'] ?? null))
+                ->map(self::artwork(...))->values()->all(),
         ];
+    }
+
+    /** @return array{cover: string, title: string, url: string} */
+    public static function artwork(CollectionRecord $record): array
+    {
+        return [
+            'cover' => $record->payload['cover'],
+            'title' => $record->payload['artist'].' — '.$record->payload['displayTitle'],
+            'url' => route('shelf.record', $record, false),
+        ];
+    }
+
+    /**
+     * @param  list<string>  $excludeCovers
+     * @return list<array{cover: string, title: string, url: string}>
+     */
+    public static function publicArtwork(array $excludeCovers = []): array
+    {
+        return array_values(CollectionRecord::visibleTo(null)
+            ->whereNotNull('payload->cover')->where('payload->cover', '!=', '')
+            ->whereNotIn('payload->cover', $excludeCovers)
+            ->inRandomOrder()->limit(6)->get(['id', 'payload'])
+            ->unique('payload.cover')->map(self::artwork(...))->all());
     }
 
     /** @return array<string, mixed> */

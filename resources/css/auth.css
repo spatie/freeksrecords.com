@@ -34,59 +34,10 @@
     text-wrap: balance;
 }
 
-.auth-page .auth-sleeves {
-    position: relative;
-    width: 100%;
-    max-width: 480px;
-    height: 280px;
+.auth-page .hero-artwork {
     margin-top: 30px;
-    isolation: isolate;
-}
-
-.auth-page .auth-sleeves img {
-    position: absolute;
-    top: 40px;
-    left: 0;
-    width: 39%;
-    height: auto;
-    aspect-ratio: 1;
-    object-fit: cover;
-    border: 4px solid #fffaf0;
-    box-shadow:
-        0 12px 20px #292a2226,
-        0 2px 4px #292a221a;
-    transform: rotate(-13deg);
-}
-
-.auth-page .auth-sleeves img:nth-child(2) {
-    left: 15%;
-    top: 16px;
-    transform: rotate(-6deg);
-}
-
-.auth-page .auth-sleeves img:nth-child(3) {
-    left: 30%;
-    top: 4px;
-    transform: rotate(2deg);
-}
-
-.auth-page .auth-sleeves img:nth-child(4) {
-    left: 45%;
-    top: 24px;
-    transform: rotate(9deg);
-}
-
-.auth-page .auth-sleeves img:nth-child(5) {
-    left: 60%;
-    top: 62px;
-    transform: rotate(15deg);
-}
-
-.auth-page .auth-reassurance {
-    max-width: 340px;
-    margin: 4px 0 0;
-    color: #625e52;
-    font-size: 13px;
+    margin-bottom: 48px;
+    aspect-ratio: 1.65;
 }
 
 .auth-page .auth-panel {
@@ -180,10 +131,6 @@
         gap: 32px;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
-
-    .auth-page .auth-sleeves {
-        height: 220px;
-    }
 }
 
 @media (max-width: 600px) {
@@ -234,39 +181,9 @@
         line-height: 1.55;
     }
 
-    .auth-page .auth-sleeves {
-        max-width: 260px;
-        height: 100px;
-        margin: 10px auto;
-    }
-
-    .auth-page .auth-sleeves img {
-        top: 14px;
-        width: 32%;
-        left: 4%;
-        border-width: 2px;
-    }
-
-    .auth-page .auth-sleeves img:nth-child(2) {
-        top: 5px;
-        left: 19%;
-    }
-    .auth-page .auth-sleeves img:nth-child(3) {
-        top: 0;
-        left: 34%;
-    }
-    .auth-page .auth-sleeves img:nth-child(4) {
-        top: 8px;
-        left: 49%;
-    }
-    .auth-page .auth-sleeves img:nth-child(5) {
-        top: 20px;
-        left: 64%;
-    }
-
-    .auth-page .auth-reassurance {
-        max-width: none;
-        font-size: 12px;
+    .auth-page .hero-artwork {
+        margin-top: 16px;
+        aspect-ratio: 1.8;
     }
 
     .auth-page .auth-panel {
