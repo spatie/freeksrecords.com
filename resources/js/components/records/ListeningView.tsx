@@ -221,7 +221,6 @@ export function ListeningView({
                                     ref={refs.sleeve}
                                 >
                                     <img
-                                        crossOrigin="anonymous"
                                         alt={`${record.displayTitle} sleeve`}
                                         onLoad={(event) => {
                                             if (label.current)

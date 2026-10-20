@@ -95,12 +95,12 @@ class SocialData
      * @param  list<string>  $excludeCovers
      * @return list<array{cover: string, title: string, url: string}>
      */
-    public static function publicArtwork(array $excludeCovers = []): array
+    public static function publicArtwork(array $excludeCovers = [], int $limit = 6): array
     {
         return array_values(CollectionRecord::visibleTo(null)
             ->whereNotNull('payload->cover')->where('payload->cover', '!=', '')
             ->whereNotIn('payload->cover', $excludeCovers)
-            ->inRandomOrder()->limit(6)->get(['id', 'payload'])
+            ->inRandomOrder()->limit($limit)->get(['id', 'payload'])
             ->unique('payload.cover')->map(self::artwork(...))->all());
     }
 
@@ -116,11 +116,13 @@ class SocialData
             'commentsEnabled' => $user->comments_enabled ?? true,
             'digestEnabled' => $user->digest_enabled ?? true,
             'googleConnected' => filled($user->google_id),
+            'avatarUrl' => $user->google_avatar_url,
             'discogsConnected' => filled($user->discogs_token),
             'discogsUsername' => $user->discogs_username,
             'importedAt' => $user->collection_imported_at?->toIso8601String(),
             'lastSyncedAt' => $user->last_synced_at?->toIso8601String(),
             'syncStatus' => $user->sync_status,
+            'syncTotal' => $user->sync_total,
             'collectionCount' => $user->records()->count(),
         ];
     }

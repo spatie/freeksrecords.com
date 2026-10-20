@@ -1,7 +1,6 @@
 .collection-browser {
     --controls-height: 94px;
     --controls-top: 12px;
-    --index-height: 120px;
 }
 .collection-heading {
     scroll-margin-top: calc(
@@ -414,15 +413,11 @@
 @media (max-width: 860px) {
     .collection-heading {
         scroll-margin-top: calc(
-            var(--controls-height) + var(--index-height) + var(--controls-top) +
-                20px
+            var(--controls-height) + var(--controls-top) + 20px
         );
     }
     .cabinet-year-heading {
-        top: calc(
-            var(--controls-height) + var(--index-height) + var(--controls-top) +
-                8px
-        );
+        top: calc(var(--controls-height) + var(--controls-top) - 1px);
     }
     .collection-controls {
         align-items: stretch;
@@ -437,9 +432,9 @@
         width: 100%;
     }
     .collection-index {
-        position: sticky;
-        top: calc(var(--controls-height) + var(--controls-top) + 8px);
-        z-index: 10;
+        position: relative;
+        top: auto;
+        max-height: none;
         margin-top: 22px;
         padding: 12px 12px 5px;
     }
@@ -942,6 +937,7 @@
 .catalog-record-open {
     display: block;
     width: 100%;
+    appearance: none;
     cursor: pointer;
 }
 .catalog-record-label a {

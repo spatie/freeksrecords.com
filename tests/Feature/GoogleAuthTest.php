@@ -20,6 +20,7 @@ beforeEach(function () {
     $this->googleProfile = [
         'sub' => 'google-sub-123', 'email' => 'collector@example.test',
         'email_verified' => true, 'name' => 'A New Collector',
+        'picture' => 'https://lh3.googleusercontent.com/test-collector-photo',
     ];
     $this->googleUnavailable = false;
     $client = new Client(['handler' => HandlerStack::create(function (RequestInterface $request) {
@@ -67,27 +68,42 @@ it('creates a private verified Google account and sends it straight to importing
         ->and($user->name)->toBe('A New Collector')->and($user->hasVerifiedEmail())->toBeTrue()
         ->and($user->visibility)->toBe('only_me')->and($user->digest_enabled)->toBeTrue()
         ->and($user->legacy_owner)->toBeFalse()->and($user->collection_imported_at)->toBeNull()
+        ->and($user->google_avatar_url)->toBe($this->googleProfile['picture'])
         ->and(session()->getId())->not->toBe($sessionId)
         ->and($user->toArray())->not->toHaveKey('google_id')
+        ->and($user->toArray())->not->toHaveKey('google_avatar_url')
         ->and(json_encode($user->getAttributes()))->not->toContain('test-access-token-not-to-store');
     $this->assertDatabaseCount('users', 2);
     Notification::assertNothingSent();
     $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0)
-        ->where('auth.user.importedAt', null)->where('auth.user.discogsConnected', false)->where('auth.user.googleConnected', true));
+        ->where('auth.user.importedAt', null)->where('auth.user.discogsConnected', false)->where('auth.user.googleConnected', true)
+        ->where('auth.user.avatarUrl', $this->googleProfile['picture']));
 });
 
 it('signs in by Google subject without changing profile email or confusing another email-matched account', function () {
     $linked = socialUser('linked');
-    $linked->update(['google_id' => 'google-sub-123']);
+    $linked->update(['google_id' => 'google-sub-123', 'google_avatar_url' => 'https://lh3.googleusercontent.com/old-photo']);
     $other = socialUser('other');
     $this->googleProfile['email'] = $other->email;
     $this->get(route('google.redirect'));
     $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/feed');
     $this->assertAuthenticatedAs($linked);
     expect($linked->fresh()->email)->toBe('linked@example.test')->and($linked->fresh()->name)->toBe('Linked')
+        ->and($linked->fresh()->google_avatar_url)->toBe($this->googleProfile['picture'])
         ->and($other->fresh()->google_id)->toBeNull();
     $this->assertDatabaseCount('users', 3);
 });
+
+it('falls back to initials when Google removes a photo or supplies an unsafe image URL', function (?string $picture) {
+    $linked = socialUser('linked');
+    $linked->update(['google_id' => 'google-sub-123', 'google_avatar_url' => 'https://lh3.googleusercontent.com/old-photo']);
+    $this->googleProfile['picture'] = $picture;
+    $this->get(route('google.redirect'));
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/feed');
+    $this->assertAuthenticatedAs($linked);
+    expect($linked->fresh()->google_avatar_url)->toBeNull();
+    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.avatarUrl', null));
+})->with([null, 'http://example.test/photo.jpg', 'javascript:alert(1)']);
 
 it('never claims an existing password account or Freeks reserved ownership by email match', function (bool $legacy) {
     $owner = $legacy ? User::freek() : socialUser('existing');
@@ -168,6 +184,7 @@ it('links only the password-confirmed account, preserves its collection and pref
     $this->post(route('google.link'), ['current_password' => 'a-long-demo-password', 'user_id' => $other->id, 'visibility' => 'everyone'])->assertRedirect();
     $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/settings')->assertSessionHasNoErrors();
     expect($owner->fresh()->google_id)->toBe('google-sub-123')->and($owner->fresh()->only(array_keys($original)))->toEqual($original)
+        ->and($owner->fresh()->google_avatar_url)->toBe($this->googleProfile['picture'])
         ->and($other->fresh()->google_id)->toBeNull()->and($record->fresh()->user_id)->toBe($owner->id);
     $this->actingAs($owner->fresh())->get('/settings')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.googleConnected', true));
     $this->post('/logout');

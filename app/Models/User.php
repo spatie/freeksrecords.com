@@ -17,6 +17,7 @@ use Illuminate\Support\Str;
  * @property string $email
  * @property string $password
  * @property ?string $google_id
+ * @property ?string $google_avatar_url
  * @property bool $legacy_owner
  * @property string $visibility
  * @property bool $comments_enabled
@@ -29,6 +30,7 @@ use Illuminate\Support\Str;
  * @property ?CarbonImmutable $collection_imported_at
  * @property ?CarbonImmutable $last_synced_at
  * @property ?string $sync_status
+ * @property ?int $sync_total
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -43,7 +45,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $guarded = ['id'];
 
-    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'discogs_token', 'discogs_secret'];
+    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'google_avatar_url', 'discogs_token', 'discogs_secret'];
 
     protected static function booted(): void
     {
@@ -75,6 +77,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'legacy_owner' => 'boolean', 'comments_enabled' => 'boolean', 'digest_enabled' => 'boolean',
             'discogs_token' => 'encrypted', 'discogs_secret' => 'encrypted',
             'collection_imported_at' => 'immutable_datetime', 'last_synced_at' => 'immutable_datetime',
+            'sync_total' => 'integer',
         ];
     }
 

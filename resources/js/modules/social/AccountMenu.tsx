@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { ChevronDown, LogOut, Settings } from 'lucide-react';
+import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
 import { useRef } from 'react';
 
 import type { Viewer } from '@/modules/social/types';
@@ -15,7 +15,20 @@ export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
                 popoverTarget="account-popover"
                 aria-label={`Account menu for ${user.handle}`}
             >
-                <span>{user.handle}</span>
+                <span className="account-avatar" aria-hidden="true">
+                    {Array.from(user.handle)[0]?.toLocaleUpperCase()}
+                    {user.avatarUrl && (
+                        <img
+                            src={user.avatarUrl}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            onError={(event) => {
+                                event.currentTarget.hidden = true;
+                            }}
+                        />
+                    )}
+                </span>
+                <span className="account-name">{user.handle}</span>
                 <ChevronDown size={14} aria-hidden="true" />
             </button>
             <div
@@ -24,6 +37,16 @@ export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
                 className="account-popover"
                 popover="auto"
             >
+                {user.verified && (
+                    <Link
+                        href="/friends"
+                        aria-current={path === '/friends' ? 'page' : undefined}
+                        onClick={() => popover.current?.hidePopover()}
+                    >
+                        <Users size={16} aria-hidden="true" />
+                        Your friends
+                    </Link>
+                )}
                 {user.verified && (
                     <Link
                         href="/settings"

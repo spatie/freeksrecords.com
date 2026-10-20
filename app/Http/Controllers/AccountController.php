@@ -25,7 +25,7 @@ class AccountController extends Controller
             'name' => ['nullable', 'string', 'max:80'],
             'handle' => ['nullable', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), 'unique:users'],
             'email' => ['required', 'email', 'max:254', 'unique:users'],
-            'password' => ['required', 'confirmed', PasswordRule::min(12)],
+            'password' => ['required', PasswordRule::min(12)],
         ], [], ['handle' => 'username']);
 
         $user = User::query()->create($data);

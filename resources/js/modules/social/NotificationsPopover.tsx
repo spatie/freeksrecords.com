@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { FriendActions } from '@/modules/social/FriendActions';
 import type { Notifications, SocialProps } from '@/modules/social/types';
 
 export function NotificationsPopover() {
@@ -192,6 +193,24 @@ export function NotificationsPopover() {
                                             )}
                                         </span>
                                     </Link>
+                                    {notification.canRespond && (
+                                        <div className="notification-actions">
+                                            <FriendActions
+                                                personId={notification.actor.id}
+                                                actions={[
+                                                    {
+                                                        value: 'accept',
+                                                        label: 'Accept',
+                                                    },
+                                                    {
+                                                        value: 'decline',
+                                                        label: 'Decline',
+                                                    },
+                                                ]}
+                                                onSuccess={() => void load()}
+                                            />
+                                        </div>
+                                    )}
                                 </article>
                             ))}
                             <nav

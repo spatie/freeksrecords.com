@@ -7,7 +7,7 @@ import type { CollectionRecordSummary } from '@/components/records/types';
 
 type RecordSleeveProps = {
     browseBasePath?: string;
-    onSelect?: () => void;
+    onSelect?: (source: HTMLElement) => void;
     onArtist?: (artist: string) => void;
     showYear?: boolean;
     record: CollectionRecordSummary;
@@ -37,13 +37,12 @@ export function RecordSleeve({
                     className="catalog-record-open"
                     type={onSelect ? 'button' : undefined}
                     href={onSelect ? undefined : record.shareUrl}
-                    onClick={onSelect}
+                    onClick={(event) => onSelect?.(event.currentTarget)}
                     aria-label={`${record.shareUrl.startsWith('/shelves/') ? 'View' : 'Take out'} ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
                 >
                     <span className="catalog-record-art">
                         <img
                             alt=""
-                            crossOrigin="anonymous"
                             decoding="async"
                             draggable={false}
                             height={600}

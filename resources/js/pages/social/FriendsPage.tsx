@@ -11,11 +11,8 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
         <>
             <Head title="Your friends" />
             <div className="page-heading">
-                <h1>Friends</h1>
-                <p>
-                    Find someone by username and send a request. Once they
-                    accept, you’ll see the records they share with friends.
-                </p>
+                <p className="page-eyebrow">Friends</p>
+                <h1>Your people.</h1>
             </div>
             <form
                 className="search"
@@ -60,14 +57,22 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                                   { value: 'decline', label: 'Decline' },
                               ];
                     return (
-                        <article className="person-row panel" key={person.id}>
-                            <div>
-                                <h2>
-                                    <Link href={person.profileUrl}>
-                                        {person.name}
-                                    </Link>
-                                </h2>
-                                <p>@{person.handle}</p>
+                        <article className="person-row" key={person.id}>
+                            <div className="person-identity">
+                                <span
+                                    className="person-avatar"
+                                    aria-hidden="true"
+                                >
+                                    {person.handle.slice(0, 1).toUpperCase()}
+                                </span>
+                                <div>
+                                    <h2>
+                                        <Link href={person.profileUrl}>
+                                            {person.name}
+                                        </Link>
+                                    </h2>
+                                    <p>@{person.handle}</p>
+                                </div>
                             </div>
                             <div className="actions">
                                 {connection && (
@@ -85,6 +90,14 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                                               ? 'Request sent'
                                               : 'Wants to be friends'}
                                     </span>
+                                )}
+                                {connection?.accepted_at && (
+                                    <Link
+                                        className="button secondary"
+                                        href={person.profileUrl}
+                                    >
+                                        View collection
+                                    </Link>
                                 )}
                                 <FriendActions
                                     personId={person.id}

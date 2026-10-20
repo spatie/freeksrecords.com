@@ -42,7 +42,8 @@ it('uses only live public records for linked artwork and never falls back to the
         });
     $response = $this->get($path)->assertOk();
     $artwork = collect($response->inertiaProps('artwork'));
-    expect($artwork)->toHaveCount(6)->and($artwork->pluck('cover')->unique())->toHaveCount(6);
+    $expectedCount = $path === '/' ? 6 : 12;
+    expect($artwork)->toHaveCount($expectedCount)->and($artwork->pluck('cover')->unique())->toHaveCount($expectedCount);
     foreach ($artwork as $item) {
         $record = $records->firstWhere('payload.cover', $item['cover']);
         expect($record)->not->toBeNull()
@@ -143,7 +144,7 @@ it('sends signed-in visitors to verification or the chronological friends feed w
         ->and($response->headers->get('Cache-Control'))->not->toContain('public', 's-maxage');
 })->with([[true, '/feed'], [false, '/verify-email']]);
 
-it('renders the feed sidebar with real collection totals and incoming request forms', function () {
+it('keeps friend requests off the feed and available on the friends page', function () {
     $viewer = socialUser('homeviewer');
     $requester = socialUser('homerequester');
     $other = socialUser('unrelatedrequester');
@@ -155,10 +156,11 @@ it('renders the feed sidebar with real collection totals and incoming request fo
     Friendship::query()->create(['user_low' => $other->id, 'user_high' => $stranger->id, 'requested_by' => $other->id]);
 
     $this->actingAs($viewer)->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->component('social/FeedPage')->where('collectionCount', 3)->has('incomingRequests', 1)
-        ->where('incomingRequests.0.id', $requester->id)->where('auth.user.profileUrl', '/homeviewer'));
-    $this->post(route('friend.action', $requester), ['action' => 'accept'])->assertRedirect();
-    $this->get('/feed')->assertInertia(fn (Assert $page) => $page->has('incomingRequests', 0));
+        ->component('social/FeedPage')->where('collectionCount', 3)->missing('incomingRequests')
+        ->where('auth.user.profileUrl', '/homeviewer'));
+    $this->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('social/FriendsPage')->has('people.data', 1)->where('people.data.0.id', $requester->id)
+        ->has('connections', 1)->where('connections.0.requested_by', $requester->id)->where('connections.0.accepted_at', null));
 });
 
 it('previews legal drafts locally without publishing unapproved policies', function (string $document) {

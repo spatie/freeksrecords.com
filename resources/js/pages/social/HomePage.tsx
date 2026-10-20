@@ -10,7 +10,11 @@ export function HomePage({ collectors, artwork }: HomeProps) {
             <Head title="A shelf for every record" />
             <section className="landing-hero">
                 <div className="landing-copy">
-                    <h1>A shelf for every record.</h1>
+                    <h1>
+                        Good records.
+                        <br />
+                        Better company.
+                    </h1>
                     <p className="lede">
                         Keep collecting on Discogs. Sync your collection here
                         and choose who gets to see it.
@@ -22,8 +26,6 @@ export function HomePage({ collectors, artwork }: HomeProps) {
                         <Link href="/collections">Browse collections</Link>
                     </div>
                     <p className="landing-note">
-                        Your collection is private until you share it.
-                        <br />
                         Already a member? <Link href="/login">Sign in</Link>
                     </p>
                 </div>

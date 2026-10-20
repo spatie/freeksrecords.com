@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowRight, ArrowUp, Search, X } from 'lucide-react';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { browseHash } from '@/components/records/browseState';
 import { motionScrollBehavior } from '@/components/records/recordMotion';
@@ -18,7 +18,6 @@ type CollectionIndexProps = {
     groups: CollectionGroup[];
     activeGroup: string | null;
     onGroup: (group: string) => void;
-    onHeightChange: (height: number) => void;
 };
 
 const labels: Record<IndexMode, { heading: string; plural: string }> = {
@@ -38,9 +37,7 @@ export function CollectionIndex({
     groups,
     activeGroup,
     onGroup,
-    onHeightChange,
 }: CollectionIndexProps) {
-    const panel = useRef<HTMLElement>(null);
     const indexGroups = useRef<HTMLDivElement>(null);
     const [groupQuery, setGroupQuery] = useState('');
     const [indexScroll, setIndexScroll] = useState({
@@ -51,23 +48,6 @@ export function CollectionIndex({
     const displayedGroups = groups.filter((group) =>
         group.name.toLocaleLowerCase().includes(groupQuery.toLocaleLowerCase()),
     );
-    const reportHeight = useEffectEvent(onHeightChange);
-
-    useEffect(() => {
-        if (!panel.current) return;
-        const observer = new ResizeObserver((entries) => {
-            for (const entry of entries)
-                reportHeight(
-                    entry.borderBoxSize[0]?.blockSize ??
-                        entry.target.getBoundingClientRect().height,
-                );
-        });
-        observer.observe(panel.current);
-        return () => {
-            observer.disconnect();
-            reportHeight(0);
-        };
-    }, []);
 
     useEffect(() => {
         const index = indexGroups.current;
@@ -133,11 +113,7 @@ export function CollectionIndex({
     }
 
     return (
-        <aside
-            className="collection-index"
-            aria-label={`${mode} collections`}
-            ref={panel}
-        >
+        <aside className="collection-index" aria-label={`${mode} collections`}>
             <div className="index-heading">
                 {labels[mode].heading}
                 <span>{groups.length}</span>

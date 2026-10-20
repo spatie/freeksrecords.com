@@ -45,18 +45,21 @@ it('reports only the signed-in collector’s import progress through completion 
     $user = socialUser('importprogress');
     $user->update(['email_verified_at' => null]);
     $this->actingAs($user)->getJson('/discogs/status')->assertForbidden();
-    $user->update(['email_verified_at' => now(), 'discogs_token' => 'private-access', 'discogs_secret' => 'private-secret', 'sync_status' => 'Syncing']);
+    $user->update(['email_verified_at' => now(), 'discogs_token' => 'private-access', 'discogs_secret' => 'private-secret', 'sync_status' => 'Syncing', 'sync_total' => 850]);
     socialRecord(socialUser('anotherimporter'), 'Another collector’s private record');
-    socialRecord($user, 'My first record', activity: false);
+    socialRecord($user, 'My first record', activity: false)->update(['private_note' => 'Not in import summaries']);
     $response = $this->getJson('/discogs/status')->assertOk()
         ->assertExactJson([
             'collectorId' => $user->id, 'collectionUrl' => route('profile', $user->handle), 'visibility' => 'Only me',
-            'connected' => true, 'complete' => false, 'count' => 1, 'status' => 'Syncing', 'failed' => false,
+            'connected' => true, 'complete' => false, 'count' => 1, 'total' => 850, 'status' => 'Syncing', 'failed' => false,
         ])
         ->assertDontSee('private-access')->assertDontSee('private-secret')->assertDontSee('Another collector');
     expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
-    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('auth.user.syncStatus', 'Syncing')->where('collectionCount', 1)->where('auth.user.importedAt', null));
+    $this->get('/feed')->assertOk()->assertDontSee('Not in import summaries')->assertDontSee('Another collector’s private record')
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.user.syncStatus', 'Syncing')->where('auth.user.syncTotal', 850)
+            ->where('collectionCount', 1)->where('auth.user.importedAt', null)
+            ->has('importRecords', 1)->where('importRecords.0.displayTitle', 'My first record'));
 
     $user->update(['sync_status' => 'Sync failed. Existing records were kept.']);
     $this->getJson('/discogs/status')->assertJsonPath('failed', true)->assertJsonPath('count', 1);
@@ -113,7 +116,8 @@ it('imports paginated collections silently, isolates duplicate copy ids, then mi
     ]);
     $job = new SyncUserCollection($user->id);
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
-    expect($user->records()->count())->toBe(2)->and($user->records()->where('is_activity', true)->count())->toBe(0)->and($user->fresh()->collection_imported_at)->not->toBeNull();
+    expect($user->records()->count())->toBe(2)->and($user->records()->where('is_activity', true)->count())->toBe(0)
+        ->and($user->fresh()->collection_imported_at)->not->toBeNull()->and($user->fresh()->sync_total)->toBe(2);
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect($user->records()->pluck('instance_id')->all())->toBe([102, 103])
@@ -121,7 +125,7 @@ it('imports paginated collections silently, isolates duplicate copy ids, then mi
     expect($user->records()->where('instance_id', 103)->first()->added_at->format('Y-m-d H:i:s'))->toBe('2026-10-18 07:30:00');
     expect($other->records()->first()->payload['title'])->toBe('Other copy');
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
-    expect($user->records()->count())->toBe(0)->and($other->records()->count())->toBe(1);
+    expect($user->records()->count())->toBe(0)->and($other->records()->count())->toBe(1)->and($user->fresh()->sync_total)->toBe(0);
 });
 
 it('preserves collections and initial-import suppression through partial responses and interrupted retries', function () {
@@ -140,11 +144,11 @@ it('preserves collections and initial-import suppression through partial respons
     ]);
     $job = new SyncUserCollection($user->id);
     expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
-    expect($user->records()->count())->toBe(2)->and($user->fresh()->collection_imported_at)->toBeNull();
+    expect($user->records()->count())->toBe(2)->and($user->fresh()->collection_imported_at)->toBeNull()->and($user->fresh()->sync_total)->toBe(2);
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect($user->records()->count())->toBe(2)->and($user->records()->where('is_activity', true)->count())->toBe(0);
     expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
-    expect($user->records()->count())->toBe(2);
+    expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_total)->toBeNull();
 });
 
 it('fails safely without OAuth configuration or with malformed provider responses', function () {

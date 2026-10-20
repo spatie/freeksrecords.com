@@ -20,11 +20,13 @@ export type Viewer = Person & {
     commentsEnabled: boolean;
     digestEnabled: boolean;
     googleConnected: boolean;
+    avatarUrl: string | null;
     discogsConnected: boolean;
     discogsUsername: string | null;
     importedAt: string | null;
     lastSyncedAt: string | null;
     syncStatus: string | null;
+    syncTotal: number | null;
     collectionCount: number;
 };
 
@@ -67,8 +69,8 @@ export type ProfileProps = {
 };
 export type FeedProps = {
     records: Pagination<CollectionRecordSummary>;
+    importRecords: CollectionRecordSummary[];
     collectionCount: number;
-    incomingRequests: Person[];
 };
 export type FriendsProps = {
     query: string;
@@ -111,6 +113,7 @@ export type Notifications = {
         record: { title: string; artist: string; cover: string } | null;
         url: string;
         unread: boolean;
+        canRespond: boolean;
     }>;
     unreadCount: number;
 };

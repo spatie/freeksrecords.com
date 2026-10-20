@@ -87,6 +87,11 @@ and password reset. Each profile has a unique handle at `/people/{handle}`.
   never record counts or Discogs connection details.
 - Find friends by exact handle at `/friends`. Requests can be accepted, declined or
   cancelled; either friend can unfriend. Only accepted friends appear in `/feed`.
+  Pending requests can also be answered inside the notification popover. New requests
+  queue an email to verified recipients with seven-day Laravel signed links. Those
+  links work without signing in, but require a confirmation POST: opening or scanning
+  an email never changes a friendship. Responses and cancellations invalidate both
+  choices, and an old link cannot act on a later request between the same people.
 - Feed entries use the original Discogs addition date, newest first. First imports
   and migrated records never generate activity. Visibility and friendship are queried
   again on every visit, notification listing, and digest send.
