@@ -140,13 +140,11 @@
     .site-header {
         max-width: 1440px;
         margin: auto;
-        padding: 28px 5vw;
+        padding: 20px 5vw;
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
-        gap: 24px;
+        gap: 40px;
         align-items: center;
-    }
-    .site-header {
         border-bottom: 1px solid #d7d2c5;
     }
     .demo-logins {
@@ -220,9 +218,44 @@
         font-size: 14px;
     }
     .site-header .main-navigation {
-        justify-content: center;
+        justify-self: start;
         flex-wrap: nowrap;
-        gap: 28px;
+        gap: 2px;
+        padding: 4px;
+        border: 1px solid #d9d1c1;
+        border-radius: 8px;
+        background: #e9e3d680;
+    }
+    .site-header .main-navigation > a {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 10px 18px;
+        border-radius: 4px;
+        color: #666052;
+        white-space: nowrap;
+        font-weight: 500;
+    }
+    .site-header .main-navigation > a:hover {
+        background: #faf7ef80;
+        color: #292a22;
+        text-decoration: none;
+    }
+    .site-header .main-navigation > a[aria-current] {
+        background: #faf8f0;
+        color: #983e25;
+        box-shadow: 0 1px 3px #48331b12;
+        text-decoration: none;
+    }
+    .main-navigation > a[aria-current]::after {
+        content: '';
+        position: absolute;
+        inset: auto 18px 0;
+        height: 2px;
+        border-radius: 2px 2px 0 0;
+        background: #a64028;
     }
     .site-header .guest-navigation {
         grid-column: 2 / -1;
@@ -233,7 +266,7 @@
         display: flex;
         align-items: center;
         justify-content: end;
-        gap: 12px;
+        gap: 8px;
         min-width: 0;
         font-size: 13px;
     }
@@ -245,9 +278,10 @@
         max-width: 180px;
         min-width: 0;
         min-height: 44px;
-        border: 0;
-        padding: 4px;
-        background: transparent;
+        border: 1px solid #d7d0c0;
+        border-radius: 6px;
+        padding: 8px 10px;
+        background: #faf8f066;
         color: #55564c;
         cursor: pointer;
     }
@@ -259,8 +293,15 @@
     .account-trigger svg {
         flex: none;
     }
-    .account-trigger:hover {
-        color: #a53f22;
+    .account-trigger:hover,
+    .account-trigger:has(+ .account-popover:popover-open),
+    .account-trigger:has(+ .account-popover [aria-current]) {
+        background: #faf8f0;
+        border-color: #a99c84;
+        color: #292a22;
+    }
+    .account-trigger:has(+ .account-popover:popover-open) svg {
+        transform: rotate(180deg);
     }
     .account-popover {
         position: fixed;
@@ -276,8 +317,11 @@
     }
     .account-popover a,
     .account-popover button {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 12px;
         width: 100%;
+        min-height: 44px;
         padding: 10px 12px;
         border: 0;
         border-radius: 4px;
@@ -312,27 +356,37 @@
     .site-header nav > a {
         text-decoration: none;
     }
-    .site-header nav > a:not(.button):hover,
-    .site-header nav > a:not(.button)[aria-current] {
+    .site-header .guest-navigation > a:not(.button):hover,
+    .site-header .guest-navigation > a:not(.button)[aria-current] {
         color: #a53f22;
         text-decoration: underline;
     }
     .notifications-trigger {
         anchor-name: --notifications;
+        position: relative;
         display: inline-flex;
         align-items: center;
-        gap: 7px;
-        padding: 10px 4px;
-        border: 0;
-        background: none;
-        color: inherit;
+        justify-content: center;
+        flex: none;
+        width: 44px;
+        height: 44px;
+        padding: 10px;
+        border: 1px solid transparent;
+        border-radius: 50%;
+        background: transparent;
+        color: #666052;
         cursor: pointer;
     }
     .notifications-trigger:hover,
     .notifications-trigger:has(+ .notifications-popover:popover-open) {
         color: #a53f22;
+        border-color: #d7d0c0;
+        background: #faf8f0;
     }
     .notification-count {
+        position: absolute;
+        top: 0;
+        right: -2px;
         border-radius: 20px;
         padding: 1px 6px;
         background: #292a22;
@@ -1163,11 +1217,15 @@
         }
         .site-header .main-navigation {
             grid-column: 1 / -1;
-            justify-content: space-between;
-            gap: 12px;
+            justify-self: stretch;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr;
+            gap: 2px;
+            margin-bottom: 16px;
         }
-        .main-navigation a {
-            padding: 12px 0 16px;
+        .site-header .main-navigation > a {
+            padding-inline: 8px;
+            font-size: 13px;
         }
         .site-header:has(.guest-navigation) {
             grid-template-columns: minmax(0, 1fr) auto auto;
