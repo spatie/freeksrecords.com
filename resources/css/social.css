@@ -867,30 +867,22 @@
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 10px 24px;
-        width: fit-content;
-        max-width: 100%;
-        margin: 0 0 36px;
-        padding: 14px 24px;
-        background: #faf6e8e8;
-        border-left: 3px solid #a64028;
-        box-shadow: 0 5px 12px -7px #4b351555;
-        transform: rotate(-0.5deg);
+        gap: 6px 14px;
+        margin: 0 0 24px;
+        color: #6b695e;
     }
     .import-label {
         display: inline-flex;
         align-items: center;
-        gap: 12px;
-        color: #913f2c;
+        gap: 8px;
     }
     .import-label strong {
-        font-family: Georgia, 'Times New Roman', serif;
-        font-size: 22px;
+        font-size: 14px;
         font-weight: 400;
     }
     .import-record {
-        width: 26px;
-        height: 26px;
+        width: 16px;
+        height: 16px;
         border-radius: 50%;
         background:
             radial-gradient(
@@ -904,7 +896,7 @@
         animation: import-spin 4s linear infinite;
     }
     .import-count {
-        font-size: 15px;
+        font-size: 13px;
         font-variant-numeric: tabular-nums;
     }
     .import-failed .import-record {
@@ -1094,6 +1086,13 @@
         min-width: 0;
         aspect-ratio: 1.12;
         isolation: isolate;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 300ms ease-out;
+    }
+    .hero-artwork[data-ready] {
+        visibility: visible;
+        opacity: 1;
     }
     .floating-sleeve {
         --sleeve-angle: -10deg;
@@ -1171,6 +1170,9 @@
     }
     @media (prefers-reduced-motion: reduce) {
         .navigation-indicator[data-positioned] {
+            transition: none;
+        }
+        .hero-artwork {
             transition: none;
         }
         .floating-sleeve {
