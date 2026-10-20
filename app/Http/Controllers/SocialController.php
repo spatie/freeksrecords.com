@@ -13,7 +13,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -35,48 +34,7 @@ class SocialController extends Controller
 
     public function record(Request $request, CollectionRecord $record): InertiaResponse
     {
-        abort_unless($record->user->canViewCollection($request->user()), 404);
-
-        $collectionUrl = route('profile', $record->user->handle);
-        $browse = $request->query('browse');
-        if (is_string($browse) && strlen($browse) <= 1000) {
-            $collectionUrl .= '#'.$browse;
-        }
-
-        $owner = $request->user()?->id === $record->user_id;
-        $comments = $record->comments()->with('user')->oldest('id')->paginate(30);
-        $payload = Arr::only($record->payload, [
-            'id', 'instanceId', 'artist', 'artists', 'title', 'displayTitle', 'edition',
-            'year', 'originalYear', 'originalReleaseDate', 'pressingReleaseDate', 'addedAt',
-            'label', 'catalogNumber', 'format', 'mediaFormats', 'genres', 'styles', 'cover',
-            'discogsUrl', 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch', 'trackSource',
-        ]);
-        $payload['tracks'] = array_map(fn (array $track) => Arr::only($track, [
-            'position', 'title', 'artist', 'duration', 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
-        ]), $record->payload['tracks'] ?? []);
-
-        return Inertia::render('social/RecordPage', [
-            'collectionUrl' => $collectionUrl,
-            'record' => [
-                'id' => $record->id,
-                'owner' => SocialData::person($record->user),
-                'payload' => $payload,
-                'formats' => $record->formats(),
-                'addedLabel' => $record->added_at->timezone('Europe/Brussels')->format('j F Y'),
-                'sharedNote' => $record->shared_note,
-                ...($owner ? ['privateNote' => $record->private_note] : []),
-                'canEditNotes' => $owner,
-                'commentsEnabled' => $record->user->comments_enabled,
-            ],
-            'comments' => SocialData::pagination($comments, $comments->getCollection()->map(fn (Comment $comment) => [
-                'id' => $comment->id,
-                'body' => $comment->body,
-                'user' => SocialData::person($comment->user),
-                'canDelete' => in_array($request->user()?->id, [$comment->user_id, $record->user_id], true),
-            ])->all()),
-            'appreciations' => DB::table('appreciations')->where('collection_record_id', $record->id)->count(),
-            'appreciated' => $request->user() && DB::table('appreciations')->where('collection_record_id', $record->id)->where('user_id', $request->user()->id)->exists(),
-        ]);
+        return Inertia::render('social/RecordPage', SocialData::record($request, $record));
     }
 
     public function feed(Request $request): InertiaResponse

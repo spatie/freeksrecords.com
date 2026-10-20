@@ -21,6 +21,11 @@ export function sleeveOrigin(instanceId: number): SleeveOrigin | null {
         `[data-record-id="${instanceId}"] .catalog-record-art`,
     );
     if (!sleeve) return null;
+
+    return artworkOrigin(sleeve);
+}
+
+export function artworkOrigin(sleeve: HTMLElement): SleeveOrigin | null {
     const bounds = sleeve.getBoundingClientRect();
     if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return null;
     const matrix = new DOMMatrixReadOnly(getComputedStyle(sleeve).transform);

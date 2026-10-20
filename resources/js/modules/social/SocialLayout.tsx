@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { legacyCollectionUrl } from '@/lib/record-history';
 import { AccountMenu } from '@/modules/social/AccountMenu';
 import { NotificationsPopover } from '@/modules/social/NotificationsPopover';
+import { RecordOverlay } from '@/modules/social/RecordOverlay';
 import type { SocialProps } from '@/modules/social/types';
 import '../../../css/social.css';
 import '../../../css/auth.css';
@@ -13,6 +14,8 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     const { props, url, component } = usePage<SocialProps>();
     const user = props.auth.user;
     const path = url.split(/[?#]/)[0];
+    const recordOpen =
+        component === 'social/RecordPage' || Boolean(props.recordOverlay);
     const navigationRef = useRef<HTMLElement>(null);
     const indicatorRef = useRef<HTMLSpanElement>(null);
 
@@ -70,10 +73,10 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             <Head>
                 <meta name="robots" content="noindex, nofollow" />
             </Head>
-            <a className="skip" href="#main">
+            <a className="skip" href="#main" inert={recordOpen}>
                 Skip to content
             </a>
-            <header className="site-header">
+            <header className="site-header" inert={recordOpen}>
                 <Link className="brand" href="/">
                     <span className="brand-mark" aria-hidden="true" /> Plaat
                     Club<span className="brand-period">.</span>
@@ -178,52 +181,54 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                     </nav>
                 )}
             </header>
-            <main id="main" className="page">
-                {user?.verified &&
-                    (path === '/feed' || path === '/friends') && (
-                        <nav
-                            className="friends-navigation"
-                            aria-label="Friends navigation"
-                        >
-                            <Link
-                                href="/feed"
-                                aria-current={
-                                    path === '/feed' ? 'page' : undefined
-                                }
+            <RecordOverlay>
+                <main id="main" className="page">
+                    {user?.verified &&
+                        (path === '/feed' || path === '/friends') && (
+                            <nav
+                                className="friends-navigation"
+                                aria-label="Friends navigation"
                             >
-                                Additions
-                            </Link>
-                            <Link
-                                href="/friends"
-                                aria-current={
-                                    path === '/friends' ? 'page' : undefined
-                                }
-                            >
-                                Your friends
-                            </Link>
-                        </nav>
+                                <Link
+                                    href="/feed"
+                                    aria-current={
+                                        path === '/feed' ? 'page' : undefined
+                                    }
+                                >
+                                    Additions
+                                </Link>
+                                <Link
+                                    href="/friends"
+                                    aria-current={
+                                        path === '/friends' ? 'page' : undefined
+                                    }
+                                >
+                                    Your friends
+                                </Link>
+                            </nav>
+                        )}
+                    {props.flash.status && (
+                        <p className="notice" role="status">
+                            {props.flash.status}
+                        </p>
                     )}
-                {props.flash.status && (
-                    <p className="notice" role="status">
-                        {props.flash.status}
-                    </p>
-                )}
-                {Object.keys(props.errors).length > 0 && (
-                    <div className="errors" role="alert">
-                        <strong>Please check the following:</strong>
-                        <ul>
-                            {Object.entries(props.errors).map(
-                                ([field, message]) => (
-                                    <li key={field}>
-                                        <a href={`#${field}`}>{message}</a>
-                                    </li>
-                                ),
-                            )}
-                        </ul>
-                    </div>
-                )}
-                {children}
-            </main>
+                    {Object.keys(props.errors).length > 0 && (
+                        <div className="errors" role="alert">
+                            <strong>Please check the following:</strong>
+                            <ul>
+                                {Object.entries(props.errors).map(
+                                    ([field, message]) => (
+                                        <li key={field}>
+                                            <a href={`#${field}`}>{message}</a>
+                                        </li>
+                                    ),
+                                )}
+                            </ul>
+                        </div>
+                    )}
+                    {children}
+                </main>
+            </RecordOverlay>
         </div>
     );
 }

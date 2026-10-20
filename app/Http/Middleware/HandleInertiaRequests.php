@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CollectionRecord;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\SocialData;
@@ -41,6 +42,15 @@ class HandleInertiaRequests extends Middleware
                 : 0,
             'flash' => ['status' => fn () => $request->session()->get('status')],
             'demoUsers' => fn () => $this->demoUsers($request),
+            'recordOverlay' => function () use ($request): ?array {
+                $id = $request->query('record');
+                if ($id === null) {
+                    return null;
+                }
+                abort_unless(is_string($id) && ctype_digit($id), 404);
+
+                return SocialData::record($request, CollectionRecord::query()->findOrFail($id));
+            },
         ];
     }
 

@@ -12,11 +12,7 @@ export function ProfilePage({ person, records, visible }: ProfileProps) {
             <Head title={`${person.name}’s collection`} />
             <div className="collector-heading">
                 <h1>{person.name}’s collection</h1>
-                <p>
-                    @{person.handle}
-                    {visible &&
-                        ` · ${records?.length ?? 0} ${records?.length === 1 ? 'record' : 'records'}`}
-                </p>
+                <p>@{person.handle}</p>
                 {owner && user ? (
                     <CollectionSharing key={person.id} user={user} />
                 ) : (

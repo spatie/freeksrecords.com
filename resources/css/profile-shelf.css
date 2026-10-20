@@ -7,3 +7,19 @@
 .profile-record-room .record-room::after {
     content: none;
 }
+
+.profile-record-room .record-social {
+    margin-top: 32px;
+}
+
+.profile-record-room .record-social .conversation,
+.profile-record-room .record-social .panel {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.profile-record-room .record-social .panel::after {
+    content: none;
+}
