@@ -113,7 +113,7 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
                     <Head title={overlay.record.payload.displayTitle} />
                     <ListeningView
                         key={overlay.record.id}
-                        interactiveSleeve
+                        clubLayout
                         returnOrigin={() =>
                             sourceArtwork.current?.isConnected
                                 ? artworkOrigin(sourceArtwork.current)

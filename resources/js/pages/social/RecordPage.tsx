@@ -24,7 +24,7 @@ export function RecordPage(props: RecordProps) {
             <Head title={payload.displayTitle} />
             <RecordRoom>
                 <ListeningView
-                    interactiveSleeve
+                    clubLayout
                     instant
                     origin={null}
                     record={{

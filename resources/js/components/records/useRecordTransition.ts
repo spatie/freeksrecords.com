@@ -17,8 +17,8 @@ type RecordTransitionOptions = {
     instanceId: number;
     origin: SleeveOrigin | null;
     returnOrigin?: () => SleeveOrigin | null;
-    interactiveSleeve?: boolean;
-    /** Skip the entrance, for a record the server already rendered in place. */
+    clubLayout?: boolean;
+    /** Skip the cover's entrance flight for a record rendered in place. */
     instant: boolean;
     onSettled: () => void;
     onReturned: () => void;
@@ -31,7 +31,7 @@ export function useRecordTransition({
     instanceId,
     origin,
     returnOrigin,
-    interactiveSleeve = false,
+    clubLayout = false,
     instant,
     onSettled,
     onReturned,
@@ -43,7 +43,6 @@ export function useRecordTransition({
     const vinyl = useRef<HTMLDivElement>(null);
     const animations = useRef<Animation[]>([]);
     const returning = useRef(false);
-    const pulled = useRef(false);
     const [phase, setPhase] = useState<RecordTransitionPhase>('moving');
     const settle = useEffectEvent(() => {
         if (returning.current) return;
@@ -53,23 +52,20 @@ export function useRecordTransition({
 
     useLayoutEffect(() => {
         if (!stage.current || !sleeve.current || !vinyl.current) return;
-        const duration =
-            instant || prefersReducedMotion()
-                ? 0
-                : interactiveSleeve
-                  ? 650
-                  : 420;
+        const reducedMotion = prefersReducedMotion();
+        const duration = instant || reducedMotion ? 0 : clubLayout ? 650 : 420;
         const target = stage.current.getBoundingClientRect();
         const animate = (
             element: HTMLElement | null,
             frames: Keyframe[],
             delay = 0,
+            animationDuration = duration,
         ) => {
             if (!element) return;
             animations.current.push(
                 element.animate(frames, {
-                    duration: Math.max(0, duration - delay),
-                    delay: duration === 0 ? 0 : delay,
+                    duration: Math.max(0, animationDuration - delay),
+                    delay: animationDuration === 0 ? 0 : delay,
                     easing: restingEase,
                     fill: 'both',
                 }),
@@ -85,15 +81,25 @@ export function useRecordTransition({
         ]);
         animate(sleeve.current, [
             { transform: 'none' },
-            { transform: interactiveSleeve ? 'rotate(-6deg)' : sleeveRest },
+            {
+                transform: clubLayout
+                    ? 'translate(-8%, 5%) rotate(-9deg)'
+                    : sleeveRest,
+            },
         ]);
+        const vinylDelay = clubLayout ? (duration > 0 ? 300 : 0) : 50;
         animate(
             vinyl.current,
             [
                 { transform: 'none' },
-                { transform: interactiveSleeve ? 'none' : vinylRest },
+                {
+                    transform: clubLayout
+                        ? 'translateX(43%) rotate(80deg)'
+                        : vinylRest,
+                },
             ],
-            50,
+            vinylDelay,
+            clubLayout && !reducedMotion ? vinylDelay + 650 : duration,
         );
         animate(surface.current, [{ opacity: 0 }, { opacity: 1 }]);
         animate(backdrop.current, [{ opacity: 0 }, { opacity: 1 }]);
@@ -108,49 +114,13 @@ export function useRecordTransition({
             animations.current.forEach((animation) => animation.cancel());
             animations.current = [];
         };
-    }, [origin, instant, interactiveSleeve]);
-
-    function toggleVinyl() {
-        if (phase !== 'settled' || returning.current) return;
-        pulled.current = !pulled.current;
-        for (const [element, transform] of [
-            [
-                sleeve.current,
-                pulled.current
-                    ? 'translate(-8%, 5%) rotate(-9deg)'
-                    : 'rotate(-6deg)',
-            ],
-            [
-                vinyl.current,
-                pulled.current ? 'translateX(43%) rotate(80deg)' : 'none',
-            ],
-        ] as const) {
-            if (!element) continue;
-            animations.current.push(
-                element.animate(
-                    [
-                        { transform: getComputedStyle(element).transform },
-                        { transform },
-                    ],
-                    {
-                        duration: prefersReducedMotion() ? 0 : 650,
-                        easing: restingEase,
-                        fill: 'both',
-                    },
-                ),
-            );
-        }
-    }
+    }, [origin, instant, clubLayout]);
 
     async function putAway() {
         if (returning.current) return;
         returning.current = true;
         setPhase('returning');
-        const duration = prefersReducedMotion()
-            ? 0
-            : interactiveSleeve
-              ? 500
-              : 190;
+        const duration = prefersReducedMotion() ? 0 : clubLayout ? 500 : 190;
         const elements = [stage.current, sleeve.current, vinyl.current];
         const transforms = elements.map((element) =>
             element ? getComputedStyle(element).transform : 'none',
@@ -207,6 +177,5 @@ export function useRecordTransition({
         refs: { stage, surface, backdrop, sleeve, vinyl },
         phase,
         putAway,
-        toggleVinyl,
     };
 }

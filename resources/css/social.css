@@ -43,7 +43,7 @@
         color: var(--ink);
         background: var(--page-color);
         font:
-            15px/1.5 'Club Sans',
+            16px/1.5 'Club Sans',
             sans-serif;
     }
     :scope.home-page,
@@ -197,7 +197,7 @@
         align-items: center;
         gap: 8px;
         min-width: 0;
-        font-size: 12px;
+        font-size: 15px;
     }
     .account-trigger {
         anchor-name: --account;
@@ -258,7 +258,7 @@
         right: -3px;
         background: var(--acid);
         color: var(--ink);
-        font-size: 10px;
+        font-size: 14px;
         padding: 2px 6px;
         border-radius: 20px;
     }
@@ -289,7 +289,7 @@
         text-align: left;
         text-decoration: none;
         background: transparent;
-        font-size: 14px;
+        font-size: 16px;
     }
     .account-popover > :is(a, button):hover,
     .account-popover [aria-current] {
@@ -373,11 +373,11 @@
     .notification-copy {
         display: grid;
         gap: 4px;
-        font-size: 13px;
+        font-size: 15px;
         overflow-wrap: anywhere;
     }
     .notification-unread {
-        font-size: 10px;
+        font-size: 14px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
     }
@@ -395,6 +395,9 @@
         margin: auto;
         padding: 36px 4.5vw 90px;
         min-height: calc(100svh - 94px);
+    }
+    .page:has(.record-focus) {
+        z-index: 50;
     }
     .page::before {
         content: '';
@@ -441,13 +444,13 @@
         margin: 0 0 18px;
     }
     .lede {
-        font-size: 15px;
+        font-size: 16px;
         max-width: 60ch;
         line-height: 1.6;
     }
     small,
     .muted {
-        font-size: 12px;
+        font-size: 14px;
         line-height: 1.6;
         color: #514e40;
     }
@@ -460,7 +463,7 @@
         margin-bottom: 0;
     }
     .page-eyebrow {
-        font-size: 11px;
+        font-size: 14px;
         text-transform: uppercase;
         letter-spacing: 0.12em;
     }
@@ -476,7 +479,7 @@
         background: var(--ink);
         color: var(--cream);
         text-decoration: none;
-        font-size: 13px;
+        font-size: 16px;
         transition:
             background 180ms,
             color 180ms,
@@ -521,7 +524,7 @@
         margin: 0;
     }
     .section-heading > a {
-        font-size: 12px;
+        font-size: 15px;
     }
     .spaced {
         margin-top: 28px;
@@ -536,7 +539,7 @@
     label {
         display: grid;
         gap: 8px;
-        font-size: 13px;
+        font-size: 16px;
     }
     input,
     select,
@@ -564,7 +567,7 @@
     .field-error {
         margin: 0;
         color: #88200e;
-        font-size: 13px;
+        font-size: 15px;
     }
     input[aria-invalid='true'] {
         border-width: 2px;
@@ -615,7 +618,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 12px 24px;
-        font-size: 11px;
+        font-size: 14px;
         text-transform: uppercase;
         letter-spacing: 0.07em;
         list-style: none;
@@ -630,7 +633,7 @@
     .onboarding-detail,
     .discogs-help {
         max-width: 60ch;
-        font-size: 13px;
+        font-size: 15px;
         margin-top: 24px;
     }
     .discogs-help {
@@ -646,7 +649,7 @@
         flex-wrap: wrap;
         gap: 10px 20px;
         margin: 22px 0;
-        font-size: 13px;
+        font-size: 15px;
     }
     .import-label {
         display: inline-flex;
@@ -696,11 +699,11 @@
     }
     .collector-heading p {
         margin: 0;
-        font-size: 14px;
+        font-size: 16px;
     }
     .collection-visibility {
         margin-left: auto;
-        font-size: 13px;
+        font-size: 15px;
     }
     .settings-layout {
         display: grid;
@@ -840,17 +843,17 @@
     }
     .person-row p {
         margin: 0;
-        font-size: 12px;
+        font-size: 15px;
     }
     .person-row .text-button {
-        font-size: 12px;
+        font-size: 15px;
         min-height: 44px;
     }
     .badge {
         border: 1px solid;
         padding: 5px 10px;
         border-radius: 30px;
-        font-size: 11px;
+        font-size: 14px;
         white-space: nowrap;
     }
     .collection-previews {
@@ -913,7 +916,7 @@
     }
     .collection-preview-caption p {
         margin: 0;
-        font-size: 12px;
+        font-size: 15px;
     }
     .collection-preview-link:hover h2 {
         text-decoration: underline;
@@ -927,12 +930,12 @@
     }
     .comment .section-heading {
         margin-bottom: 10px;
-        font-size: 13px;
+        font-size: 15px;
     }
     .comment-body {
         white-space: pre-wrap;
         overflow-wrap: anywhere;
-        font-size: 14px;
+        font-size: 16px;
     }
     .appreciation {
         display: flex;
@@ -944,7 +947,7 @@
     }
     .appreciation p {
         margin: 0;
-        font-size: 12px;
+        font-size: 15px;
     }
     .legal-document {
         max-width: 900px;
@@ -976,7 +979,7 @@
         background: var(--cream);
     }
     .demo-logins p {
-        font-size: 12px;
+        font-size: 14px;
     }
     .demo-logins small {
         display: block;
@@ -1122,7 +1125,7 @@
         position: absolute;
         right: 4.5vw;
         bottom: 25px;
-        font-size: 11px;
+        font-size: 14px;
     }
     .landing-empty {
         position: absolute;
@@ -1195,7 +1198,7 @@
         }
         .guest-navigation .button {
             padding-inline: 12px;
-            font-size: 11px;
+            font-size: 15px;
         }
         .notifications-popover {
             right: 16px;
@@ -1298,7 +1301,7 @@
         }
         .landing-signoff {
             right: 5vw;
-            font-size: 10px;
+            font-size: 14px;
         }
     }
     @media (prefers-reduced-motion: reduce) {

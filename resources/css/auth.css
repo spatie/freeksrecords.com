@@ -44,7 +44,7 @@
         padding-bottom: 18px;
         margin-bottom: 26px;
         border-bottom: 1px solid;
-        font-size: 10px;
+        font-size: 14px;
         letter-spacing: 0.12em;
         text-transform: uppercase;
     }
@@ -60,7 +60,7 @@
     }
     .auth-introduction {
         max-width: 30ch;
-        font-size: 14px;
+        font-size: 16px;
         margin-bottom: 28px;
     }
     .auth-panel .stack {
@@ -70,11 +70,11 @@
         justify-self: stretch;
     }
     .auth-panel label {
-        font-size: 12px;
+        font-size: 16px;
     }
     .auth-panel label small {
         text-transform: none;
-        font-size: 11px;
+        font-size: 14px;
     }
     .auth-links {
         display: flex;
@@ -82,10 +82,10 @@
         justify-content: space-between;
         gap: 12px;
         margin-top: 24px;
-        font-size: 12px;
+        font-size: 15px;
     }
     .auth-panel > p:last-child {
-        font-size: 12px;
+        font-size: 15px;
         margin: 24px 0 0;
     }
     .auth-panel > form:not(.stack) {
@@ -96,7 +96,7 @@
         gap: 14px;
         align-items: center;
         margin: 20px 0;
-        font-size: 11px;
+        font-size: 14px;
     }
     .auth-divider::before,
     .auth-divider::after {

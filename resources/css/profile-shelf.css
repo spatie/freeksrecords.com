@@ -63,7 +63,12 @@
         background: transparent;
         border: 0;
         padding: 10px 0;
-        font-size: 13px;
+        font-size: 16px;
+    }
+    .record-search input::placeholder,
+    .artist-search input::placeholder {
+        color: var(--ink);
+        opacity: 1;
     }
     .record-search:focus-within {
         outline: 2px solid;
@@ -111,7 +116,7 @@
     }
     .index-heading > span {
         font:
-            11px 'Club Sans',
+            14px 'Club Sans',
             sans-serif;
     }
     .index-groups {
@@ -126,10 +131,10 @@
         padding: 10px 0;
         border-top: 1px solid #20201633;
         text-decoration: none;
-        font-size: 13px;
+        font-size: 15px;
     }
     .index-group > span:last-child {
-        font-size: 10px;
+        font-size: 14px;
         padding-top: 3px;
     }
     .index-group[aria-current],
@@ -149,7 +154,7 @@
         padding: 10px 0;
         border: 0;
         background: transparent;
-        font-size: 12px;
+        font-size: 16px;
     }
     .artist-search button {
         min-width: 30px;
@@ -161,11 +166,11 @@
         align-items: center;
         width: 100%;
         padding: 16px 0 0;
-        font-size: 12px;
+        font-size: 14px;
     }
     .index-empty {
         padding: 20px 0;
-        font-size: 12px;
+        font-size: 14px;
     }
     .collection-main {
         min-width: 0;
@@ -204,7 +209,7 @@
     }
     .collection-loading {
         padding: 20px 25px;
-        font-size: 13px;
+        font-size: 15px;
     }
     .collection-main.is-draggable {
         max-height: 76svh;
@@ -310,7 +315,8 @@
         gap: 4px;
         margin-top: 25px;
         padding-inline: 2px;
-        font-size: 11px;
+        font-size: 14px;
+        line-height: 1.5;
         overflow-wrap: anywhere;
     }
     .catalog-record-label strong {
@@ -323,7 +329,7 @@
         text-decoration: underline;
     }
     .catalog-record-year {
-        font-size: 10px;
+        font-size: 14px;
     }
     .cabinet-year-heading {
         padding: 24px 25px 0;
@@ -344,7 +350,7 @@
     }
     .empty-shelf button {
         text-decoration: underline;
-        font-size: 13px;
+        font-size: 15px;
     }
     .shelf-load-sentinel {
         height: 1px;
@@ -389,10 +395,11 @@
         );
     }
     .listening-scroll {
-        height: 100%;
+        position: absolute;
+        inset: 85px 0 0;
         overflow-y: auto;
         overscroll-behavior: contain;
-        padding: 95px 5vw 60px;
+        padding: 10px 5vw 60px;
         scrollbar-width: thin;
     }
     .listening-view.is-moving:not(.is-returning) .listening-scroll {
@@ -424,7 +431,7 @@
         align-items: center;
         gap: 8px;
         min-height: 46px;
-        font-size: 12px;
+        font-size: 15px;
     }
     .record-share-status {
         position: absolute;
@@ -434,7 +441,7 @@
         padding: 10px 14px;
         background: var(--ink);
         color: var(--paper);
-        font-size: 12px;
+        font-size: 14px;
     }
     .listening-layout {
         display: grid;
@@ -470,25 +477,6 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-    }
-    .sleeve-pull {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: transparent;
-        padding: 0;
-        border: 0;
-    }
-    .sleeve-pull:hover {
-        cursor: grab;
-    }
-    .sleeve-pull-hint {
-        position: absolute;
-        top: calc(100% + 62px);
-        width: 100%;
-        text-align: center;
-        font-size: 11px;
     }
     .extracted-vinyl {
         inset: 3%;
@@ -555,8 +543,7 @@
         transform: translateY(16px);
         pointer-events: none;
     }
-    .is-returning .listening-information,
-    .is-returning .sleeve-pull-hint {
+    .is-returning .listening-information {
         opacity: 0;
         pointer-events: none;
     }
@@ -570,14 +557,14 @@
         display: flex;
         align-items: center;
         gap: 7px;
-        font-size: 14px;
+        font-size: 16px;
     }
     .listening-artist:hover {
         text-decoration: underline;
     }
     .listening-title {
         font:
-            700 clamp(60px, 7vw, 112px)/0.85 'Club Display',
+            700 clamp(60px, 7vw, 112px)/1.1 'Club Display',
             sans-serif;
         letter-spacing: -0.025em;
         text-transform: uppercase;
@@ -591,11 +578,11 @@
         display: flex;
         flex-wrap: wrap;
         gap: 8px 18px;
-        font-size: 12px;
+        font-size: 15px;
     }
     .record-collection-date {
         margin: 14px 0;
-        font-size: 11px;
+        font-size: 14px;
     }
     .album-listen-links {
         display: flex;
@@ -610,7 +597,7 @@
         padding: 10px 12px;
         border: 1px solid #20201666;
         border-radius: 30px;
-        font-size: 11px;
+        font-size: 14px;
         text-decoration: none;
     }
     .album-listen-links a:hover {
@@ -632,20 +619,20 @@
     }
     .listening-tracklist li {
         display: grid;
-        grid-template-columns: 24px minmax(0, 1fr) 35px 34px 34px;
+        grid-template-columns: 28px minmax(0, 1fr) 42px 34px 34px;
         align-items: center;
         gap: 6px;
         padding: 8px 0;
         border-top: 1px solid #20201633;
-        font-size: 12px;
+        font-size: 15px;
     }
     .track-name small {
         display: block;
-        font-size: 10px;
+        font-size: 14px;
     }
     .track-position,
     .track-duration {
-        font-size: 10px;
+        font-size: 14px;
     }
     .listening-tracklist li > a {
         display: grid;
@@ -670,7 +657,7 @@
         margin-top: 30px;
     }
     .record-social .conversation > .muted {
-        font-size: 11px;
+        font-size: 14px;
     }
     .appreciation .button {
         border-radius: 0;
@@ -786,7 +773,6 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .catalog-record-label {
-            font-size: 10px;
             margin-top: 20px;
         }
         .collection-heading {
@@ -797,7 +783,7 @@
             padding-left: 18px;
         }
         .listening-scroll {
-            padding: 85px 7vw 45px;
+            padding: 0 7vw 45px;
         }
         .listening-layout {
             grid-template-columns: 1fr;
@@ -806,7 +792,7 @@
         .record-stage {
             position: relative;
             height: auto;
-            padding: 0 0 110px;
+            padding: 0 0 50px;
         }
         .record-stage-art {
             width: 72%;

@@ -22,7 +22,7 @@ import type {
 import { useRecordTransition } from '@/components/records/useRecordTransition';
 
 type ListeningViewProps = {
-    interactiveSleeve?: boolean;
+    clubLayout?: boolean;
     returnOrigin?: () => SleeveOrigin | null;
     instant: boolean;
     onBack: () => void;
@@ -60,7 +60,7 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 export function ListeningView({
-    interactiveSleeve = false,
+    clubLayout = false,
     returnOrigin,
     instant,
     onBack,
@@ -74,9 +74,9 @@ export function ListeningView({
     const label = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const [shareStatus, setShareStatus] = useState('');
-    const { refs, phase, putAway, toggleVinyl } = useRecordTransition({
+    const { refs, phase, putAway } = useRecordTransition({
         instanceId: record.instanceId,
-        interactiveSleeve,
+        clubLayout,
         returnOrigin,
         origin,
         instant,
@@ -232,10 +232,7 @@ export function ListeningView({
                                     <img
                                         alt={`${record.displayTitle} sleeve`}
                                         onLoad={(event) => {
-                                            if (
-                                                interactiveSleeve &&
-                                                dialog.current
-                                            ) {
+                                            if (clubLayout && dialog.current) {
                                                 for (const [
                                                     name,
                                                     value,
@@ -262,21 +259,7 @@ export function ListeningView({
                                         src={record.cover}
                                         width={600}
                                     />
-                                    {interactiveSleeve && (
-                                        <button
-                                            type="button"
-                                            className="sleeve-pull"
-                                            aria-label="Pull the vinyl out or slide it back in"
-                                            disabled={phase !== 'settled'}
-                                            onClick={toggleVinyl}
-                                        />
-                                    )}
                                 </div>
-                                {interactiveSleeve && (
-                                    <span className="sleeve-pull-hint">
-                                        Click the sleeve. Take a closer look. ↗
-                                    </span>
-                                )}
                             </div>
                         </div>
                         <div className="listening-information">
