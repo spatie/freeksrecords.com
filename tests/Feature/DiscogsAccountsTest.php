@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
+use Inertia\Testing\AssertableInertia as Assert;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -54,16 +55,18 @@ it('reports only the signed-in collector’s import progress through completion 
         ])
         ->assertDontSee('private-access')->assertDontSee('private-secret')->assertDontSee('Another collector');
     expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
-    $this->get('/feed')->assertOk()->assertSee('Add your records')->assertSee('1 record imported');
+    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('auth.user.syncStatus', 'Syncing')->where('collectionCount', 1)->where('auth.user.importedAt', null));
 
     $user->update(['sync_status' => 'Sync failed. Existing records were kept.']);
     $this->getJson('/discogs/status')->assertJsonPath('failed', true)->assertJsonPath('count', 1);
-    $this->get('/feed')->assertSee('Retry import');
+    $this->get('/feed')->assertInertia(fn (Assert $page) => $page->where('auth.user.syncStatus', 'Sync failed. Existing records were kept.'));
     $user->update(['handle' => 'renamedcollector', 'visibility' => 'friends', 'sync_status' => 'Up to date', 'collection_imported_at' => now()]);
     $this->getJson('/discogs/status')->assertJsonPath('complete', true)->assertJsonPath('failed', false)
         ->assertJsonPath('collectorId', $user->id)->assertJsonPath('collectionUrl', url('/renamedcollector'))
         ->assertJsonPath('visibility', 'Friends');
-    $this->get('/feed')->assertSee('View my collection')->assertDontSee('data-import-status', false);
+    $this->get('/feed')->assertInertia(fn (Assert $page) => $page
+        ->where('auth.user.profileUrl', '/renamedcollector')->where('auth.user.importedAt', $user->collection_imported_at->toIso8601String()));
 });
 
 it('rejects forged, expired and cross-user callbacks without reaching Discogs', function (string $scenario) {

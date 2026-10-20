@@ -14,7 +14,6 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/social.css',
                 'resources/js/app.tsx',
-                'resources/js/profile-shelf.tsx',
             ],
             refresh: true,
             fonts: [

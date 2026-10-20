@@ -1,0 +1,187 @@
+import { Head, Link, usePage } from '@inertiajs/react';
+import { useEffect, type ReactNode } from 'react';
+
+import { legacyCollectionUrl } from '@/lib/record-history';
+import { AccountMenu } from '@/modules/social/AccountMenu';
+import { NotificationsPopover } from '@/modules/social/NotificationsPopover';
+import type { SocialProps } from '@/modules/social/types';
+import '../../../css/social.css';
+import '../../../css/auth.css';
+import '../../../css/collection-visibility.css';
+
+export function SocialLayout({ children }: { children: ReactNode }) {
+    const { props, url, component } = usePage<SocialProps>();
+    const user = props.auth.user;
+    const path = url.split(/[?#]/)[0];
+    const pageClass =
+        component === 'social/HomePage'
+            ? 'home-page'
+            : component === 'social/AuthPage'
+              ? 'auth-page'
+              : component === 'social/ProfilePage'
+                ? 'collection-page'
+                : component.includes('Privacy') || component.includes('Terms')
+                  ? 'legal-page'
+                  : '';
+
+    useEffect(() => {
+        if (path !== '/' && path !== '/feed') return;
+        const destination = legacyCollectionUrl(window.location.hash);
+        if (destination) window.location.replace(destination);
+    }, [path]);
+
+    return (
+        <div className={`social-app ${pageClass}`}>
+            <Head>
+                <meta name="robots" content="noindex, nofollow" />
+            </Head>
+            <a className="skip" href="#main">
+                Skip to content
+            </a>
+            <header className="site-header">
+                <Link className="brand" href="/">
+                    <span className="brand-mark" aria-hidden="true" /> Plaat
+                    Club<span className="brand-period">.</span>
+                </Link>
+                {user ? (
+                    <>
+                        {user.verified && (
+                            <nav
+                                className="main-navigation"
+                                aria-label="Main navigation"
+                            >
+                                <Link
+                                    href={user.profileUrl}
+                                    aria-current={
+                                        path === user.profileUrl
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
+                                    My collection
+                                </Link>
+                                <Link
+                                    href="/feed"
+                                    aria-current={
+                                        path === '/feed' || path === '/friends'
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
+                                    Friends
+                                </Link>
+                                <Link
+                                    href="/collections"
+                                    aria-current={
+                                        path === '/collections'
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
+                                    Explore
+                                </Link>
+                            </nav>
+                        )}
+                        <div className="header-account">
+                            {user.verified ? (
+                                <NotificationsPopover
+                                    key={`${user.id}:${props.notificationCount}`}
+                                />
+                            ) : (
+                                <Link
+                                    href="/verify-email"
+                                    aria-current={
+                                        path === '/verify-email'
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
+                                    Verify email
+                                </Link>
+                            )}
+                            <AccountMenu
+                                key={user.id}
+                                user={user}
+                                path={path}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <nav
+                        className="guest-navigation"
+                        aria-label="Main navigation"
+                    >
+                        <Link
+                            className="guest-explore"
+                            href="/collections"
+                            aria-current={
+                                path === '/collections' ? 'page' : undefined
+                            }
+                        >
+                            Explore
+                        </Link>
+                        <Link
+                            href="/login"
+                            aria-current={
+                                path === '/login' ? 'page' : undefined
+                            }
+                        >
+                            Sign in
+                        </Link>
+                        {!component.endsWith('AuthPage') && (
+                            <Link className="button small" href="/register">
+                                Create account
+                            </Link>
+                        )}
+                    </nav>
+                )}
+            </header>
+            <main id="main" className="page">
+                {user?.verified &&
+                    (path === '/feed' || path === '/friends') && (
+                        <nav
+                            className="friends-navigation"
+                            aria-label="Friends navigation"
+                        >
+                            <Link
+                                href="/feed"
+                                aria-current={
+                                    path === '/feed' ? 'page' : undefined
+                                }
+                            >
+                                Additions
+                            </Link>
+                            <Link
+                                href="/friends"
+                                aria-current={
+                                    path === '/friends' ? 'page' : undefined
+                                }
+                            >
+                                Your friends
+                            </Link>
+                        </nav>
+                    )}
+                {props.flash.status && (
+                    <p className="notice" role="status">
+                        {props.flash.status}
+                    </p>
+                )}
+                {Object.keys(props.errors).length > 0 && (
+                    <div className="errors" role="alert">
+                        <strong>Please check the following:</strong>
+                        <ul>
+                            {Object.entries(props.errors).map(
+                                ([field, message]) => (
+                                    <li key={field}>
+                                        <a href={`#${field}`}>{message}</a>
+                                    </li>
+                                ),
+                            )}
+                        </ul>
+                    </div>
+                )}
+                {children}
+            </main>
+        </div>
+    );
+}

@@ -198,10 +198,10 @@ requires both `APP_ENV=local` and `SOCIAL_DEMO_MODE=true`, allows only existing 
 demo accounts, and restricts hosts to loopback and the configured app URL. It never
 creates users or permits switching to Freek’s reserved account. Normal email/password
 authentication remains unchanged; production installs use `composer install --no-dev`.
-In Settings, enable the digest and use **Check my digest preview** to exercise the
-last seven days without changing the scheduled weekly checkpoint. This button is
-available only with `APP_ENV=local` and `SOCIAL_DEMO_MODE=true`; privacy and empty-week
-suppression still apply. Real Discogs authorization requires your own OAuth consumer
+For developer email checks, enable a demo user’s digest and run
+`php artisan social:send-digests --preview-for=<user-id>` locally. This checks the last
+seven days without changing the weekly checkpoint; privacy and empty-week suppression
+still apply. There are no preview tools in Settings. Real Discogs authorization requires your own OAuth consumer
 credentials; missing credentials show an actionable message rather than a fake connection.
 
 ## Deployment

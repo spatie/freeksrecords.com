@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class AccountController extends Controller
 {
@@ -21,11 +22,12 @@ class AccountController extends Controller
     {
         $request->merge(['email' => strtolower($request->string('email')->trim()), 'handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:80'],
-            'handle' => ['required', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), 'unique:users'],
+            'name' => ['nullable', 'string', 'max:80'],
+            'handle' => ['nullable', 'string', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), 'unique:users'],
             'email' => ['required', 'email', 'max:254', 'unique:users'],
             'password' => ['required', 'confirmed', PasswordRule::min(12)],
         ], [], ['handle' => 'username']);
+
         $user = User::query()->create($data);
         event(new Registered($user));
         Auth::login($user);
@@ -51,6 +53,7 @@ class AccountController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        Inertia::clearHistory();
 
         return redirect('/');
     }
@@ -103,7 +106,6 @@ class AccountController extends Controller
         $user = $request->user();
         $request->merge(['handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:80'],
             'handle' => ['required', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), Rule::unique('users')->ignore($user->id)],
             'visibility' => ['required', Rule::in($user->legacy_owner ? ['everyone'] : ['only_me', 'friends', 'everyone'])],
             'comments_enabled' => ['required', 'boolean'], 'digest_enabled' => ['required', 'boolean'],

@@ -11,9 +11,9 @@ type RecordShelfProps = {
     groupByYear: boolean;
     showYears?: boolean;
     onMore: () => void;
-    onArtist: (artist: string) => void;
+    onArtist?: (artist: string) => void;
     onReset: () => void;
-    onSelect: (record: CollectionRecordSummary) => void;
+    onSelect?: (record: CollectionRecordSummary) => void;
     records: CollectionRecordSummary[];
     transitionRecordId: number | null;
     visibleCount: number;
@@ -90,8 +90,16 @@ export function RecordShelf({
                             {section.records.map((record) => (
                                 <RecordSleeve
                                     browseBasePath={browseBasePath}
-                                    key={record.instanceId}
-                                    onSelect={() => onSelect(record)}
+                                    key={
+                                        record.owner
+                                            ? record.shareUrl
+                                            : record.instanceId
+                                    }
+                                    onSelect={
+                                        onSelect
+                                            ? () => onSelect(record)
+                                            : undefined
+                                    }
                                     onArtist={onArtist}
                                     record={record}
                                     showYear={showYears}

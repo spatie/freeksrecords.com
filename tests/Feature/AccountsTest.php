@@ -8,25 +8,28 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('shows local demo login controls only on the login page', function () {
     app()->detectEnvironment(fn () => 'local');
     config(['services.social_demo' => true]);
     $alex = socialUser('alex');
 
-    $this->get('/login')->assertOk()->assertSeeText('Local demo accounts')->assertSee(route('loginLinkLogin'), false);
+    $this->get('/login')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('demoUsers', 1)->where('demoUsers.0.email', $alex->email)
+        ->where('demoUsers.0.url', route('loginLinkLogin', absolute: false)));
 
     foreach (['/', '/register', '/forgot-password', '/reset-password/preview-token', '/people/alex'] as $path) {
-        $this->get($path)->assertOk()->assertDontSee('demo-logins')->assertDontSee('laravel-login-link-login');
+        $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->where('demoUsers', []));
     }
 
     $this->actingAs($alex);
     foreach (['/people/alex', '/feed', '/settings'] as $path) {
-        $this->get($path)->assertOk()->assertDontSee('demo-logins')->assertDontSee('laravel-login-link-login');
+        $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->where('demoUsers', []));
     }
 
     $alex->update(['email_verified_at' => null]);
-    $this->get('/verify-email')->assertOk()->assertDontSee('demo-logins')->assertDontSee('laravel-login-link-login');
+    $this->get('/verify-email')->assertOk()->assertInertia(fn (Assert $page) => $page->where('demoUsers', []));
 });
 
 it('switches existing local demo accounts without passwords and ignores forged package selectors', function () {
@@ -34,7 +37,8 @@ it('switches existing local demo accounts without passwords and ignores forged p
     config(['services.social_demo' => true]);
     $alex = socialUser('alex');
     $robin = socialUser('robin');
-    $this->get('/login')->assertOk()->assertSeeText('Local demo accounts')->assertSeeText('Alex')->assertSeeText('Robin')->assertDontSeeText('Sam');
+    $this->get('/login')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->has('demoUsers', 2)->where('demoUsers.0.label', 'Alex')->where('demoUsers.1.label', 'Robin'));
 
     $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/feed');
     $this->assertAuthenticatedAs($alex);
@@ -63,7 +67,7 @@ it('hides and disables login links outside explicitly enabled local demos', func
     app()->detectEnvironment(fn () => $environment);
     config(['services.social_demo' => $enabled]);
     $alex = socialUser('alex');
-    $this->get('/login')->assertOk()->assertDontSee('Local demo accounts')->assertDontSee('laravel-login-link-login');
+    $this->get('/login')->assertOk()->assertInertia(fn (Assert $page) => $page->where('demoUsers', []));
     $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $alex->email, '_token' => 'demo-login'])->assertNotFound();
     $this->assertGuest();
 })->with([['production', true], ['staging', true], ['testing', true], ['local', false]]);
@@ -79,22 +83,97 @@ it('renders account emails with a shared inline layout and a working action link
 
 it('registers a private account, verifies the inbox, and authenticates securely', function () {
     Notification::fake();
-    $this->post('/register', ['name' => 'New Collector', 'handle' => 'New_Collector', 'email' => 'NEW@example.test', 'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password', 'visibility' => 'everyone', 'email_verified_at' => now(), 'legacy_owner' => true])->assertRedirect('/verify-email');
+    $this->post('/register', ['name' => 'New Collector', 'handle' => 'New_Collector', 'email' => 'NEW@example.test', 'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password', 'visibility' => 'everyone', 'email_verified_at' => now(), 'legacy_owner' => true, 'google_id' => 'forged-google-identity'])->assertRedirect('/verify-email');
     $user = User::query()->where('email', 'new@example.test')->firstOrFail();
-    expect($user->handle)->toBe('new_collector')->and($user->visibility)->toBe('only_me')->and($user->legacy_owner)->toBeFalse()->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue();
+    expect($user->handle)->toBe('new_collector')->and($user->visibility)->toBe('only_me')->and($user->legacy_owner)->toBeFalse()->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()->and($user->google_id)->toBeNull();
     expect(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
     Notification::assertSentTo($user, VerifyEmail::class);
     $this->get('/feed')->assertRedirect('/verify-email');
-    $this->get('/verify-email')->assertOk()->assertSee($user->email)->assertSee('bring in your records from Discogs')
-        ->assertDontSee('href="/friends"', false)->assertDontSee('href="/settings"', false);
+    $this->get('/verify-email')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('social/AuthPage')->where('mode', 'verify')->where('auth.user.email', $user->email)
+        ->where('auth.user.verified', false));
     $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
-    $this->get('/feed')->assertOk();
+    $this->get('/feed')->assertOk()->assertViewHas('page.encryptHistory', true);
     $this->post('/logout')->assertRedirect('/');
     $this->assertGuest();
+    $this->get('/')->assertViewHas('page.clearHistory', true);
+    $this->get('/settings')->assertRedirect('/login');
     $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])->assertSessionHasErrors('email');
-    $this->post('/login', ['email' => $user->email, 'password' => 'a-long-demo-password'])->assertRedirect('/feed');
+    $this->post('/login', ['email' => $user->email, 'password' => 'a-long-demo-password'])->assertRedirect('/settings');
     $this->assertAuthenticatedAs($user);
 });
+
+it('registers with only an email and confirmed password and lets the username change in settings', function () {
+    Notification::fake();
+    $this->post('/register', [
+        'email' => ' NEW.COLLECTOR@example.test ',
+        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        'visibility' => 'everyone', 'legacy_owner' => true, 'email_verified_at' => now(),
+    ])->assertRedirect('/verify-email');
+
+    $user = User::query()->where('email', 'new.collector@example.test')->firstOrFail();
+    expect($user->name)->toBe('New Collector')->and($user->handle)->toBe('new_collector')
+        ->and($user->visibility)->toBe('only_me')->and($user->legacy_owner)->toBeFalse()
+        ->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()
+        ->and(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
+    $this->assertAuthenticatedAs($user);
+    Notification::assertSentTo($user, VerifyEmail::class);
+    $this->get('/settings')->assertRedirect('/verify-email');
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
+    $this->patch('/settings', [
+        'handle' => ' Chosen_Handle ', 'visibility' => 'only_me',
+        'comments_enabled' => true, 'digest_enabled' => true,
+    ])->assertSessionHasNoErrors();
+    expect($user->fresh()->handle)->toBe('chosen_handle')->and($user->fresh()->name)->toBe('New Collector');
+    $this->get('/people/chosen_handle')->assertOk()->assertSee('New Collector');
+    $this->patch('/settings', [
+        'handle' => '', 'visibility' => 'only_me',
+        'comments_enabled' => true, 'digest_enabled' => true,
+    ])->assertSessionHasErrors('handle');
+});
+
+it('generates valid unique usernames from unusual, reserved and long email local parts', function (string $localPart) {
+    Notification::fake();
+    $handles = [];
+
+    foreach (['example.test', 'another.test'] as $domain) {
+        $email = "{$localPart}@{$domain}";
+        $this->post('/register', [
+            'email' => $email, 'name' => ' ', 'handle' => ' ',
+            'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        ])->assertRedirect('/verify-email');
+
+        $user = User::query()->where('email', $email)->firstOrFail();
+        expect($user->handle)->toMatch('/^[a-z0-9_]{3,30}$/')->not->toBeIn(User::RESERVED_HANDLES)
+            ->not->toBe('freek')->and($user->name)->not->toBeEmpty()
+            ->and(mb_strlen($user->name))->toBeLessThanOrEqual(80);
+        $handles[] = $user->handle;
+        $this->post('/logout')->assertRedirect('/');
+    }
+
+    expect($handles[0])->not->toBe($handles[1]);
+})->with(['collector', 'a', '---', 'élodie', '你好', 'freek', 'settings', str_repeat('a', 64)]);
+
+it('keeps validation for explicit profile fields and confirmed passwords during email-first signup', function (array $invalid, array $errors) {
+    $this->post('/register', [
+        'email' => 'collector@example.test',
+        'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password',
+        ...$invalid,
+    ])->assertSessionHasErrors($errors);
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'collector@example.test']);
+})->with([
+    [['name' => str_repeat('a', 81)], ['name']],
+    [['name' => ['invalid']], ['name']],
+    [['handle' => 'ab'], ['handle']],
+    [['handle' => str_repeat('a', 31)], ['handle']],
+    [['handle' => 'not-valid'], ['handle']],
+    [['handle' => 'freek'], ['handle']],
+    [['email' => ' FREEK@spatie.be '], ['email']],
+    [['password' => 'short', 'password_confirmation' => 'short'], ['password']],
+    [['password_confirmation' => null], ['password']],
+    [['password_confirmation' => 'different-password'], ['password']],
+]);
 
 it('reserves Freek’s identity and rejects duplicate or invalid handles and weak passwords', function () {
     $data = ['name' => 'Someone', 'handle' => 'freek', 'email' => 'other@example.test', 'password' => 'short', 'password_confirmation' => 'short'];
@@ -138,9 +217,10 @@ it('reserves top-level routes and assets in registration and settings', function
 
 it('updates only allowed profile fields and keeps the legacy collection public', function () {
     $user = socialUser('settings');
-    $this->actingAs($user)->patch('/settings', ['name' => 'New name', 'handle' => 'Changed', 'visibility' => 'friends', 'comments_enabled' => false, 'digest_enabled' => false, 'email' => 'stolen@example.test', 'legacy_owner' => true])->assertSessionHasNoErrors();
-    expect($user->fresh()->handle)->toBe('changed')->and($user->fresh()->comments_enabled)->toBeFalse()->and($user->fresh()->digest_enabled)->toBeFalse()->and($user->fresh()->email)->toBe('settings@example.test');
-    $this->get('/people/changed')->assertOk()->assertSee('New name');
+    $this->actingAs($user)->patch('/settings', ['name' => 'New name', 'handle' => 'Changed', 'visibility' => 'friends', 'comments_enabled' => false, 'digest_enabled' => false, 'email' => 'stolen@example.test', 'legacy_owner' => true, 'google_id' => 'forged-google-identity'])->assertSessionHasNoErrors();
+    expect($user->fresh()->handle)->toBe('changed')->and($user->fresh()->comments_enabled)->toBeFalse()->and($user->fresh()->digest_enabled)->toBeFalse()->and($user->fresh()->email)->toBe('settings@example.test')->and($user->fresh()->google_id)->toBeNull();
+    expect($user->fresh()->name)->toBe('Settings');
+    $this->get('/people/changed')->assertOk()->assertSee('Settings');
     $this->post('/logout');
     $freek = User::freek();
     $freek->update(['email_verified_at' => now()]);
@@ -190,7 +270,8 @@ it('seeds repeatable real catalog local data without touching Freek and refuses 
     }
     expect(User::query()->where('handle', 'casey')->first()->visibility)->toBe('only_me');
     $this->actingAs(User::query()->where('handle', 'jamie')->firstOrFail())->get('/feed')
-        ->assertOk()->assertSee('Add your records')->assertSee('Connect Discogs');
+        ->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0)
+        ->where('auth.user.discogsConnected', false)->where('auth.user.importedAt', null));
     Notification::assertNothingSent();
     app()->detectEnvironment(fn () => 'production');
     $this->artisan('social:seed-demo')->assertFailed();

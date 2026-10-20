@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+
 import { browseHash } from '@/components/records/browseState';
 import '../../../css/record-cases.css';
 
@@ -5,8 +7,8 @@ import type { CollectionRecordSummary } from '@/components/records/types';
 
 type RecordSleeveProps = {
     browseBasePath?: string;
-    onSelect: () => void;
-    onArtist: (artist: string) => void;
+    onSelect?: () => void;
+    onArtist?: (artist: string) => void;
     showYear?: boolean;
     record: CollectionRecordSummary;
     transitionRecordId: number | null;
@@ -20,6 +22,9 @@ export function RecordSleeve({
     record,
     transitionRecordId,
 }: RecordSleeveProps) {
+    const SleeveAction = onSelect ? 'button' : 'a';
+    const OwnerLink = record.owner ? Link : 'a';
+
     return (
         <article
             className="catalog-record"
@@ -28,11 +33,12 @@ export function RecordSleeve({
             data-selected={transitionRecordId === record.instanceId}
         >
             <span className="catalog-record-content">
-                <button
+                <SleeveAction
                     className="catalog-record-open"
-                    type="button"
+                    type={onSelect ? 'button' : undefined}
+                    href={onSelect ? undefined : record.shareUrl}
                     onClick={onSelect}
-                    aria-label={`Take out ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
+                    aria-label={`${record.shareUrl.startsWith('/shelves/') ? 'View' : 'Take out'} ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
                 >
                     <span className="catalog-record-art">
                         <img
@@ -57,15 +63,16 @@ export function RecordSleeve({
                         )}
                         <span className="cover-gloss" />
                     </span>
-                </button>
+                </SleeveAction>
                 <span className="catalog-record-label">
                     <strong>
                         {record.artists.map((artist, index) => (
                             <span key={artist}>
                                 {index > 0 && ', '}
-                                <a
+                                <OwnerLink
                                     onClick={(event) => {
                                         if (
+                                            !onArtist ||
                                             event.metaKey ||
                                             event.ctrlKey ||
                                             event.shiftKey ||
@@ -75,10 +82,10 @@ export function RecordSleeve({
                                         event.preventDefault();
                                         onArtist(artist);
                                     }}
-                                    href={`${browseBasePath}${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
+                                    href={`${record.owner?.profileUrl ?? browseBasePath}${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`}
                                 >
                                     {artist}
-                                </a>
+                                </OwnerLink>
                             </span>
                         ))}
                     </strong>
@@ -87,6 +94,25 @@ export function RecordSleeve({
                         <time className="catalog-record-year">
                             {record.originalYear}
                         </time>
+                    )}
+                    {record.owner && (
+                        <small className="catalog-record-activity">
+                            <Link href={record.owner.profileUrl}>
+                                {record.owner.name}
+                            </Link>
+                            {' · '}
+                            <time dateTime={record.addedAt}>
+                                {new Date(record.addedAt).toLocaleDateString(
+                                    'en-GB',
+                                    {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        timeZone: 'Europe/Brussels',
+                                    },
+                                )}
+                            </time>
+                        </small>
                     )}
                 </span>
             </span>

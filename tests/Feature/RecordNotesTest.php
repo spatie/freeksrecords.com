@@ -3,6 +3,7 @@
 use App\Models\CollectionRecord;
 use App\Models\User;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('lets an owner edit and clear notes on only the selected copy without activity or notifications', function () {
     Notification::fake();
@@ -23,7 +24,9 @@ it('lets an owner edit and clear notes on only the selected copy without activit
         ->and($record->fresh()->private_note)->toBe('Paid €20')
         ->and($copy->fresh()->shared_note)->toBeNull()
         ->and($otherCopy->fresh()->private_note)->toBeNull();
-    $this->get("/shelves/{$record->id}")->assertOk()->assertSee('name="shared_note"', false)->assertSee('name="private_note"', false)->assertSee('Paid €20');
+    $this->get("/shelves/{$record->id}")->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('record.canEditNotes', true)->where('record.privateNote', 'Paid €20')
+        ->where('record.sharedNote', "First line\nSecond line"));
     expect(CollectionRecord::friendActivity($friend)->whereKey($record->id)->exists())->toBeFalse();
     $this->actingAs($owner)->patch("/shelves/{$record->id}/notes", ['shared_note' => '', 'private_note' => ''])->assertSessionHasNoErrors();
     expect($record->fresh()->shared_note)->toBeNull()->and($record->fresh()->private_note)->toBeNull();
@@ -73,7 +76,9 @@ it('inherits current collection visibility and never renders private notes or ow
     }
     $response = $this->get("/shelves/{$record->id}");
     if ($visible) {
-        $response->assertOk()->assertSee(e($record->shared_note), false)->assertDontSee('<script>alert', false);
+        $response->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('record.sharedNote', $record->shared_note)->where('record.canEditNotes', false)
+            ->missing('record.privateNote'))->assertDontSee('<script>alert', false);
     } else {
         $response->assertNotFound()->assertDontSee('Next line');
     }
@@ -89,10 +94,11 @@ it('inherits current collection visibility and never renders private notes or ow
 it('escapes owner textarea content and omits empty shared note panels for visitors', function () {
     $owner = socialUser('notes_owner', 'everyone');
     $record = socialRecord($owner);
-    $this->get("/shelves/{$record->id}")->assertOk()->assertDontSee('Owner’s shared note');
+    $this->get("/shelves/{$record->id}")->assertOk()->assertInertia(fn (Assert $page) => $page->where('record.sharedNote', null)->missing('record.privateNote'));
     $attack = '</textarea><script>alert("note")</script>';
     $this->actingAs($owner)->patch("/shelves/{$record->id}/notes", ['shared_note' => $attack, 'private_note' => $attack])->assertSessionHasNoErrors();
-    $this->get("/shelves/{$record->id}")->assertOk()->assertSee(e($attack), false)->assertDontSee($attack, false);
+    $this->get("/shelves/{$record->id}")->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('record.sharedNote', $attack)->where('record.privateNote', $attack))->assertDontSee($attack, false);
 });
 
 it('excludes private notes from serialization and both notes from the legacy public API', function () {

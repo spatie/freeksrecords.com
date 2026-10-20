@@ -1,0 +1,23 @@
+/* Attribution is part of the label flow, never a fixed-height overlay. */
+.catalog-record-label {
+    min-height: 112px;
+    overflow-wrap: anywhere;
+}
+
+.catalog-record-label strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.catalog-record-activity {
+    display: block;
+    color: #d7c2a2;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.has-single-shelf .catalog-record-activity {
+    color: var(--muted);
+}

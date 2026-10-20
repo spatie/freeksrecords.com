@@ -1,33 +1,47 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\CollectionVisibilityController;
 use App\Http\Controllers\DiscogsConnectionController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
 use App\Http\Middleware\PrivateResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware(PrivateResponse::class)->group(function () {
+    foreach (['privacy', 'terms'] as $document) {
+        Route::get("/{$document}", function () use ($document) {
+            abort_unless(app()->environment('local'), 404);
+
+            return Inertia::render('social/'.ucfirst($document).'Page');
+        })->name($document);
+    }
+
     Route::get('/community', [HomeController::class, 'intro'])->name('community');
     Route::get('/collections', [HomeController::class, 'collections'])->name('collections');
     Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:20,1')->name('google.callback');
 
     Route::middleware('guest')->group(function () {
-        Route::view('/register', 'social.auth', ['mode' => 'register'])->name('register');
+        Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->middleware('throttle:6,1')->name('google.redirect');
+        Route::get('/register', fn () => Inertia::render('social/AuthPage', ['mode' => 'register']))->name('register');
         Route::post('/register', [AccountController::class, 'register'])->middleware('throttle:6,1');
-        Route::view('/login', 'social.auth', ['mode' => 'login'])->name('login');
+        Route::get('/login', fn () => Inertia::render('social/AuthPage', ['mode' => 'login']))->name('login');
         Route::post('/login', [AccountController::class, 'login'])->middleware('throttle:6,1');
-        Route::view('/forgot-password', 'social.auth', ['mode' => 'forgot'])->name('password.request');
+        Route::get('/forgot-password', fn () => Inertia::render('social/AuthPage', ['mode' => 'forgot']))->name('password.request');
         Route::post('/forgot-password', [AccountController::class, 'forgot'])->middleware('throttle:6,1');
-        Route::get('/reset-password/{token}', fn (string $token) => view('social.auth', ['mode' => 'reset', 'token' => $token]))->name('password.reset');
+        Route::get('/reset-password/{token}', fn (Request $request, string $token) => Inertia::render('social/AuthPage', ['mode' => 'reset', 'token' => $token, 'email' => $request->string('email')->toString()]))->name('password.reset');
         Route::post('/reset-password', [AccountController::class, 'reset'])->middleware('throttle:6,1');
     });
 
     Route::middleware(['auth', 'auth.session'])->group(function () {
         Route::post('/logout', [AccountController::class, 'logout'])->name('logout');
-        Route::view('/verify-email', 'social.auth', ['mode' => 'verify'])->name('verification.notice');
+        Route::get('/verify-email', fn () => Inertia::render('social/AuthPage', ['mode' => 'verify']))->name('verification.notice');
         Route::get('/verify-email/{id}/{hash}', [AccountController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
         Route::post('/email/verification-notification', [AccountController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
 
@@ -35,9 +49,10 @@ Route::middleware(PrivateResponse::class)->group(function () {
             Route::get('/feed', [SocialController::class, 'feed'])->name('feed');
             Route::get('/friends', [SocialController::class, 'friends'])->name('friends');
             Route::post('/friends/{user}', [SocialController::class, 'friend'])->middleware('throttle:30,1')->name('friend.action');
-            Route::view('/settings', 'social.settings')->name('settings');
+            Route::get('/settings', fn () => Inertia::render('social/SettingsPage'))->name('settings');
             Route::patch('/settings', [AccountController::class, 'settings']);
-            Route::post('/demo/digest', [SocialController::class, 'previewDigest'])->middleware('throttle:6,1');
+            Route::post('/settings/google', [GoogleAuthController::class, 'link'])->middleware('throttle:6,1')->name('google.link');
+            Route::patch('/collection/visibility', [CollectionVisibilityController::class, 'update'])->name('collection.visibility.update');
             Route::patch('/shelves/{record}/notes', [RecordNotesController::class, 'update'])->whereNumber('record')->name('shelf.notes.update');
             Route::post('/shelves/{record}/appreciations', [SocialController::class, 'appreciate'])->middleware('throttle:60,1');
             Route::delete('/shelves/{record}/appreciations', [SocialController::class, 'unappreciate']);

@@ -8,21 +8,24 @@ use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
-use Illuminate\Contracts\View\View;
+use App\Support\SocialData;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 class SocialController extends Controller
 {
-    public function profile(Request $request, User $user): View
+    public function profile(Request $request, User $user): InertiaResponse
     {
         $visible = $user->canViewCollection($request->user());
 
-        return view('social.profile', [
-            'person' => $user, 'visible' => $visible,
+        return Inertia::render('social/ProfilePage', [
+            'person' => SocialData::person($user), 'visible' => $visible,
             'records' => $visible ? app(RecordCollection::class)->profileSummaries(
                 array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')
                     ->get(['id', 'instance_id', 'discogs_release_id', 'added_at', 'payload'])->all()),
@@ -30,7 +33,7 @@ class SocialController extends Controller
         ]);
     }
 
-    public function record(Request $request, CollectionRecord $record): View
+    public function record(Request $request, CollectionRecord $record): InertiaResponse
     {
         abort_unless($record->user->canViewCollection($request->user()), 404);
 
@@ -40,33 +43,74 @@ class SocialController extends Controller
             $collectionUrl .= '#'.$browse;
         }
 
-        return view('social.record', [
+        $owner = $request->user()?->id === $record->user_id;
+        $comments = $record->comments()->with('user')->oldest('id')->paginate(30);
+        $payload = Arr::only($record->payload, [
+            'id', 'instanceId', 'artist', 'artists', 'title', 'displayTitle', 'edition',
+            'year', 'originalYear', 'originalReleaseDate', 'pressingReleaseDate', 'addedAt',
+            'label', 'catalogNumber', 'format', 'mediaFormats', 'genres', 'styles', 'cover',
+            'discogsUrl', 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch', 'trackSource',
+        ]);
+        $payload['tracks'] = array_map(fn (array $track) => Arr::only($track, [
+            'position', 'title', 'artist', 'duration', 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
+        ]), $record->payload['tracks'] ?? []);
+
+        return Inertia::render('social/RecordPage', [
             'collectionUrl' => $collectionUrl,
-            'record' => $record, 'comments' => $record->comments()->with('user')->oldest('id')->paginate(30),
+            'record' => [
+                'id' => $record->id,
+                'owner' => SocialData::person($record->user),
+                'payload' => $payload,
+                'formats' => $record->formats(),
+                'addedLabel' => $record->added_at->timezone('Europe/Brussels')->format('j F Y'),
+                'sharedNote' => $record->shared_note,
+                ...($owner ? ['privateNote' => $record->private_note] : []),
+                'canEditNotes' => $owner,
+                'commentsEnabled' => $record->user->comments_enabled,
+            ],
+            'comments' => SocialData::pagination($comments, $comments->getCollection()->map(fn (Comment $comment) => [
+                'id' => $comment->id,
+                'body' => $comment->body,
+                'user' => SocialData::person($comment->user),
+                'canDelete' => in_array($request->user()?->id, [$comment->user_id, $record->user_id], true),
+            ])->all()),
             'appreciations' => DB::table('appreciations')->where('collection_record_id', $record->id)->count(),
             'appreciated' => $request->user() && DB::table('appreciations')->where('collection_record_id', $record->id)->where('user_id', $request->user()->id)->exists(),
         ]);
     }
 
-    public function feed(Request $request): View
+    public function feed(Request $request): InertiaResponse
     {
         $user = $request->user();
+        $records = CollectionRecord::friendActivity($user)->with('user')->paginate(24);
+        $copies = array_values($records->items());
+        $feedRecords = array_map(
+            fn (array $summary, CollectionRecord $record): array => [
+                ...$summary,
+                'owner' => [
+                    'name' => $record->user->name,
+                    'profileUrl' => route('profile', $record->user->handle, false),
+                ],
+            ],
+            app(RecordCollection::class)->profileSummaries($copies),
+            $copies,
+        );
 
-        return view('social.feed', [
-            'records' => CollectionRecord::friendActivity($user)->with('user')->paginate(24),
+        return Inertia::render('social/FeedPage', [
+            'records' => SocialData::pagination($records, $feedRecords),
             'collectionCount' => $user->records()->count(),
             'incomingRequests' => User::query()->whereIn('id', Friendship::query()
                 ->whereNull('accepted_at')->where('requested_by', '!=', $user->id)
                 ->where(fn ($query) => $query->where('user_low', $user->id)->orWhere('user_high', $user->id))
-                ->select('requested_by'))->orderBy('name')->get(),
+                ->select('requested_by'))->orderBy('name')->get()->map(SocialData::person(...))->all(),
         ]);
     }
 
-    public function friends(Request $request): View
+    public function friends(Request $request): InertiaResponse
     {
         $user = $request->user();
-        $request->validate(['q' => 'nullable|string|max:30']);
-        $query = strtolower($request->string('q')->trim());
+        $request->validate(['q' => ['nullable', 'string', 'max:31']]);
+        $query = $request->string('q')->trim()->lower()->ltrim('@')->toString();
         $connections = Friendship::query()->where('user_low', $user->id)->orWhere('user_high', $user->id)->get();
         $people = User::query()->whereKeyNot($user->id)->where(function ($builder) use ($query, $connections, $user): void {
             if ($query !== '') {
@@ -76,7 +120,16 @@ class SocialController extends Controller
             }
         })->orderBy('handle')->paginate(30)->withQueryString();
 
-        return view('social.friends', compact('people', 'connections', 'query'));
+        return Inertia::render('social/FriendsPage', [
+            'query' => $query,
+            'people' => SocialData::pagination($people, $people->getCollection()->map(SocialData::person(...))->all()),
+            'connections' => $connections->map(fn (Friendship $friendship) => [
+                'user_low' => $friendship->user_low,
+                'user_high' => $friendship->user_high,
+                'requested_by' => $friendship->requested_by,
+                'accepted_at' => $friendship->accepted_at,
+            ])->all(),
+        ]);
     }
 
     public function friend(Request $request, User $user): RedirectResponse
@@ -153,14 +206,35 @@ class SocialController extends Controller
         return back()->with('status', 'Comment deleted.');
     }
 
-    public function notifications(Request $request): View|RedirectResponse
+    public function notifications(Request $request): JsonResponse|RedirectResponse
     {
         if (! $request->ajax()) {
             return redirect()->route('feed', ['notifications' => 1]);
         }
 
-        return view('social.notifications', [
-            'notifications' => SocialNotification::visibleTo($request->user())->with(['actor', 'record'])->latest('id')->simplePaginate(15),
+        $notifications = SocialNotification::visibleTo($request->user())->with(['actor', 'record'])->latest('id')->simplePaginate(15);
+
+        return response()->json([
+            'notifications' => SocialData::pagination($notifications, $notifications->getCollection()->map(fn (SocialNotification $notification) => [
+                'id' => $notification->id,
+                'actor' => SocialData::person($notification->actor),
+                'text' => match ($notification->kind) {
+                    'friend_request' => 'sent you a friend request.',
+                    'friend_accepted' => 'accepted your friend request.',
+                    'appreciation' => 'appreciated your record.',
+                    'comment' => 'commented on your record.',
+                    default => 'updated your listening circle.',
+                },
+                'record' => $notification->record ? [
+                    'title' => $notification->record->payload['displayTitle'],
+                    'artist' => $notification->record->payload['artist'],
+                    'cover' => $notification->record->payload['cover'],
+                ] : null,
+                'url' => $notification->record
+                    ? route('shelf.record', $notification->record, false).($notification->kind === 'comment' ? '#comments' : '')
+                    : route('friends', absolute: false),
+                'unread' => $notification->read_at === null,
+            ])->all()),
             'unreadCount' => SocialNotification::visibleTo($request->user())->whereNull('read_at')->count(),
         ]);
     }
@@ -169,18 +243,10 @@ class SocialController extends Controller
     {
         SocialNotification::visibleTo($request->user())->whereNull('read_at')->update(['read_at' => now()]);
 
-        if ($request->ajax()) {
+        if ($request->ajax() && ! $request->header('X-Inertia')) {
             return response()->noContent();
         }
 
         return back()->with('status', 'Notifications marked as read.');
-    }
-
-    public function previewDigest(Request $request): RedirectResponse
-    {
-        abort_unless(app()->environment('local') && config('services.social_demo'), 404);
-        Artisan::call('social:send-digests', ['--preview-for' => $request->user()->id]);
-
-        return back()->with('status', 'Digest preview checked for the last seven days. If enabled and there are visible additions, an email is in the preview inbox. Empty weeks send nothing.');
     }
 }
