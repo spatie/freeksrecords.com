@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 
+import { CollectionSharing } from '@/modules/social/CollectionSharing';
 import { FeedShelf } from '@/modules/social/FeedShelf';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { Pagination } from '@/modules/social/Pagination';
@@ -38,11 +39,14 @@ export function FeedPage({
                             <li aria-current="step">Import collection</li>
                         </ol>
                     )}
-                    <h1 id="onboarding-title">
-                        {user.discogsConnected
-                            ? 'Your collection'
-                            : 'Add your records'}
-                    </h1>
+                    <div className="collector-heading">
+                        <h1 id="onboarding-title">
+                            {user.discogsConnected
+                                ? 'Your collection'
+                                : 'Add your records'}
+                        </h1>
+                        <CollectionSharing key={user.id} user={user} />
+                    </div>
                     {user.discogsConnected ? (
                         <>
                             <ImportStatus user={user} />

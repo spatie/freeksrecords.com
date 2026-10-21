@@ -55,6 +55,16 @@
         --page-color: var(--acid);
         --page-accent: var(--red);
     }
+    :scope.collection-page,
+    :scope.feed-page:has(.profile-record-room) {
+        background-image: repeating-linear-gradient(
+            155deg,
+            transparent 0 680px,
+            color-mix(in srgb, var(--page-accent) 32%, var(--page-color)) 680px
+                1360px,
+            transparent 1360px 2040px
+        );
+    }
     :scope.explore-page {
         --page-color: var(--lilac);
         --page-accent: var(--acid);
@@ -79,6 +89,7 @@
     }
     a {
         color: inherit;
+        text-decoration: underline;
         text-underline-offset: 5px;
     }
     button,
@@ -127,7 +138,6 @@
         display: inline-flex;
         align-items: center;
         gap: 7px;
-        text-decoration: none;
         font:
             700 36px/0.9 'Club Display',
             sans-serif;
@@ -179,7 +189,6 @@
         font-size: 16px;
     }
     .site-header nav a {
-        text-decoration: none;
         min-height: 44px;
         display: inline-flex;
         align-items: center;
@@ -192,29 +201,13 @@
         justify-self: center;
         gap: 2px !important;
     }
-    .main-navigation > a,
-    .my-collection-navigation > a {
+    .main-navigation > a {
         padding: 10px 18px;
         white-space: nowrap;
     }
-    .my-collection-navigation {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        padding-right: 14px;
-    }
-    .navigation-indicator {
-        position: absolute;
-        height: 1px;
-        bottom: 1px;
-        left: 0;
-        background: currentColor;
-        pointer-events: none;
-    }
-    .navigation-indicator[data-positioned] {
-        transition:
-            transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
-            width 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    .main-navigation > a[aria-current] {
+        font-weight: 600;
+        text-decoration-thickness: 2px;
     }
     .guest-navigation {
         grid-column: 2 / -1;
@@ -315,7 +308,6 @@
         padding: 14px;
         border: 0;
         text-align: left;
-        text-decoration: none;
         background: transparent;
         font-size: 16px;
     }
@@ -380,7 +372,6 @@
         align-items: start;
         gap: 14px;
         padding: 20px;
-        text-decoration: none;
     }
     .notification-item > a:hover {
         background: var(--acid);
@@ -416,6 +407,9 @@
     .notification-pagination {
         padding: 20px;
     }
+    .notifications-empty {
+        margin: 0;
+    }
     .page {
         position: relative;
         isolation: isolate;
@@ -442,7 +436,9 @@
         );
     }
     :scope.home-page .page::before,
-    :scope.auth-page .page::before {
+    :scope.auth-page .page::before,
+    :scope.collection-page .page::before,
+    :scope.feed-page:has(.profile-record-room) .page::before {
         display: none;
     }
     h1,
@@ -506,7 +502,6 @@
         border-radius: 40px;
         background: var(--ink);
         color: var(--cream);
-        text-decoration: none;
         font-size: 16px;
         transition:
             background 180ms,
@@ -702,6 +697,19 @@
         margin: 22px 0;
         font-size: 15px;
     }
+    .import-confirmation {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border: 1px solid #718a59;
+        border-radius: 20px;
+        background: #e4efcf;
+        color: #294b27;
+        font-size: 13px;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
     .import-label {
         display: inline-flex;
         align-items: center;
@@ -740,18 +748,18 @@
     .collector-heading {
         display: flex;
         flex-wrap: wrap;
-        align-items: baseline;
+        align-items: center;
         gap: 12px 24px;
         padding: 4px 0 28px;
         margin-bottom: 20px;
     }
     .collector-heading h1 {
-        width: 100%;
         margin: 0;
-        font-size: clamp(64px, 9vw, 144px);
+        font-size: clamp(54px, 7vw, 112px);
         max-width: 18ch;
     }
     .collector-heading p {
+        width: 100%;
         margin: 0;
         font-size: 16px;
     }
@@ -760,47 +768,16 @@
         font-size: 15px;
     }
     :scope.collection-page .site-header,
-    :scope.feed-page .site-header {
+    :scope.feed-page:has(.profile-record-room) .site-header {
+        position: sticky;
+        top: 0;
         transition:
             min-height 650ms cubic-bezier(0.4, 0, 0.2, 1),
             padding-block 650ms cubic-bezier(0.4, 0, 0.2, 1);
     }
-    :scope.collection-page .page,
-    :scope.feed-page .page {
-        transition: padding-top 650ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .collector-heading {
-        transition:
-            padding-bottom 650ms cubic-bezier(0.4, 0, 0.2, 1),
-            margin-bottom 650ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .collector-heading h1,
-    .importing-collection > h1 {
-        transition:
-            font-size 650ms cubic-bezier(0.4, 0, 0.2, 1),
-            margin-bottom 650ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .importing-collection .import-status {
-        transition: margin-block 650ms cubic-bezier(0.4, 0, 0.2, 1);
-    }
     :scope[data-collection-compact='true'] .site-header {
         min-height: 76px;
         padding-block: 9px;
-    }
-    :scope[data-collection-compact='true'] .page {
-        padding-top: 14px;
-    }
-    :scope[data-collection-compact='true'] .collector-heading {
-        padding-bottom: 14px;
-        margin-bottom: 10px;
-    }
-    :scope[data-collection-compact='true'] .collector-heading h1,
-    :scope[data-collection-compact='true'] .importing-collection > h1 {
-        font-size: 36px;
-        margin-bottom: 0;
-    }
-    :scope[data-collection-compact='true'] .import-status {
-        margin-block: 12px;
     }
     .settings-layout {
         display: grid;
@@ -932,12 +909,6 @@
         font-size: clamp(28px, 4vw, 52px);
         margin-bottom: 4px;
     }
-    .person-row h2 a {
-        text-decoration: none;
-    }
-    .person-row h2 a:hover {
-        text-decoration: underline;
-    }
     .person-row p {
         margin: 0;
         font-size: 15px;
@@ -998,9 +969,6 @@
         aspect-ratio: 1;
         object-fit: cover;
         box-shadow: 4px 9px 12px #20201633;
-    }
-    .collection-preview-link {
-        text-decoration: none;
     }
     .collection-preview-caption {
         padding-top: 18px;
@@ -1085,6 +1053,24 @@
     .about-introduction {
         font-size: 22px;
     }
+    .about-maker-heading {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin: 38px 0 24px;
+    }
+    .about-maker-heading h2 {
+        margin: 0;
+    }
+    .about-maker-heading img {
+        width: 112px;
+        height: 112px;
+        flex-shrink: 0;
+        object-fit: cover;
+        border: 4px solid var(--cream);
+        box-shadow: 3px 3px 0 var(--ink);
+        transform: rotate(-3deg);
+    }
     .about-projects {
         display: grid;
         gap: 16px;
@@ -1094,10 +1080,6 @@
         display: grid;
         padding-bottom: 16px;
         border-bottom: 1px solid;
-        text-decoration: none;
-    }
-    .about-projects a:hover strong {
-        text-decoration: underline;
     }
     .about-legal {
         display: flex;
@@ -1255,7 +1237,6 @@
         background: var(--cream);
         box-shadow: 5px 7px 0 var(--ink);
         text-align: center;
-        text-decoration: none;
         transform: rotate(10deg);
         font:
             700 32px/0.9 'Club Display',
@@ -1300,9 +1281,6 @@
         .main-navigation > a {
             flex: 1;
             justify-content: center;
-        }
-        .my-collection-navigation {
-            padding-right: 8px;
         }
         .site-header:has(.guest-navigation) {
             padding-bottom: 18px;
@@ -1350,13 +1328,9 @@
         .notifications-popover {
             right: 16px;
         }
-        .main-navigation > a,
-        .my-collection-navigation > a {
+        .main-navigation > a {
             padding-inline: 6px;
             font-size: 15px;
-        }
-        .my-collection-navigation {
-            padding-right: 4px;
         }
         .page {
             padding: 30px 5vw 60px;
@@ -1371,7 +1345,7 @@
             margin-bottom: 24px;
         }
         .collector-heading h1 {
-            font-size: 18vw;
+            font-size: 14vw;
         }
         .collector-heading {
             gap: 8px 14px;
@@ -1385,6 +1359,13 @@
         .legal-document,
         .onboarding {
             padding: 26px;
+        }
+        .about-maker-heading {
+            gap: 20px;
+        }
+        .about-maker-heading img {
+            width: 80px;
+            height: 80px;
         }
         .empty {
             padding: 30px 24px;

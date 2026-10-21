@@ -6,6 +6,10 @@
         --accent: #f5442a;
         --font-body: 'Club Sans', sans-serif;
         --font-display: 'Club Display', sans-serif;
+        scroll-margin-top: var(--site-header-height, 0px);
+    }
+    .collection-browser {
+        scroll-margin-top: var(--site-header-height, 0px);
     }
     .record-room {
         color: var(--ink);
@@ -17,6 +21,11 @@
         cursor: pointer;
     }
     .collection-controls {
+        position: sticky;
+        top: var(--site-header-height, 0px);
+        z-index: 20;
+        background: var(--page-color, var(--paper));
+        scroll-margin-top: var(--site-header-height, 0px);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -99,7 +108,9 @@
         min-width: 0;
         align-self: start;
         position: sticky;
-        top: 20px;
+        top: calc(
+            var(--site-header-height, 0px) + var(--controls-height, 0px) + 16px
+        );
         padding: 22px 16px;
         background: var(--paper);
         border-radius: 0 35px 0 0;
@@ -130,7 +141,6 @@
         gap: 12px;
         padding: 10px 0;
         border-top: 1px solid #20201633;
-        text-decoration: none;
         font-size: 15px;
     }
     .index-group > span:last-child {
@@ -175,58 +185,33 @@
     .collection-main {
         min-width: 0;
     }
-    .collection-stream {
-        height: 76svh;
-        overflow: auto;
-        overscroll-behavior: contain;
-        scrollbar-width: thin;
-        background: repeating-linear-gradient(
-            155deg,
-            #dbee8d 0 750px,
-            #fff0cf 750px 1500px,
-            #c9b8ef 1500px 2250px,
-            #dbee8d 2250px 3000px
-        );
-    }
     .collection-stream .catalog-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
     .collection-stream .catalog-grid:empty {
         display: none;
     }
-    .collection-stream:has(.empty-shelf) {
-        height: auto;
-    }
     .collection-section {
         grid-column: 1 / -1;
-        font-size: clamp(42px, 5vw, 76px);
-        margin: 0;
-        padding: 20px 0 0;
         overflow-wrap: anywhere;
     }
-    .collection-section:focus {
+    .collection-record-group {
+        scroll-margin-top: calc(
+            var(--site-header-height, 0px) + var(--controls-height, 0px)
+        );
+    }
+    .collection-record-group:focus {
         outline: none;
     }
     .collection-loading {
         padding: 20px 25px;
         font-size: 15px;
     }
-    .collection-main.is-draggable {
-        max-height: 76svh;
-        overflow: auto;
-        overscroll-behavior: contain;
-        scrollbar-width: thin;
-        cursor: grab;
-    }
-    .collection-main[data-dragging='true'] {
-        cursor: grabbing;
-        user-select: none;
-    }
-    .collection-main[data-dragging='true'] .catalog-record-art {
-        transition: none;
-    }
     .collection-heading {
         padding: 12px 25px 0;
+        scroll-margin-top: calc(
+            var(--site-header-height, 0px) + var(--controls-height, 0px) + 12px
+        );
     }
     .collection-heading h2 {
         font-size: clamp(36px, 4vw, 64px);
@@ -240,14 +225,8 @@
         padding: 36px 25px 50px;
         align-items: start;
     }
-    .is-draggable .catalog-grid {
-        min-width: 980px;
-    }
     .has-index .catalog-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .has-index .is-draggable .catalog-grid {
-        min-width: 830px;
     }
     .catalog-record {
         position: relative;
@@ -322,19 +301,23 @@
     .catalog-record-label strong {
         font-weight: 600;
     }
-    .catalog-record-label a {
-        text-decoration: none;
-    }
-    .catalog-record-label a:hover {
-        text-decoration: underline;
-    }
     .catalog-record-year {
         font-size: 16px;
     }
+    .collection-section,
     .cabinet-year-heading {
-        padding: 24px 25px 0;
+        position: sticky;
+        top: calc(var(--site-header-height, 0px) + var(--controls-height, 0px));
+        z-index: 5;
+        margin: 0;
+        padding: 12px 16px;
+        background: var(--paper);
+        border-bottom: 1px solid;
+        scroll-margin-top: calc(
+            var(--site-header-height, 0px) + var(--controls-height, 0px)
+        );
         font:
-            700 70px/1 'Club Display',
+            700 clamp(26px, 2.6vw, 36px)/1.15 'Club Display',
             sans-serif;
     }
     .empty-shelf {
@@ -609,7 +592,6 @@
         width: 44px;
         height: 44px;
         border-radius: 50%;
-        text-decoration: none;
     }
     .album-listen-links a:hover {
         background: #20201612;
@@ -763,19 +745,13 @@
         .index-continuation {
             padding-top: 14px;
         }
-        .collection-main.is-draggable {
-            max-height: 72svh;
-        }
-        .is-draggable .catalog-grid,
-        .has-index .is-draggable .catalog-grid {
-            min-width: 580px;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
         .catalog-grid {
             padding: 28px 18px 40px;
             gap: 42px 25px;
         }
-        .collection-stream .catalog-grid {
+        .collection-stream .catalog-grid,
+        .catalog-grid,
+        .has-index .catalog-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
         .catalog-record-label {
@@ -783,10 +759,6 @@
         }
         .collection-heading {
             padding: 10px 18px 0;
-        }
-        .cabinet-year-heading {
-            font-size: 50px;
-            padding-left: 18px;
         }
         .listening-scroll {
             padding: 32px 7vw 45px;

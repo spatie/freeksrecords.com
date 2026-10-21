@@ -129,16 +129,3 @@
 .sharing-public p {
     margin-bottom: 0;
 }
-@media (max-width: 600px) {
-    .my-collection-navigation .sharing-label {
-        display: none;
-    }
-    .my-collection-navigation .collection-sharing summary {
-        gap: 5px;
-        min-height: 40px;
-        padding-inline: 9px;
-    }
-    .my-collection-navigation .collection-sharing {
-        position: static;
-    }
-}
