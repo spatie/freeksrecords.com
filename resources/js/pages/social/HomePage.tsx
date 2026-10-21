@@ -32,9 +32,6 @@ export function HomePage({ artwork }: HomeProps) {
                     <br />
                     inside ↗
                 </Link>
-                <p className="landing-signoff">
-                    For the love of records. And people.
-                </p>
             </section>
         </>
     );
