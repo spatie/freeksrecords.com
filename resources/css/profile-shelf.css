@@ -453,7 +453,7 @@
     }
     .record-stage {
         position: sticky;
-        top: 25px;
+        top: 0;
         height: 570px;
         min-width: 0;
         padding-top: 30px;
@@ -797,6 +797,7 @@
         }
         .record-stage {
             position: relative;
+            top: 25px;
             height: auto;
             padding: 0 0 50px;
         }
