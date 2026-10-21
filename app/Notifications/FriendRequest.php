@@ -45,6 +45,7 @@ class FriendRequest extends Notification implements ShouldQueue
         }
 
         return (new MailMessage)->subject('A friend request on Plaat Club')
+            ->theme('friend-request-theme')
             ->markdown('mail.friend-request', ['sender' => $sender, 'links' => $links]);
     }
 }

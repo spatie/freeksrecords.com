@@ -3,6 +3,7 @@
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Notifications\FriendRequest;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -17,10 +18,16 @@ it('emails one verified recipient per new friend request with signed accept and 
     Notification::assertNotSentTo($sender, FriendRequest::class);
     Notification::assertSentTo($recipient, FriendRequest::class, function (FriendRequest $notification) use ($recipient) {
         $message = $notification->toMail($recipient);
-        expect((string) $message->render())->toContain('Accept friend request', 'Decline friend request', 'class="inner-body"', '&lt;script&gt;Not markup&lt;/script&gt;')
+        $html = (string) $message->render();
+        $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
+        expect($html)->toContain('Accept friend request', 'Decline friend request', 'class="inner-body"', '&lt;script&gt;Not markup&lt;/script&gt;')
             ->not->toContain('<script>Not markup</script>');
+        expect($text)->toContain('Only me stay private', 'expire in seven days')
+            ->not->toContain('<table', '<style');
         foreach ($message->viewData['links'] as $action => $url) {
             expect($url)->toContain('/'.$recipient->id.'/'.$action.'?', 'signature=');
+            expect(html_entity_decode($html))->toContain('href="'.$url.'"');
+            expect($text)->toContain(ucfirst($action).' friend request: '.$url);
         }
 
         return true;
