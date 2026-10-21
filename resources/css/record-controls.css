@@ -582,54 +582,9 @@
     line-height: 1.5;
 }
 
-.album-listen-links a {
-    border-radius: 3px;
-    background-clip: padding-box;
-    transition:
-        transform 150ms,
-        box-shadow 150ms,
-        color 150ms;
-    text-shadow: 0 1px #0003;
-}
-.album-listen-links a:first-child {
-    border-color: #272c22;
-    background: linear-gradient(180deg, #4b5144, #30372c);
-    color: #f0e5c9;
-    box-shadow:
-        inset 0 1px #b6b79c66,
-        inset 0 -1px #18201566,
-        0 2px 0 #171f18,
-        0 4px 6px #44321b29;
-}
-.album-listen-links a:last-child {
-    border-color: #a18c67;
-    color: #413a2c;
-    background: linear-gradient(180deg, #e7d8b9, #cbbc99);
-    text-shadow: 0 1px #fff5d5;
-    box-shadow:
-        inset 0 1px #fff6dfb3,
-        inset 0 -1px #a9926766,
-        0 2px 0 #8b7958,
-        0 4px 6px #44321b29;
-}
 .listening-tracklist li {
     border-bottom-color: #ae957145;
     transition: background-color 140ms;
-}
-.listening-tracklist li > a {
-    width: 34px;
-    height: 34px;
-    border: 1px solid #aa947066;
-    background: linear-gradient(#efe1bd, #d2bc94);
-    color: #514c3d;
-    box-shadow:
-        inset 0 1px #fff3d7,
-        0 2px 2px #57432826;
-    transition:
-        opacity 140ms,
-        transform 140ms,
-        box-shadow 140ms,
-        color 140ms;
 }
 .record-search button,
 .artist-search button {
@@ -695,13 +650,6 @@
     .listening-tracklist li:hover {
         background: #c4a16b14;
     }
-    .listening-tracklist li > a:hover {
-        color: #8c422c;
-        transform: translateY(-1px);
-        box-shadow:
-            inset 0 1px #fff3d7,
-            0 3px 3px #57432844;
-    }
     .record-room .back-to-top:hover {
         transform: translateY(-2px);
         box-shadow:
@@ -724,7 +672,6 @@
 .record-room .collection-tabs button:active,
 .record-room .listening-close:active,
 .record-room .listening-share:active,
-.album-listen-links a:active,
 .record-room .back-to-top:active {
     transform: translateY(2px);
     scale: 0.98;
@@ -745,7 +692,6 @@
     .record-room .listening-share,
     .album-listen-links a,
     .listening-tracklist li,
-    .listening-tracklist li > a,
     .record-room .back-to-top {
         transition: none;
     }

@@ -519,6 +519,16 @@
         overflow: hidden;
         font-size: 9px;
         line-height: 1.1;
+        animation: record-label-turn 36s linear infinite;
+        animation-play-state: paused;
+    }
+    .listening-view.is-settled .record-centre {
+        animation-play-state: running;
+    }
+    @keyframes record-label-turn {
+        to {
+            transform: rotate(1turn);
+        }
     }
     .record-centre strong {
         font:
@@ -595,15 +605,18 @@
     .album-listen-links a {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 10px 12px;
-        border: 1px solid #20201666;
-        border-radius: 30px;
-        font-size: 16px;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
         text-decoration: none;
     }
     .album-listen-links a:hover {
-        background: var(--paper);
+        background: #20201612;
+    }
+    .album-listen-links a:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 2px;
     }
     .tracks-heading h2 {
         font:
@@ -620,7 +633,7 @@
     }
     .listening-tracklist li {
         display: grid;
-        grid-template-columns: 30px minmax(0, 1fr) 48px 34px 34px;
+        grid-template-columns: 30px minmax(0, 1fr) 48px;
         align-items: center;
         gap: 6px;
         padding: 12px 0;
@@ -635,15 +648,6 @@
     .track-position,
     .track-duration {
         font-size: 16px;
-    }
-    .listening-tracklist li > a {
-        display: grid;
-        place-items: center;
-        min-height: 34px;
-        border-radius: 50%;
-    }
-    .listening-tracklist li > a:hover {
-        background: var(--paper);
     }
     .record-social {
         margin-top: 30px;
