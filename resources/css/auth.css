@@ -51,8 +51,6 @@
     .auth-slip-record {
         width: 23px;
         height: 23px;
-        border: 7px double;
-        border-radius: 50%;
     }
     .auth-panel h1 {
         font-size: clamp(58px, 6vw, 88px);
