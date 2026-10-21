@@ -40,6 +40,36 @@ export function AboutPage() {
                         <strong>There There ↗</strong>
                         <span>The helpdesk we’re building at Spatie.</span>
                     </a>
+                    <a href="https://flareapp.io">
+                        <strong>Flare ↗</strong>
+                        <span>
+                            Error tracking and performance monitoring we build
+                            at Spatie for Laravel, PHP, and JavaScript.
+                        </span>
+                    </a>
+                    <a href="https://ohdear.app">
+                        <strong>Oh Dear ↗</strong>
+                        <span>
+                            The website monitoring service I run with Mattias
+                            Geniar. Uptime, broken links, certificates, and
+                            more.
+                        </span>
+                    </a>
+                    <a href="https://mailcoach.app">
+                        <strong>Mailcoach ↗</strong>
+                        <span>
+                            The email marketing platform we build at Spatie for
+                            newsletters, automations, and transactional email.
+                        </span>
+                    </a>
+                    <a href="https://spatie.be">
+                        <strong>Spatie ↗</strong>
+                        <span>
+                            The software company I co-own in Antwerp. We build
+                            Laravel products and maintain hundreds of open
+                            source packages.
+                        </span>
+                    </a>
                 </nav>
                 <p>
                     Questions or a good record to recommend?{' '}
