@@ -8,15 +8,17 @@ use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
 use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Queue\Interruptible;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
-class SyncUserCollection implements ShouldBeUnique, ShouldQueue
+class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -25,6 +27,10 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
     public int $uniqueFor = 7500;
 
     public int $tries = 3;
+
+    public int $maxExceptions = 3;
+
+    protected bool $shouldStop = false;
 
     public function __construct(public int $userId) {}
 
@@ -36,6 +42,33 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
     public function backoff(): int
     {
         return 120;
+    }
+
+    public function retryUntil(): CarbonImmutable
+    {
+        return CarbonImmutable::now()->addDay();
+    }
+
+    public function interrupted(int $signal): void
+    {
+        $this->shouldStop = true;
+    }
+
+    /** @phpstan-impure Shutdown signals can change the flag between requests. */
+    protected function releaseIfInterrupted(): bool
+    {
+        if (! $this->shouldStop) {
+            return false;
+        }
+
+        $this->release(1);
+
+        return true;
+    }
+
+    public function failed(?Throwable $exception): void
+    {
+        User::query()->whereKey($this->userId)->update(['sync_status' => 'Sync failed. Reconnect if access was revoked, then retry. Existing records were kept.']);
     }
 
     public function handle(DiscogsRecordMapper $mapper, RecordCollection $legacy): void
@@ -64,6 +97,9 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
                 }
                 $user->update(['sync_total' => $response['pagination']['items']]);
                 foreach ($response['releases'] as $entry) {
+                    if ($this->releaseIfInterrupted()) {
+                        return;
+                    }
                     $instance = $entry['instance_id'];
                     $seen[] = $instance;
                     if ($known = $user->records()->where('instance_id', $instance)->first()) {
@@ -72,6 +108,9 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
                         continue;
                     }
                     $release = $discogs->get('releases/'.$entry['basic_information']['id']);
+                    if ($this->releaseIfInterrupted()) {
+                        return;
+                    }
                     $master = empty($entry['basic_information']['master_id']) ? [] : $discogs->get('masters/'.$entry['basic_information']['master_id']);
                     $payload = $mapper->record($entry, $release, $master);
                     // Artwork is public release data, but private collection membership is never published as a share image.
@@ -94,10 +133,11 @@ class SyncUserCollection implements ShouldBeUnique, ShouldQueue
                 $changed = $changed || $removed > 0;
                 $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date']);
             });
-        } catch (Throwable) {
-            $user->update(['sync_status' => 'Sync failed. Reconnect if access was revoked, then retry. Existing records were kept.']);
+        } catch (Throwable $exception) {
+            $user->update(['sync_status' => 'Retrying automatically. Existing records were kept.']);
             // Never serialize HTTP exceptions containing OAuth headers into failed_jobs/logs.
-            throw new RuntimeException('Discogs sync failed for user '.$this->userId.'. Retry or reconnect.');
+            $reason = $exception instanceof RequestException ? 'HTTP '.$exception->response->status() : class_basename($exception);
+            throw new RuntimeException('Discogs sync failed for user '.$this->userId.': '.$reason.'. Retry or reconnect.');
         } finally {
             if ($user->legacy_owner) {
                 $legacy->flush();

@@ -130,6 +130,38 @@ it('imports paginated collections silently, isolates duplicate copy ids, then mi
     expect($user->records()->count())->toBe(0)->and($other->records()->count())->toBe(1)->and($user->fresh()->sync_total)->toBe(0);
 });
 
+it('resumes a deployment-interrupted import without removing records or announcing initial additions', function () {
+    $user = socialUser('deployment');
+    $user->update(['discogs_username' => 'deployment', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    socialRecord($user, 'Previously saved copy', false, instance: 303);
+    $first = discogsCollectionEntry(301, 401);
+    $first['basic_information']['master_id'] = 0;
+    $second = [...$first, 'instance_id' => 302, 'basic_information' => [...$first['basic_information'], 'id' => 402]];
+    $job = new SyncUserCollection($user->id);
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$first, $second]]),
+        'api.discogs.com/releases/401' => Http::response(['tracklist' => []]),
+        'api.discogs.com/releases/402' => function () use ($job) {
+            $job->interrupted(SIGTERM);
+
+            return Http::response(['tracklist' => []]);
+        },
+    ]);
+    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    expect($user->records()->pluck('instance_id')->all())->toBe([301, 303])
+        ->and($user->fresh()->collection_imported_at)->toBeNull()
+        ->and($user->fresh()->sync_status)->toBe('Syncing');
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$first, $second]]),
+        'api.discogs.com/releases/402' => Http::response(['tracklist' => []]),
+    ]);
+    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    expect($user->records()->pluck('instance_id')->all())->toBe([301, 302])
+        ->and($user->records()->where('is_activity', true)->count())->toBe(0)
+        ->and($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->fresh()->collection_imported_at)->not->toBeNull();
+});
+
 it('preserves collections and initial-import suppression through partial responses and interrupted retries', function () {
     $user = socialUser('partial');
     $user->update(['discogs_username' => 'partial', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
@@ -146,11 +178,14 @@ it('preserves collections and initial-import suppression through partial respons
     ]);
     $job = new SyncUserCollection($user->id);
     expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
-    expect($user->records()->count())->toBe(2)->and($user->fresh()->collection_imported_at)->toBeNull()->and($user->fresh()->sync_total)->toBe(2);
+    expect($user->records()->count())->toBe(2)->and($user->fresh()->collection_imported_at)->toBeNull()->and($user->fresh()->sync_total)->toBe(2)
+        ->and($user->fresh()->sync_status)->toBe('Retrying automatically. Existing records were kept.');
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect($user->records()->count())->toBe(2)->and($user->records()->where('is_activity', true)->count())->toBe(0);
-    expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
+    expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class, 'HTTP 503');
     expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_total)->toBeNull();
+    $job->failed(new RuntimeException('Retries exhausted'));
+    expect($user->fresh()->sync_status)->toStartWith('Sync failed');
 });
 
 it('fails safely without OAuth configuration or with malformed provider responses', function () {

@@ -133,9 +133,16 @@ or collectors can queue a manual sync in Settings. Jobs are unique and lock per 
 Incomplete or interrupted imports keep existing records, remain resumable, and never
 promote an initial import to activity. Removals only apply after complete pagination,
 including a confirmed empty collection. Credentials are not serialized into jobs or errors.
+On graceful worker shutdown (including Cloud deploys), imports release their job at the
+next request boundary and resume on another worker, skipping already saved copies.
+Deploy interruptions do not consume the three-exception retry budget; imports have a
+24-hour retry deadline. Automatic retries are shown as retrying, not paused; only
+exhausted retries require manual action. Diagnostics retain HTTP status or exception
+class, never provider response bodies, OAuth headers or credentials.
 Keep queue visibility/retry time greater than the job timeout: the database queue defaults
 to 7500 seconds, with workers using `--timeout=7200`. Configure equivalent timeouts for
-other queue backends. Large first imports take time because Discogs rate limits requests.
+other queue backends. Forced kills cannot run cleanup and recover after that visibility
+and lock timeout. Large first imports take time because Discogs rate limits requests.
 
 ### Migration and Freek’s ownership
 

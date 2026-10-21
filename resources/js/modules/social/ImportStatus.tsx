@@ -11,6 +11,7 @@ export function ImportStatus({ user }: { user: Viewer }) {
         },
     });
     const failed = user.syncStatus?.startsWith('Sync failed');
+    const retrying = user.syncStatus?.startsWith('Retrying automatically');
     return (
         <div
             className={`import-status ${failed ? 'import-failed' : ''}`}
@@ -18,7 +19,13 @@ export function ImportStatus({ user }: { user: Viewer }) {
         >
             <span className="import-label">
                 <span className="import-record" aria-hidden="true" />
-                <strong>{failed ? 'Import paused' : 'Still importing'}</strong>
+                <strong>
+                    {failed
+                        ? 'Import paused'
+                        : retrying
+                          ? 'Retrying automatically'
+                          : 'Still importing'}
+                </strong>
             </span>
             <span className="import-count">
                 {user.collectionCount}
