@@ -212,7 +212,7 @@ it('reserves top-level routes and assets in registration and settings', function
         'comments_enabled' => true, 'digest_enabled' => true,
     ])->assertSessionHasErrors('handle');
     expect($user->fresh()->handle)->toBe('validcollector');
-})->with(User::RESERVED_HANDLES);
+})->with(array_unique(['about', ...User::RESERVED_HANDLES]));
 
 it('updates only allowed profile fields and keeps the legacy collection public', function () {
     $user = socialUser('settings');

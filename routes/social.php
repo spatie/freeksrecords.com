@@ -15,9 +15,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::middleware(PrivateResponse::class)->group(function () {
-    foreach (['privacy', 'terms'] as $document) {
+    foreach (['about', 'privacy', 'terms'] as $document) {
         Route::get("/{$document}", function () use ($document) {
-            abort_unless(app()->environment('local'), 404);
+            if ($document === 'terms') {
+                abort_unless(app()->environment('local'), 404);
+            }
 
             return Inertia::render('social/'.ucfirst($document).'Page');
         })->name($document);

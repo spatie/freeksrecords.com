@@ -155,10 +155,21 @@ it('keeps friend requests off the feed and available on the friends page', funct
         ->has('connections', 1)->where('connections.0.requested_by', $requester->id)->where('connections.0.accepted_at', null));
 });
 
-it('previews legal drafts locally without publishing unapproved policies', function (string $document) {
+it('publishes the about page and privacy policy without requiring sign-in', function (string $document) {
+    app()->detectEnvironment(fn () => 'production');
+
+    $response = $this->get(route($document))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('social/'.ucfirst($document).'Page'));
+    expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
+
+    $this->actingAs(socialUser('documentreader'))->get(route($document))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('social/'.ucfirst($document).'Page'));
+})->with(['about', 'privacy']);
+
+it('previews unapproved terms locally without publishing them', function () {
     app()->detectEnvironment(fn () => 'local');
-    $this->get(route($document))->assertOk()->assertInertia(fn (Assert $page) => $page->component('social/'.ucfirst($document).'Page'));
+    $this->get(route('terms'))->assertOk()->assertInertia(fn (Assert $page) => $page->component('social/TermsPage'));
 
     app()->detectEnvironment(fn () => 'production');
-    $this->get(route($document))->assertNotFound();
-})->with(['privacy', 'terms']);
+    $this->get(route('terms'))->assertNotFound();
+});

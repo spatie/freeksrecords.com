@@ -67,6 +67,10 @@
         --page-color: var(--cream);
         --page-accent: var(--lilac);
     }
+    :scope.about-page {
+        --page-color: var(--lilac);
+        --page-accent: var(--acid);
+    }
     * {
         box-sizing: border-box;
     }
@@ -954,6 +958,12 @@
         margin: auto;
         background: var(--acid);
         padding: 50px;
+        font-size: 18px;
+        line-height: 1.7;
+    }
+    .legal-document h1 {
+        font-size: clamp(64px, 8vw, 112px);
+        line-height: 0.98;
     }
     .legal-document h2 {
         margin: 38px 0 18px;
@@ -962,9 +972,50 @@
     .legal-document li {
         max-width: 68ch;
     }
+    .legal-document p a,
+    .about-legal a {
+        text-decoration: underline;
+    }
     .legal-document ul {
         padding-left: 22px;
         list-style: disc;
+    }
+    .legal-document > .text-button {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        margin-bottom: 24px;
+    }
+    .about-document {
+        background: var(--cream);
+    }
+    .about-introduction {
+        font-size: 22px;
+    }
+    .about-projects {
+        display: grid;
+        gap: 16px;
+        margin: 28px 0;
+    }
+    .about-projects a {
+        display: grid;
+        padding-bottom: 16px;
+        border-bottom: 1px solid;
+        text-decoration: none;
+    }
+    .about-projects a:hover strong {
+        text-decoration: underline;
+    }
+    .about-legal {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 28px;
+        margin-top: 32px;
+    }
+    .about-legal a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
     }
     .review-note {
         padding: 20px;
@@ -1120,6 +1171,15 @@
     }
     .landing-enter:hover {
         transform: rotate(-8deg) scale(1.05);
+    }
+    .landing-about {
+        position: absolute;
+        left: 4.5vw;
+        bottom: 18px;
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        font-size: 18px;
     }
     .landing-empty {
         position: absolute;

@@ -65,6 +65,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             'social/FeedPage': 'feed-page',
             'social/FriendsPage': 'friends-page',
             'social/SettingsPage': 'settings-page',
+            'social/AboutPage': 'about-page',
             'social/PrivacyPage': 'legal-page',
             'social/TermsPage': 'legal-page',
         }[component] ?? '';

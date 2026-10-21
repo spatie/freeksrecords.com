@@ -69,6 +69,8 @@ export default defineConfig({
         ignorePatterns: [
             '.github/**',
             'composer.json',
+            // Keep Google's ownership-verification file byte-for-byte intact.
+            'public/googlec13fe7c31e9be465.html',
             'resources/views/mail/*',
         ],
         sortTailwindcss: {
