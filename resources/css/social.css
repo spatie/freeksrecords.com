@@ -134,23 +134,40 @@
         letter-spacing: -1.5px;
         white-space: nowrap;
     }
-    .brand-mark {
+    .brand-mark,
+    .auth-slip-record {
         width: 24px;
         height: 24px;
+        flex-shrink: 0;
         border-radius: 50%;
-        background: repeating-radial-gradient(
-            circle,
-            var(--ink) 0 2px,
-            #555243 3px 4px
-        );
+        background:
+            repeating-radial-gradient(
+                circle,
+                transparent 0 2px,
+                #ffffff18 2px 2.5px,
+                transparent 2.5px 3.5px
+            ),
+            conic-gradient(
+                from 35deg,
+                var(--ink) 0 18%,
+                #424238 20% 23%,
+                var(--ink) 25% 68%,
+                #424238 70% 73%,
+                var(--ink) 75% 100%
+            );
         position: relative;
     }
-    .brand-mark::after {
+    .brand-mark::after,
+    .auth-slip-record::after {
         content: '';
         position: absolute;
-        inset: 9px;
+        inset: 33%;
         border-radius: 50%;
-        background: var(--red);
+        background: radial-gradient(
+            circle,
+            var(--ink) 0 0.9px,
+            var(--cream) 1px 100%
+        );
     }
     .brand-period {
         margin-left: -6px;
@@ -1273,9 +1290,6 @@
         .brand-mark {
             width: 20px;
             height: 20px;
-        }
-        .brand-mark::after {
-            inset: 7px;
         }
         .guest-navigation {
             gap: 15px !important;
