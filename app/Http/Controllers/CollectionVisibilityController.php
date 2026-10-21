@@ -15,7 +15,7 @@ class CollectionVisibilityController extends Controller
         abort_unless($user?->hasVerifiedEmail(), 403);
 
         $data = $request->validateWithBag('collectionVisibility', [
-            'visibility' => ['required', 'string', Rule::in($user->legacy_owner ? ['everyone'] : ['only_me', 'friends', 'everyone'])],
+            'visibility' => ['required', 'string', Rule::in($user->allowedCollectionVisibilities())],
         ], ['visibility.in' => $user->legacy_owner
             ? 'This original public collection must remain visible to everyone.'
             : 'Choose Only me, Friends, or Everyone.']);

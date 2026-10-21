@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     createContext,
     useContext,
@@ -8,14 +8,11 @@ import {
     type ReactNode,
 } from 'react';
 
-import { ListeningView } from '@/components/records/ListeningView';
-import { browseHash } from '@/components/records/browseState';
 import {
     artworkOrigin,
     type SleeveOrigin,
 } from '@/components/records/recordMotion';
-import { RecordRoom } from '@/modules/social/RecordRoom';
-import { RecordSocial } from '@/modules/social/RecordSocial';
+import { SocialRecordView } from '@/modules/social/SocialRecordView';
 import type { SocialProps } from '@/modules/social/types';
 
 export const RecordOverlayContext = createContext<
@@ -109,38 +106,17 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
                 {children}
             </div>
             {overlay && (
-                <RecordRoom>
-                    <Head title={overlay.record.payload.displayTitle} />
-                    <ListeningView
-                        key={overlay.record.id}
-                        clubLayout
-                        returnOrigin={() =>
-                            sourceArtwork.current?.isConnected
-                                ? artworkOrigin(sourceArtwork.current)
-                                : null
-                        }
-                        instant={origin === null}
-                        origin={origin}
-                        record={{
-                            ...overlay.record.payload,
-                            trackTitles: overlay.record.payload.tracks.map(
-                                (track) => track.title,
-                            ),
-                            shareUrl: `/shelves/${overlay.record.id}`,
-                        }}
-                        details={overlay.record.payload}
-                        onBack={close}
-                        onArtist={(artist) =>
-                            router.visit(
-                                `${overlay.record.owner.profileUrl}${browseHash({ mode: 'artist', group: artist, query: '', visibleCount: 25 })}`,
-                            )
-                        }
-                    >
-                        <div className="record-social">
-                            <RecordSocial {...overlay} />
-                        </div>
-                    </ListeningView>
-                </RecordRoom>
+                <SocialRecordView
+                    key={overlay.record.id}
+                    data={overlay}
+                    returnOrigin={() =>
+                        sourceArtwork.current?.isConnected
+                            ? artworkOrigin(sourceArtwork.current)
+                            : null
+                    }
+                    origin={origin}
+                    onBack={close}
+                />
             )}
         </RecordOverlayContext>
     );

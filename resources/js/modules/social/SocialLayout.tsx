@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { legacyCollectionUrl } from '@/lib/record-history';
 import { AccountMenu } from '@/modules/social/AccountMenu';
+import { isSettingUpCollection } from '@/modules/social/collectionSetup';
 import { NotificationsPopover } from '@/modules/social/NotificationsPopover';
 import { RecordOverlay } from '@/modules/social/RecordOverlay';
 import type { SocialProps } from '@/modules/social/types';
@@ -14,10 +15,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     const { props, url, component } = usePage<SocialProps>();
     const user = props.auth.user;
     const path = url.split(/[?#]/)[0];
-    const settingUpCollection =
-        user &&
-        !user.importedAt &&
-        (!user.collectionCount || user.discogsConnected);
+    const settingUpCollection = user && isSettingUpCollection(user);
     const onboarding = component === 'social/FeedPage' && settingUpCollection;
     const recordOpen =
         component === 'social/RecordPage' || Boolean(props.recordOverlay);

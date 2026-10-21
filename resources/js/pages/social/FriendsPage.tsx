@@ -1,5 +1,6 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
+import { Avatar } from '@/modules/social/Avatar';
 import { FriendActions } from '@/modules/social/FriendActions';
 import { Pagination } from '@/modules/social/Pagination';
 import type { FriendsProps, SocialProps } from '@/modules/social/types';
@@ -59,12 +60,10 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                     return (
                         <article className="person-row" key={person.id}>
                             <div className="person-identity">
-                                <span
+                                <Avatar
                                     className="person-avatar"
-                                    aria-hidden="true"
-                                >
-                                    {person.handle.slice(0, 1).toUpperCase()}
-                                </span>
+                                    label={person.handle}
+                                />
                                 <div>
                                     <h2>
                                         <Link href={person.profileUrl}>

@@ -13,8 +13,8 @@ class RecordNotesController extends Controller
         abort_unless($request->user()->id === $record->user_id, 403);
 
         $data = $request->validate([
-            'shared_note' => 'present|nullable|string|max:5000',
-            'private_note' => 'present|nullable|string|max:5000',
+            'shared_note' => ['present', 'nullable', 'string', 'max:5000'],
+            'private_note' => ['present', 'nullable', 'string', 'max:5000'],
         ]);
         $record->update($data);
 

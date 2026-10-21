@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ConnectDiscogsAccountAction;
+use App\Actions\DisconnectDiscogsAccountAction;
 use App\Jobs\SyncUserCollection;
 use App\Support\DiscogsOAuth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Throwable;
 
 class DiscogsConnectionController extends Controller
@@ -25,7 +26,7 @@ class DiscogsConnectionController extends Controller
             if (! is_string($tokens['oauth_token'] ?? null) || $tokens['oauth_token'] === ''
                 || ! is_string($tokens['oauth_token_secret'] ?? null) || $tokens['oauth_token_secret'] === ''
                 || ($tokens['oauth_callback_confirmed'] ?? '') !== 'true') {
-                throw new \RuntimeException('Invalid token response');
+                throw new RuntimeException('Invalid token response');
             }
             $request->session()->put('discogs_pending', [
                 'token' => $tokens['oauth_token'], 'secret' => Crypt::encryptString($tokens['oauth_token_secret']),
@@ -38,7 +39,7 @@ class DiscogsConnectionController extends Controller
         return redirect()->away('https://www.discogs.com/oauth/authorize?oauth_token='.rawurlencode($tokens['oauth_token']));
     }
 
-    public function callback(Request $request, DiscogsOAuth $oauth): RedirectResponse
+    public function callback(Request $request, DiscogsOAuth $oauth, ConnectDiscogsAccountAction $connectAccount): RedirectResponse
     {
         $pending = $request->session()->pull('discogs_pending');
         $token = $request->query('oauth_token');
@@ -52,27 +53,13 @@ class DiscogsConnectionController extends Controller
             parse_str($response->body(), $tokens);
             if (! is_string($tokens['oauth_token'] ?? null) || $tokens['oauth_token'] === ''
                 || ! is_string($tokens['oauth_token_secret'] ?? null) || $tokens['oauth_token_secret'] === '') {
-                throw new \RuntimeException('Invalid token response');
+                throw new RuntimeException('Invalid token response');
             }
             $identity = $oauth->request('GET', 'oauth/identity', $tokens['oauth_token'], $tokens['oauth_token_secret'])->json();
             if (! is_string($identity['username'] ?? null) || ! preg_match('/^[a-zA-Z0-9_.-]+$/', $identity['username'])) {
-                throw new \RuntimeException('Invalid identity response');
+                throw new RuntimeException('Invalid identity response');
             }
-            $user = $request->user();
-            if ($user->legacy_owner && $identity['username'] !== config('services.discogs.username')) {
-                throw new \RuntimeException('Wrong legacy owner');
-            }
-            Cache::lock('discogs-sync-'.$user->id, 7500)->block(3, function () use ($user, $tokens, $identity): void {
-                $current = $user->fresh();
-                // Reconnecting must never mix two different people's collections.
-                if ($current->discogs_username && $current->discogs_username !== $identity['username']) {
-                    throw new \RuntimeException('Different Discogs identity');
-                }
-                $current->update([
-                    'discogs_username' => $identity['username'],
-                    'discogs_token' => $tokens['oauth_token'], 'discogs_secret' => $tokens['oauth_token_secret'],
-                ]);
-            });
+            $connectAccount->execute($request->user(), $identity['username'], $tokens['oauth_token'], $tokens['oauth_token_secret']);
         } catch (Throwable) {
             return redirect('/settings')->withErrors(['discogs' => 'Discogs connection failed. Retry with your original Discogs account; an account can belong to only one profile.']);
         }
@@ -108,18 +95,10 @@ class DiscogsConnectionController extends Controller
         return back()->with('status', 'Collection sync requested.');
     }
 
-    public function disconnect(Request $request): RedirectResponse
+    public function disconnect(Request $request, DisconnectDiscogsAccountAction $disconnectAccount): RedirectResponse
     {
-        $lock = Cache::lock('discogs-sync-'.$request->user()->id, 7500);
-        if (! $lock->get()) {
-            throw ValidationException::withMessages(['discogs' => 'A sync is running. Please wait before disconnecting.']);
-        }
-        try {
-            $request->user()->update(['discogs_token' => null, 'discogs_secret' => null]);
-            $request->session()->forget('discogs_pending');
-        } finally {
-            $lock->release();
-        }
+        $disconnectAccount->execute($request->user());
+        $request->session()->forget('discogs_pending');
 
         return back()->with('status', 'Discogs disconnected. Imported records are kept; reconnect the same account to resume. Revoke the app on Discogs to revoke its grant too.');
     }

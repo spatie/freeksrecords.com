@@ -1,21 +1,18 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 
-import { CollectionSharing } from '@/modules/social/CollectionSharing';
+import { CollectionHeading } from '@/modules/social/CollectionHeading';
+import { isSettingUpCollection } from '@/modules/social/collectionSetup';
+import { DiscogsConnectButton } from '@/modules/social/DiscogsConnectButton';
 import { FeedShelf } from '@/modules/social/FeedShelf';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { Pagination } from '@/modules/social/Pagination';
 import { ImportedShelf } from '@/modules/social/ProfileShelf';
 import type { FeedProps, SocialProps } from '@/modules/social/types';
 
-export function FeedPage({
-    collectionCount,
-    importRecords,
-    records,
-}: FeedProps) {
-    const { auth, csrfToken } = usePage<SocialProps>().props;
+export function FeedPage({ importRecords, records }: FeedProps) {
+    const { auth } = usePage<SocialProps>().props;
     const user = auth.user!;
-    const starting =
-        !user.importedAt && (!collectionCount || user.discogsConnected);
+    const starting = isSettingUpCollection(user);
     return (
         <>
             <Head
@@ -39,14 +36,15 @@ export function FeedPage({
                             <li aria-current="step">Import collection</li>
                         </ol>
                     )}
-                    <div className="collector-heading">
-                        <h1 id="onboarding-title">
-                            {user.discogsConnected
+                    <CollectionHeading
+                        id="onboarding-title"
+                        title={
+                            user.discogsConnected
                                 ? 'Your collection'
-                                : 'Add your records'}
-                        </h1>
-                        <CollectionSharing key={user.id} user={user} />
-                    </div>
+                                : 'Add your records'
+                        }
+                        user={user}
+                    />
                     {user.discogsConnected ? (
                         <>
                             <ImportStatus user={user} />
@@ -61,16 +59,7 @@ export function FeedPage({
                                 records will appear on your own shelf, ready to
                                 browse and share.
                             </p>
-                            <form method="post" action="/discogs/connect">
-                                <input
-                                    type="hidden"
-                                    name="_token"
-                                    value={csrfToken}
-                                />
-                                <button className="button">
-                                    Connect Discogs
-                                </button>
-                            </form>
+                            <DiscogsConnectButton />
                             <p className="onboarding-detail">
                                 You’ll approve the connection on Discogs. We
                                 never see your password.{' '}

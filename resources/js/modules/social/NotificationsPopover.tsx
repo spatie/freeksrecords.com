@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { Avatar } from '@/modules/social/Avatar';
 import { FriendActions } from '@/modules/social/FriendActions';
 import type { Notifications, SocialProps } from '@/modules/social/types';
 
@@ -163,14 +164,10 @@ export function NotificationsPopover() {
                                                 loading="lazy"
                                             />
                                         ) : (
-                                            <span
+                                            <Avatar
                                                 className="notification-avatar"
-                                                aria-hidden="true"
-                                            >
-                                                {notification.actor.name
-                                                    .slice(0, 1)
-                                                    .toUpperCase()}
-                                            </span>
+                                                label={notification.actor.name}
+                                            />
                                         )}
                                         <span className="notification-copy">
                                             <span>

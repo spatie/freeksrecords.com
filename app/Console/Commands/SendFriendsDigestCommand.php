@@ -2,12 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\FriendsWeeklyDigest;
-use App\Models\CollectionRecord;
+use App\Actions\SendFriendsDigestAction;
 use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 
 class SendFriendsDigestCommand extends Command
 {
@@ -15,7 +12,7 @@ class SendFriendsDigestCommand extends Command
 
     protected $description = 'Send the latest completed Monday-to-Monday friends digest, checking current access';
 
-    public function handle(): int
+    public function handle(SendFriendsDigestAction $sendDigest): int
     {
         $preview = $this->option('preview-for');
         if ($preview && ! app()->environment('local')) {
@@ -30,25 +27,10 @@ class SendFriendsDigestCommand extends Command
         if ($preview) {
             $end = now()->timezone('Europe/Brussels');
         }
-        $week = $end->toDateString();
-        User::query()->when($preview, fn ($query) => $query->whereKey($preview))->whereNotNull('email_verified_at')->where('digest_enabled', true)->eachById(function (User $candidate) use ($end, $week, $preview): void {
-            Cache::lock('digest-'.$candidate->id, 300)->get(function () use ($candidate, $end, $week, $preview): void {
-                $user = $candidate->fresh();
-                if (! $user->digest_enabled || ! $user->email_verified_at || (! $preview && $user->digest_week === $week)) {
-                    return;
-                }
-                // Deliberately synchronous: no queued/rendered payload can outlive its privacy check.
-                $records = CollectionRecord::friendActivity($user)->with('user')
-                    ->where('added_at', '>=', $end->subWeek()->utc()->toDateTimeString())
-                    ->where('added_at', '<', $end->utc()->toDateTimeString())->get();
-                if ($records->isNotEmpty()) {
-                    Mail::to($user->email)->send(new FriendsWeeklyDigest($records));
-                }
-                if (! $preview) {
-                    $user->update(['digest_week' => $week]);
-                }
-            });
+        User::query()->when($preview, fn ($query) => $query->whereKey($preview))->whereNotNull('email_verified_at')->where('digest_enabled', true)->eachById(function (User $candidate) use ($sendDigest, $end, $preview): void {
+            $sendDigest->execute($candidate, $end, (bool) $preview);
         });
+        $this->info('Friends digests processed.');
 
         return self::SUCCESS;
     }

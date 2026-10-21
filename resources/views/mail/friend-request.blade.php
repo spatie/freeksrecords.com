@@ -1,17 +1,13 @@
-<x-mail::message>
-# Good company for your collection.
-
-<p>{{ $sender->name }} ({{ '@'.$sender->handle }}) would like to be your friend on Plaat Club.</p>
-
-Friends can see collections shared with Friends and their new additions. Collections set to Only me stay private.
-
-<x-mail::button :url="$links['accept']">
-Accept friend request
-</x-mail::button>
-
-[Decline friend request]({{ $links['decline'] }})
-
-<x-slot:subcopy>
-These private links expire in seven days and work without signing in. You’ll confirm your choice on Plaat Club. Don’t forward this email.
-</x-slot:subcopy>
-</x-mail::message>
+<x-mail::layout>
+<x-slot:head>
+<style>
+@media only screen and (max-width: 600px) {
+    .body { padding: 0 !important; }
+    .request-masthead, .request-poster, .request-copy, .request-signoff { padding-left: 24px !important; padding-right: 24px !important; }
+    .request-good, .request-company { font-size: 52px !important; letter-spacing: -3px !important; }
+    .request-vinyl, .request-vinyl-cell { width: 100px !important; }
+}
+</style>
+</x-slot:head>
+<x-mail::friend-request :sender="$sender" :links="$links" />
+</x-mail::layout>

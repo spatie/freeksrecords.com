@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 
 export function FriendRequestResponsePage({
     sender,
@@ -50,9 +50,6 @@ export function FriendRequestResponsePage({
                         accepted, declined, or cancelled.
                     </p>
                 )}
-                <Link className="text-button spaced" href="/login">
-                    Go to Plaat Club
-                </Link>
             </section>
         </>
     );
