@@ -1338,6 +1338,10 @@
         h1 {
             font-size: 20vw;
         }
+        :scope.explore-page .page-heading h1 {
+            font-size: 16vw;
+            overflow-wrap: normal;
+        }
         h2 {
             font-size: 32px;
         }
