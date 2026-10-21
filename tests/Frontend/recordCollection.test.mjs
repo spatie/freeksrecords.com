@@ -7,6 +7,7 @@ import {
     collectionView,
     normalizeSearchText,
     recordsInGroup,
+    recordsByAddedDate,
     recordsByYear,
     searchRecords,
 } from '../../resources/js/components/records/collection.ts';
@@ -22,6 +23,33 @@ const records = importedRecords.map((record) => ({
     ...record,
     trackTitles: record.tracks.map((track) => track.title),
 }));
+
+await test('latest additions group by Brussels calendar date, newest first, without mutating the collection', () => {
+    const additions = [
+        { ...records[0], instanceId: 1, addedAt: '2026-06-10T21:59:59Z' },
+        { ...records[0], instanceId: 2, addedAt: '2026-06-10T22:00:00Z' },
+        { ...records[0], instanceId: 3, addedAt: '2026-06-11T10:00:00Z' },
+        { ...records[0], instanceId: 4, addedAt: '2025-11-01T10:00:00Z' },
+        { ...records[0], instanceId: 5, addedAt: '2026-06-11T10:00:00Z' },
+    ];
+    const grouped = recordsByAddedDate(additions);
+    assert.deepEqual(
+        grouped.map(({ date, records }) => [
+            date,
+            records.map((record) => record.instanceId),
+        ]),
+        [
+            ['2026-06-11', [5, 3, 2]],
+            ['2026-06-10', [1]],
+            ['2025-11-01', [4]],
+        ],
+    );
+    assert.deepEqual(
+        additions.map((record) => record.instanceId),
+        [1, 2, 3, 4, 5],
+    );
+    assert.deepEqual(recordsByAddedDate([]), []);
+});
 
 await test('reissues belong to their original release year', () => {
     const harrison = records[0];

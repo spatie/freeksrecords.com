@@ -2,13 +2,17 @@ import { SearchX } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useEffect, useEffectEvent, useRef } from 'react';
 
-import { recordsByYear } from '@/components/records/collection';
+import {
+    formatReleaseDate,
+    recordsByAddedDate,
+    recordsByYear,
+} from '@/components/records/collection';
 import { RecordSleeve } from '@/components/records/RecordSleeve';
 import type { CollectionRecordSummary } from '@/components/records/types';
 
 type RecordShelfProps = {
     browseBasePath?: string;
-    groupByYear: boolean;
+    groupBy: 'year' | 'added' | null;
     showYears?: boolean;
     onMore: () => void;
     onArtist?: (artist: string) => void;
@@ -21,7 +25,7 @@ type RecordShelfProps = {
 
 export function RecordShelf({
     browseBasePath,
-    groupByYear,
+    groupBy,
     showYears = false,
     onMore,
     onArtist,
@@ -62,9 +66,18 @@ export function RecordShelf({
         );
     }
     const shown = records.slice(0, visibleCount);
-    const sections = groupByYear
-        ? recordsByYear(shown)
-        : [{ year: '', records: shown }];
+    const sections =
+        groupBy === 'added'
+            ? recordsByAddedDate(shown).map(({ date, records }) => ({
+                  heading: formatReleaseDate(date),
+                  records,
+              }))
+            : groupBy === 'year'
+              ? recordsByYear(shown).map(({ year, records }) => ({
+                    heading: year,
+                    records,
+                }))
+              : [{ heading: '', records: shown }];
     return (
         <div
             className={`shelf-results ${records.length < 4 ? 'has-small-collection' : ''} ${records.length <= 4 ? 'has-single-shelf' : ''}`}
@@ -78,12 +91,12 @@ export function RecordShelf({
                 {sections.map((section) => (
                     <section
                         className="cabinet-year"
-                        key={section.year || 'all'}
-                        aria-label={section.year || 'Records'}
+                        key={section.heading || 'all'}
+                        aria-label={section.heading || 'Records'}
                     >
-                        {groupByYear && (
+                        {groupBy && (
                             <h3 className="cabinet-year-heading">
-                                <span>{section.year}</span>
+                                <span>{section.heading}</span>
                             </h3>
                         )}
                         <div className="catalog-grid">

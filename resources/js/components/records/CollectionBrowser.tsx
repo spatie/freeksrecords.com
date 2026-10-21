@@ -279,7 +279,13 @@ export function CollectionBrowser({
                                 query: '',
                             })
                         }
-                        groupByYear={browse.mode === 'decade'}
+                        groupBy={
+                            browse.mode === 'recent'
+                                ? 'added'
+                                : browse.mode === 'decade'
+                                  ? 'year'
+                                  : null
+                        }
                         showYears={browse.mode === 'artist'}
                         onMore={() =>
                             onBrowse((current) => ({

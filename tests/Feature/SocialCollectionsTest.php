@@ -112,6 +112,26 @@ it('pages a large collection and jumps across sections without filtering other a
         ->assertOk()->assertJsonPath('props.records', null)->assertJsonPath('props.groups', []);
 });
 
+it('groups latest additions by Brussels calendar day across pages, with newest records first', function () {
+    $owner = socialUser('dated_shelf', 'everyone');
+    socialRecord($owner, 'Before midnight', date: '2026-06-10 21:59:59', instance: 1);
+    socialRecord($owner, 'After midnight', date: '2026-06-10 22:00:00', instance: 2);
+    foreach (range(3, 39) as $instance) {
+        socialRecord($owner, "Same day {$instance}", date: '2026-06-11 10:00:00', instance: $instance);
+    }
+    socialRecord($owner, 'Older addition', date: '2025-11-01 10:00:00', instance: 40);
+
+    $first = $this->get('/dated_shelf')->assertOk();
+    $second = $this->get('/dated_shelf?recordsPage=2')->assertOk();
+    expect($first->inertiaProps('groups'))->toBe([
+        ['name' => '2026-06-11', 'count' => 38, 'offset' => 0],
+        ['name' => '2026-06-10', 'count' => 1, 'offset' => 38],
+        ['name' => '2025-11-01', 'count' => 1, 'offset' => 39],
+    ])->and(array_column($first->inertiaProps('records.data'), 'instanceId'))->toBe(range(39, 4))
+        ->and(array_column($second->inertiaProps('records.data'), 'instanceId'))->toBe([3, 2, 1, 40])
+        ->and(array_column($second->inertiaProps('records.data'), 'section'))->toBe(['2026-06-11', '2026-06-11', '2026-06-10', '2025-11-01']);
+});
+
 it('preserves collection search and multi-genre grouping across server pages', function () {
     $owner = socialUser('search_shelf', 'everyone');
     $copy = socialRecord($owner, 'Blue Room', instance: 1);
