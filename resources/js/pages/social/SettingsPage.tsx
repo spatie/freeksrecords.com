@@ -168,63 +168,46 @@ export function SettingsPage() {
                             </>
                         )}
                     </section>
-                    {googleEnabled && (
+                    {googleEnabled && !user.googleConnected && (
                         <section
                             className="connection-section google-settings"
                             aria-labelledby="google-sign-in-title"
                         >
                             <h2 id="google-sign-in-title">Google sign-in</h2>
-                            {user.googleConnected ? (
-                                <>
-                                    <p>
-                                        Sign in with your connected Google
-                                        account.
-                                    </p>
-                                    <p className="muted">
-                                        To set or reset a password, sign out and
-                                        choose “Forgot password?” on the sign-in
-                                        page.
-                                    </p>
-                                </>
-                            ) : (
-                                <>
-                                    <p>
-                                        Use Google to sign in to this account.
-                                        Confirm your current password, then
-                                        choose the Google account for{' '}
-                                        <strong>{user.email}</strong>.
-                                    </p>
-                                    <form
-                                        className="stack"
-                                        method="post"
-                                        action="/settings/google"
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="_token"
-                                            value={csrfToken}
-                                        />
-                                        <label htmlFor="current_password">
-                                            Current password
-                                            <input
-                                                id="current_password"
-                                                name="current_password"
-                                                type="password"
-                                                autoComplete="current-password"
-                                                required
-                                            />
-                                        </label>
-                                        <button className="button secondary google-button">
-                                            Connect Google
-                                        </button>
-                                    </form>
-                                    <p className="muted spaced">
-                                        Your password will still work. Google
-                                        never gets your Plaat Club password, and
-                                        we don’t access your Gmail or Drive.
-                                    </p>
-                                </>
-                            )}
+                            <p>
+                                Use Google to sign in to this account. Confirm
+                                your current password, then choose the Google
+                                account for <strong>{user.email}</strong>.
+                            </p>
+                            <form
+                                className="stack"
+                                method="post"
+                                action="/settings/google"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="_token"
+                                    value={csrfToken}
+                                />
+                                <label htmlFor="current_password">
+                                    Current password
+                                    <input
+                                        id="current_password"
+                                        name="current_password"
+                                        type="password"
+                                        autoComplete="current-password"
+                                        required
+                                    />
+                                </label>
+                                <button className="button secondary google-button">
+                                    Connect Google
+                                </button>
+                            </form>
+                            <p className="muted spaced">
+                                Your password will still work. Google never gets
+                                your Plaat Club password, and we don’t access
+                                your Gmail or Drive.
+                            </p>
                         </section>
                     )}
                 </div>
