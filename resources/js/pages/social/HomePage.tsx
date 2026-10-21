@@ -32,6 +32,9 @@ export function HomePage({ artwork }: HomeProps) {
                     <br />
                     inside ↗
                 </Link>
+                <Link className="landing-about" href="/about">
+                    About ↗
+                </Link>
             </section>
         </>
     );
