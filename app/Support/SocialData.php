@@ -31,6 +31,9 @@ class SocialData
             'label', 'catalogNumber', 'format', 'mediaFormats', 'genres', 'styles', 'cover',
             'discogsUrl', 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch', 'trackSource',
         ]);
+        if (filled($payload['cover'] ?? null) && $payload['cover'] !== '/images/record-placeholder.svg') {
+            $payload['cover'] = route('shelf.cover', $record, false);
+        }
         $payload['tracks'] = array_map(fn (array $track) => Arr::only($track, [
             'position', 'title', 'artist', 'duration', 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
         ]), $record->payload['tracks'] ?? []);

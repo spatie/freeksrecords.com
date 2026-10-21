@@ -705,16 +705,27 @@
     @media (max-width: 600px) {
         .collection-controls {
             display: grid;
-            padding-top: 18px;
+            gap: 4px;
+            padding: 6px 0 10px;
         }
         .collection-tabs {
             justify-content: space-between;
             gap: 0;
         }
         .collection-tabs button {
-            font-size: 21px;
-            padding-inline: 8px;
+            font-size: clamp(16px, 4.3vw, 19px);
+            padding: 6px;
             min-height: 44px;
+        }
+        .record-search {
+            width: 100%;
+            min-width: 0;
+            min-height: 44px;
+        }
+        .record-search input {
+            flex: 1;
+            min-width: 0;
+            padding-block: 6px;
         }
         .collection-layout.has-index {
             grid-template-columns: minmax(0, 1fr);

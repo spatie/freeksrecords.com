@@ -228,11 +228,13 @@ it('enforces the full collection visibility matrix on profiles and record pages'
     $profile = $this->get(route('profile', $owner->handle))->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('person.name', 'Owner')->where('person.handle', 'owner')->where('visible', $allowed));
     $response = $this->get('/shelves/'.$record->id);
+    $cover = $this->get('/shelves/'.$record->id.'/cover');
     $cupboard = $this->get('/owner?record='.$record->id);
     $elsewhere = $this->get('/collections?record='.$record->id);
     if ($allowed) {
         $profile->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
         $response->assertOk()->assertSee('Private Test Album');
+        $cover->assertOk()->assertHeader('Content-Type', 'image/jpeg');
         $cupboard->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('social/ProfilePage')->has('records.data', 1)
             ->where('recordOverlay.record.id', $record->id)
@@ -243,6 +245,7 @@ it('enforces the full collection visibility matrix on profiles and record pages'
         $profile->assertDontSee('Private Test Album')->assertDontSee($owner->email)
             ->assertInertia(fn (Assert $page) => $page->where('records', null));
         $response->assertNotFound();
+        $cover->assertNotFound();
         $cupboard->assertNotFound();
         $elsewhere->assertNotFound();
     }

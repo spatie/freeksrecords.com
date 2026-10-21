@@ -36,7 +36,7 @@ class RecordCoverImages
             return $this->url($releaseId);
         }
 
-        $bytes = $this->asJpeg($this->sourceBytes($source));
+        $bytes = $this->read($source);
 
         $stored = $disk->put($path, $bytes, [
             'ContentType' => 'image/jpeg',
@@ -48,6 +48,11 @@ class RecordCoverImages
         }
 
         return $this->url($releaseId);
+    }
+
+    public function read(string $source): string
+    {
+        return $this->asJpeg($this->sourceBytes($source));
     }
 
     protected function path(int $releaseId): string
@@ -85,6 +90,19 @@ class RecordCoverImages
 
     protected function sourceBytes(string $source): string
     {
+        $disk = Storage::disk('public');
+        $storedPrefix = rtrim($disk->url('records'), '/').'/';
+
+        if (str_starts_with($source, $storedPrefix)) {
+            $filename = substr($source, strlen($storedPrefix));
+
+            if (! preg_match('/^[0-9]+\.jpg$/', $filename)) {
+                throw new RuntimeException('The stored cover path is not supported.');
+            }
+
+            return $disk->get("records/{$filename}") ?? throw new RuntimeException('The stored cover could not be read.');
+        }
+
         if (static::isBundledCover($source)) {
             $bytes = file_get_contents(public_path(ltrim($source, '/')));
 

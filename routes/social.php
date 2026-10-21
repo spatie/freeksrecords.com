@@ -6,6 +6,7 @@ use App\Http\Controllers\DiscogsConnectionController;
 use App\Http\Controllers\FriendRequestResponseController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\RecordCoverController;
 use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
 use App\Http\Middleware\PrivateResponse;
@@ -29,6 +30,7 @@ Route::middleware(PrivateResponse::class)->group(function () {
     Route::get('/collections', [HomeController::class, 'collections'])->name('collections');
     Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');
+    Route::get('/shelves/{record}/cover', RecordCoverController::class)->whereNumber('record')->name('shelf.cover');
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:20,1')->name('google.callback');
 
     Route::match(['get', 'post'], '/friends/respond/{friendship}/{recipient}/{action}', FriendRequestResponseController::class)
