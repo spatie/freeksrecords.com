@@ -213,27 +213,34 @@ export function NotificationsPopover() {
                                     )}
                                 </article>
                             ))}
-                            <nav
-                                className="notification-pagination"
-                                aria-label="Notification pagination"
-                            >
-                                {[
-                                    result.notifications.prev_page_url,
-                                    result.notifications.next_page_url,
-                                ].map(
-                                    (url, index) =>
-                                        url && (
-                                            <button
-                                                key={url}
-                                                className="text-button"
-                                                disabled={busy}
-                                                onClick={() => void load(url)}
-                                            >
-                                                {index ? 'Next' : 'Previous'}
-                                            </button>
-                                        ),
-                                )}
-                            </nav>
+                            {(result.notifications.prev_page_url ||
+                                result.notifications.next_page_url) && (
+                                <nav
+                                    className="notification-pagination"
+                                    aria-label="Notification pagination"
+                                >
+                                    {[
+                                        result.notifications.prev_page_url,
+                                        result.notifications.next_page_url,
+                                    ].map(
+                                        (url, index) =>
+                                            url && (
+                                                <button
+                                                    key={url}
+                                                    className="text-button"
+                                                    disabled={busy}
+                                                    onClick={() =>
+                                                        void load(url)
+                                                    }
+                                                >
+                                                    {index
+                                                        ? 'Next'
+                                                        : 'Previous'}
+                                                </button>
+                                            ),
+                                    )}
+                                </nav>
+                            )}
                         </>
                     )}
                 </div>

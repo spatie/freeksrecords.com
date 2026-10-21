@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react';
-import type { Ref } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 import type { CollectionMode } from '@/components/records/types';
 
@@ -8,7 +8,6 @@ type CollectionControlsProps = {
     query: string;
     onMode: (mode: CollectionMode) => void;
     onQuery: (query: string) => void;
-    ref?: Ref<HTMLDivElement>;
 };
 
 const modes: { key: CollectionMode; label: string }[] = [
@@ -23,10 +22,24 @@ export function CollectionControls({
     query,
     onMode,
     onQuery,
-    ref,
 }: CollectionControlsProps) {
+    const controls = useRef<HTMLDivElement>(null);
+    useLayoutEffect(() => {
+        const element = controls.current;
+        if (!element) return;
+        const update = () => {
+            element.parentElement?.style.setProperty(
+                '--controls-height',
+                `${element.getBoundingClientRect().height}px`,
+            );
+        };
+        update();
+        const observer = new ResizeObserver(update);
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
     return (
-        <div className="collection-controls" ref={ref}>
+        <div className="collection-controls" ref={controls}>
             <nav aria-label="Group collection" className="collection-tabs">
                 {modes.map((option) => (
                     <button

@@ -63,7 +63,6 @@
     flex-direction: column;
     justify-content: center;
     padding: 25px 210px 25px 10px;
-    text-decoration: none;
 }
 .ticket-title {
     display: block;

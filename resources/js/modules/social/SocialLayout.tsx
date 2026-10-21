@@ -3,7 +3,6 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { legacyCollectionUrl } from '@/lib/record-history';
 import { AccountMenu } from '@/modules/social/AccountMenu';
-import { CollectionSharing } from '@/modules/social/CollectionSharing';
 import { NotificationsPopover } from '@/modules/social/NotificationsPopover';
 import { RecordOverlay } from '@/modules/social/RecordOverlay';
 import type { SocialProps } from '@/modules/social/types';
@@ -23,73 +22,37 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     const recordOpen =
         component === 'social/RecordPage' || Boolean(props.recordOverlay);
     const layoutRef = useRef<HTMLDivElement>(null);
-    const navigationRef = useRef<HTMLElement>(null);
-    const indicatorRef = useRef<HTMLSpanElement>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const layout = layoutRef.current;
         if (!layout) return;
         let compact = false;
-        const update = (event?: Event) => {
-            const shelf = event
-                ? event.target
-                : layout.querySelector(
-                      '.collection-stream, .collection-main.is-draggable',
-                  );
-            if (
-                !(shelf instanceof HTMLElement) ||
-                !shelf.matches(
-                    '.collection-stream, .collection-main.is-draggable',
-                )
-            )
-                return;
-            const next = shelf.scrollTop > (compact ? 12 : 72);
+        const update = () => {
+            const next =
+                Boolean(layout.querySelector('.profile-record-room')) &&
+                window.scrollY > (compact ? 12 : 72);
             if (next === compact) return;
             compact = next;
             layout.dataset.collectionCompact = String(compact);
         };
+        const header = layout.querySelector('.site-header');
+        const updateHeaderHeight = () => {
+            layout.style.setProperty(
+                '--site-header-height',
+                `${header?.getBoundingClientRect().height ?? 0}px`,
+            );
+        };
+        updateHeaderHeight();
+        const observer = new ResizeObserver(updateHeaderHeight);
+        if (header) observer.observe(header, { box: 'border-box' });
         update();
-        layout.addEventListener('scroll', update, {
-            capture: true,
-            passive: true,
-        });
+        window.addEventListener('scroll', update, { passive: true });
         return () => {
-            layout.removeEventListener('scroll', update, true);
+            observer.disconnect();
+            window.removeEventListener('scroll', update);
             delete layout.dataset.collectionCompact;
         };
     }, [path]);
-
-    useLayoutEffect(() => {
-        const navigation = navigationRef.current;
-        const indicator = indicatorRef.current;
-        if (!navigation || !indicator) return;
-
-        const positionIndicator = () => {
-            const active = navigation.querySelector('a[aria-current]');
-            indicator.hidden = !active;
-            if (!active) return;
-
-            const link = active.getBoundingClientRect();
-            const nav = navigation.getBoundingClientRect();
-            indicator.style.width = `${link.width - 36}px`;
-            indicator.style.transform = `translateX(${link.left - nav.left - navigation.clientLeft + 18}px)`;
-        };
-
-        positionIndicator();
-        const frame = requestAnimationFrame(() => {
-            indicator.dataset.positioned = 'true';
-        });
-        const observer = new ResizeObserver(positionIndicator);
-        observer.observe(navigation);
-        navigation
-            .querySelectorAll('a')
-            .forEach((link) => observer.observe(link));
-
-        return () => {
-            cancelAnimationFrame(frame);
-            observer.disconnect();
-        };
-    }, [path, user?.id, user?.verified, onboarding]);
 
     const pageClass =
         {
@@ -128,31 +91,23 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                     <>
                         {user.verified && (
                             <nav
-                                ref={navigationRef}
                                 className="main-navigation"
                                 aria-label="Main navigation"
                             >
-                                <div className="my-collection-navigation">
-                                    <Link
-                                        href={
-                                            settingUpCollection
-                                                ? '/feed'
-                                                : user.profileUrl
-                                        }
-                                        aria-current={
-                                            path === user.profileUrl ||
-                                            onboarding
-                                                ? 'page'
-                                                : undefined
-                                        }
-                                    >
-                                        My collection
-                                    </Link>
-                                    <CollectionSharing
-                                        key={user.id}
-                                        user={user}
-                                    />
-                                </div>
+                                <Link
+                                    href={
+                                        settingUpCollection
+                                            ? '/feed'
+                                            : user.profileUrl
+                                    }
+                                    aria-current={
+                                        path === user.profileUrl || onboarding
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                >
+                                    My collection
+                                </Link>
                                 <Link
                                     href={
                                         settingUpCollection
@@ -178,12 +133,6 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 >
                                     Public
                                 </Link>
-                                <span
-                                    ref={indicatorRef}
-                                    className="navigation-indicator"
-                                    aria-hidden="true"
-                                    hidden
-                                />
                             </nav>
                         )}
                         <div className="header-account">
@@ -242,11 +191,17 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             </header>
             <RecordOverlay>
                 <main id="main" className="page">
-                    {props.flash.status && (
-                        <p className="notice" role="status">
-                            {props.flash.status}
-                        </p>
-                    )}
+                    {props.flash.status &&
+                        !(
+                            props.flash.status ===
+                                'Collection sync requested.' &&
+                            user?.discogsConnected &&
+                            !user.importedAt
+                        ) && (
+                            <p className="notice" role="status">
+                                {props.flash.status}
+                            </p>
+                        )}
                     {Object.keys(props.errors).length > 0 && (
                         <div className="errors" role="alert">
                             <strong>Please check the following:</strong>

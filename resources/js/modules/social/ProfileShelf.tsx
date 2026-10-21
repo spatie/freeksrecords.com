@@ -1,12 +1,5 @@
 import { InfiniteScroll, router, usePage } from '@inertiajs/react';
-import {
-    Fragment,
-    useContext,
-    useEffect,
-    useEffectEvent,
-    useRef,
-    useState,
-} from 'react';
+import { useContext, useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
     browseFromHash,
     browseHash,
@@ -50,16 +43,25 @@ export function ProfileShelf({
                     '[data-collection-section]',
                 ),
             );
-            const top = container.getBoundingClientRect().top + 90;
+            const controls = container
+                .closest('.record-room')
+                ?.querySelector('.collection-controls');
+            const headingHeight =
+                container
+                    .querySelector('.collection-section')
+                    ?.getBoundingClientRect().height ?? 0;
+            const top =
+                (controls?.getBoundingClientRect().bottom ?? 0) +
+                headingHeight / 2;
             const heading =
                 headings.findLast(
                     (element) => element.getBoundingClientRect().top <= top,
                 ) ?? headings[0];
             setActiveGroup(heading?.dataset.collectionSection ?? null);
         };
-        container.addEventListener('scroll', update, { passive: true });
+        window.addEventListener('scroll', update, { passive: true });
         update();
-        return () => container.removeEventListener('scroll', update);
+        return () => window.removeEventListener('scroll', update);
     }, [records?.data]);
     useEffect(
         () => () => {
@@ -78,12 +80,9 @@ export function ProfileShelf({
             ),
         ).find((element) => element.dataset.collectionSection === group);
         if (group && !heading) return false;
-        container.scrollTo({
-            top: heading
-                ? container.scrollTop +
-                  heading.getBoundingClientRect().top -
-                  container.getBoundingClientRect().top
-                : 0,
+        const target = heading ?? container.closest('.profile-record-room');
+        target?.scrollIntoView({
+            block: 'start',
             behavior: smooth ? motionScrollBehavior() : 'instant',
         });
         heading?.focus({ preventScroll: true });
@@ -114,7 +113,7 @@ export function ProfileShelf({
 
     const restoreSection = useEffectEvent(() => {
         if (window.location.hash) visit(browseFromHash(window.location.hash));
-        else scrollToGroup(browse.group, false);
+        else if (browse.group) scrollToGroup(browse.group, false);
     });
 
     useEffect(() => {
@@ -170,9 +169,7 @@ export function ProfileShelf({
                     className="collection-main collection-stream"
                     ref={wall}
                     role="region"
-                    scroll-region=""
-                    tabIndex={0}
-                    aria-label="Scrollable record collection"
+                    aria-label="Record collection"
                 >
                     <InfiniteScroll
                         data="records"
@@ -192,46 +189,58 @@ export function ProfileShelf({
                             </p>
                         }
                     >
-                        <div className="catalog-grid" ref={items}>
-                            {records?.data.map((record, index) => (
-                                <Fragment key={record.key}>
-                                    {(index === 0 ||
-                                        records.data[index - 1].section !==
-                                            record.section) && (
-                                        <h2
-                                            className="collection-section"
-                                            data-collection-section={
-                                                record.section
-                                            }
-                                            tabIndex={-1}
-                                        >
-                                            {browse.mode === 'recent'
-                                                ? formatReleaseDate(
-                                                      record.section,
-                                                  )
-                                                : record.section}
-                                        </h2>
-                                    )}
-                                    <RecordSleeve
-                                        record={record}
-                                        browseBasePath={basePath}
-                                        showYear
-                                        transitionRecordId={
-                                            page.props.recordOverlay?.record
-                                                .payload.instanceId ?? null
-                                        }
-                                        onSelect={(source) =>
-                                            openRecord(record.shareUrl, source)
-                                        }
-                                        onArtist={(artist) =>
-                                            visit({
-                                                mode: 'artist',
-                                                group: artist,
-                                                query: '',
-                                            })
-                                        }
-                                    />
-                                </Fragment>
+                        <div ref={items}>
+                            {Array.from(
+                                Map.groupBy(
+                                    records?.data ?? [],
+                                    (record) => record.section,
+                                ),
+                            ).map(([section, groupRecords]) => (
+                                <section
+                                    key={section}
+                                    data-collection-section={section}
+                                    tabIndex={-1}
+                                    className="collection-record-group"
+                                    aria-label={
+                                        browse.mode === 'recent'
+                                            ? formatReleaseDate(section)
+                                            : section
+                                    }
+                                >
+                                    <h2 className="collection-section">
+                                        {browse.mode === 'recent'
+                                            ? formatReleaseDate(section)
+                                            : section}
+                                    </h2>
+                                    <div className="catalog-grid">
+                                        {groupRecords.map((record) => (
+                                            <RecordSleeve
+                                                key={record.key}
+                                                record={record}
+                                                browseBasePath={basePath}
+                                                showYear
+                                                transitionRecordId={
+                                                    page.props.recordOverlay
+                                                        ?.record.payload
+                                                        .instanceId ?? null
+                                                }
+                                                onSelect={(source) =>
+                                                    openRecord(
+                                                        record.shareUrl,
+                                                        source,
+                                                    )
+                                                }
+                                                onArtist={(artist) =>
+                                                    visit({
+                                                        mode: 'artist',
+                                                        group: artist,
+                                                        query: '',
+                                                    })
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                </section>
                             ))}
                         </div>
                     </InfiniteScroll>
@@ -292,7 +301,6 @@ export function ImportedShelf({
     return (
         <RecordRoom>
             <CollectionBrowser
-                draggable
                 browse={browse}
                 browseBasePath={basePath}
                 onBrowse={changeBrowse}

@@ -13,7 +13,15 @@ export function AboutPage() {
                     first. Appreciate a record, leave a comment, or get a weekly
                     catch-up by email.
                 </p>
-                <h2>Made by Freek.</h2>
+                <div className="about-maker-heading">
+                    <img
+                        src="/images/freek.webp"
+                        alt="Freek Van der Herten"
+                        width="400"
+                        height="400"
+                    />
+                    <h2>Made by Freek.</h2>
+                </div>
                 <p>
                     I’m{' '}
                     <a href="https://freek.dev/about">Freek Van der Herten</a>,
