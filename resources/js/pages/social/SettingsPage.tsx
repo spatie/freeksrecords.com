@@ -1,6 +1,7 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 
 import { CollectionSharing } from '@/modules/social/CollectionSharing';
+import { DiscogsConnectButton } from '@/modules/social/DiscogsConnectButton';
 import { FieldError } from '@/modules/social/FieldError';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { SocialSwitch } from '@/modules/social/SocialSwitch';
@@ -161,18 +162,9 @@ export function SettingsPage() {
                                     collection. We never ask for your Discogs
                                     password.
                                 </p>
-                                <form method="post" action="/discogs/connect">
-                                    <input
-                                        type="hidden"
-                                        name="_token"
-                                        value={csrfToken}
-                                    />
-                                    <button className="button">
-                                        {user.discogsUsername
-                                            ? 'Reconnect Discogs'
-                                            : 'Connect Discogs'}
-                                    </button>
-                                </form>
+                                <DiscogsConnectButton
+                                    reconnect={Boolean(user.discogsUsername)}
+                                />
                             </>
                         )}
                     </section>

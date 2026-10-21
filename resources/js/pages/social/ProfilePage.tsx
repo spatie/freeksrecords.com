@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 
-import { CollectionSharing } from '@/modules/social/CollectionSharing';
+import { CollectionHeading } from '@/modules/social/CollectionHeading';
 import { ProfileShelf } from '@/modules/social/ProfileShelf';
 import type { ProfileProps, SocialProps } from '@/modules/social/types';
 
@@ -16,11 +16,12 @@ export function ProfilePage({
     return (
         <>
             <Head title={`${person.name}’s collection`} />
-            <div className="collector-heading">
-                <h1>
-                    {owner ? 'Your collection' : `${person.name}’s collection`}
-                </h1>
-                {owner && <CollectionSharing key={user.id} user={user} />}
+            <CollectionHeading
+                title={
+                    owner ? 'Your collection' : `${person.name}’s collection`
+                }
+                user={owner ? user : null}
+            >
                 <p>@{person.handle}</p>
                 {!owner && user?.verified && (
                     <Link
@@ -30,7 +31,7 @@ export function ProfilePage({
                         Manage friendship
                     </Link>
                 )}
-            </div>
+            </CollectionHeading>
             {!visible ? (
                 <section className="empty panel">
                     <h2>A private collection</h2>

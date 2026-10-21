@@ -38,7 +38,7 @@ class AccountController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $data = $request->validate(['email' => 'required|email', 'password' => 'required|string']);
+        $data = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
         $data['email'] = strtolower($data['email']);
         if (! Auth::attempt($data)) {
             throw ValidationException::withMessages(['email' => 'The supplied credentials are not correct.']);
@@ -76,7 +76,7 @@ class AccountController extends Controller
 
     public function forgot(Request $request): RedirectResponse
     {
-        $request->validate(['email' => 'required|email']);
+        $request->validate(['email' => ['required', 'email']]);
         Password::sendResetLink(['email' => strtolower($request->string('email')->trim())]);
 
         return back()->with('status', 'If that account exists, a reset link has been sent.');
@@ -85,7 +85,7 @@ class AccountController extends Controller
     public function reset(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'email' => 'required|email', 'token' => 'required|string',
+            'email' => ['required', 'email'], 'token' => ['required', 'string'],
             'password' => ['required', 'confirmed', PasswordRule::min(12)],
         ]);
         $data['email'] = strtolower($data['email']);
@@ -107,7 +107,7 @@ class AccountController extends Controller
         $request->merge(['handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
             'handle' => ['required', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), Rule::unique('users')->ignore($user->id)],
-            'visibility' => ['required', Rule::in($user->legacy_owner ? ['everyone'] : ['only_me', 'friends', 'everyone'])],
+            'visibility' => ['required', Rule::in($user->allowedCollectionVisibilities())],
             'comments_enabled' => ['required', 'boolean'], 'digest_enabled' => ['required', 'boolean'],
         ], [], ['handle' => 'username']);
         $user->update($data);

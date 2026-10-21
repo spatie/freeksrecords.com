@@ -103,6 +103,12 @@ class User extends Authenticatable implements MustVerifyEmail
         });
     }
 
+    /** @return list<string> */
+    public function allowedCollectionVisibilities(): array
+    {
+        return $this->legacy_owner ? ['everyone'] : ['only_me', 'friends', 'everyone'];
+    }
+
     public function canViewCollection(?self $viewer): bool
     {
         return $this->visibility === 'everyone' || $viewer?->id === $this->id

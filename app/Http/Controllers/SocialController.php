@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\AddRecordCommentAction;
+use App\Actions\DeleteRecordCommentAction;
+use App\Actions\UpdateFriendshipAction;
+use App\Actions\UpdateRecordAppreciationAction;
 use App\Models\CollectionRecord;
 use App\Models\Comment;
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
-use App\Notifications\FriendRequest;
 use App\Support\ProfileCollection;
 use App\Support\RecordCollection;
 use App\Support\SocialData;
@@ -15,7 +18,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -91,80 +93,40 @@ class SocialController extends Controller
         ]);
     }
 
-    public function friend(Request $request, User $user): RedirectResponse
+    public function friend(Request $request, User $user, UpdateFriendshipAction $updateFriendship): RedirectResponse
     {
         $viewer = $request->user();
         abort_if($viewer->id === $user->id, 422);
-        $data = $request->validate(['action' => 'required|in:request,accept,decline,cancel,unfriend']);
-        DB::transaction(function () use ($user, $viewer, $data): void {
-            // Serializes both directions, including two simultaneous first requests.
-            User::query()->whereIn('id', [$viewer->id, $user->id])->orderBy('id')->lockForUpdate()->get();
-            $pair = ['user_low' => min($viewer->id, $user->id), 'user_high' => max($viewer->id, $user->id)];
-            $friendship = Friendship::query()->where($pair)->first();
-            if ($data['action'] === 'request') {
-                if ($friendship === null) {
-                    $friendship = Friendship::query()->create([...$pair, 'requested_by' => $viewer->id]);
-                    SocialNotification::send($user, $viewer, 'friend_request');
-                    $user->notify(new FriendRequest($friendship->id));
-                }
-            } elseif ($data['action'] === 'accept') {
-                abort_unless($friendship && ! $friendship->accepted_at && $friendship->requested_by !== $viewer->id, 403);
-                $friendship->respond($viewer, 'accept');
-            } else {
-                abort_unless($friendship !== null, 404);
-                abort_unless(match ($data['action']) {
-                    'unfriend' => $friendship->accepted_at !== null,
-                    'cancel' => $friendship->accepted_at === null && $friendship->requested_by === $viewer->id,
-                    'decline' => $friendship->accepted_at === null && $friendship->requested_by !== $viewer->id,
-                    default => false,
-                }, 403);
-                if ($data['action'] === 'decline') {
-                    $friendship->respond($viewer, 'decline');
-                } else {
-                    $friendship->delete();
-                }
-            }
-        });
+        $data = $request->validate(['action' => ['required', 'in:request,accept,decline,cancel,unfriend']]);
+        $updateFriendship->execute($viewer, $user, $data['action']);
 
         return back()->with('status', 'Friendship updated.');
     }
 
-    public function appreciate(Request $request, CollectionRecord $record): RedirectResponse
+    public function appreciate(Request $request, CollectionRecord $record, UpdateRecordAppreciationAction $updateAppreciation): RedirectResponse
     {
-        abort_unless($record->user->canViewCollection($request->user()), 404);
-        $created = DB::table('appreciations')->insertOrIgnore(['user_id' => $request->user()->id, 'collection_record_id' => $record->id]);
-        if ($created) {
-            SocialNotification::send($record->user, $request->user(), 'appreciation', $record);
-        }
+        $updateAppreciation->execute($request->user(), $record, true);
 
         return back();
     }
 
-    public function unappreciate(Request $request, CollectionRecord $record): RedirectResponse
+    public function unappreciate(Request $request, CollectionRecord $record, UpdateRecordAppreciationAction $updateAppreciation): RedirectResponse
     {
-        abort_unless($record->user->canViewCollection($request->user()), 404);
-        DB::table('appreciations')->where('user_id', $request->user()->id)->where('collection_record_id', $record->id)->delete();
+        $updateAppreciation->execute($request->user(), $record, false);
 
         return back();
     }
 
-    public function comment(Request $request, CollectionRecord $record): RedirectResponse
+    public function comment(Request $request, CollectionRecord $record, AddRecordCommentAction $addComment): RedirectResponse
     {
-        abort_unless($record->user->canViewCollection($request->user()), 404);
-        abort_unless($record->user->comments_enabled, 403);
-        $data = $request->validate(['body' => 'required|string|max:2000']);
-        $record->comments()->create(['user_id' => $request->user()->id, 'body' => $data['body']]);
-        SocialNotification::send($record->user, $request->user(), 'comment', $record);
+        $addComment->execute($request->user(), $record, $request->input('body'));
 
         return back()->with('status', 'Comment added.');
     }
 
-    public function deleteComment(Request $request, CollectionRecord $record, Comment $comment): RedirectResponse
+    public function deleteComment(Request $request, CollectionRecord $record, Comment $comment, DeleteRecordCommentAction $deleteComment): RedirectResponse
     {
-        abort_unless($comment->collection_record_id === $record->id, 404);
-        // Authors retain their deletion right even if they lose collection access.
-        abort_if($request->user()->id !== $comment->user_id && $request->user()->id !== $record->user_id, 403);
-        $comment->delete();
+        $deleteComment->execute($request->user(), $record, $comment);
 
         return back()->with('status', 'Comment deleted.');
     }

@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
 import { useRef } from 'react';
 
+import { Avatar } from '@/modules/social/Avatar';
 import type { Viewer } from '@/modules/social/types';
 
 export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
@@ -15,19 +16,11 @@ export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
                 popoverTarget="account-popover"
                 aria-label={`Account menu for ${user.handle}`}
             >
-                <span className="account-avatar" aria-hidden="true">
-                    {Array.from(user.handle)[0]?.toLocaleUpperCase()}
-                    {user.avatarUrl && (
-                        <img
-                            src={user.avatarUrl}
-                            alt=""
-                            referrerPolicy="no-referrer"
-                            onError={(event) => {
-                                event.currentTarget.hidden = true;
-                            }}
-                        />
-                    )}
-                </span>
+                <Avatar
+                    className="account-avatar"
+                    label={user.handle}
+                    imageUrl={user.avatarUrl}
+                />
                 <span className="account-name">{user.handle}</span>
                 <ChevronDown size={14} aria-hidden="true" />
             </button>
