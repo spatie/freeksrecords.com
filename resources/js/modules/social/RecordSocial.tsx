@@ -133,103 +133,106 @@ export function RecordSocial({
                     <Link href="/login">Sign in to appreciate or comment</Link>
                 )}
             </div>
-            <section className="conversation panel" id="comments">
-                <div className="section-heading">
-                    <h2>Comments</h2>
-                    {record.canEditNotes && (
-                        <Link href="/settings">Comment controls</Link>
-                    )}
-                </div>
-                <p className="muted" id="body-help">
-                    Anyone who can view this collection can read its comments.
-                </p>
-                {comments.data.map((item) => (
-                    <article className="comment" key={item.id}>
-                        <div className="section-heading">
-                            <strong>
-                                <Link href={item.user.profileUrl}>
-                                    {item.user.name}
-                                </Link>
-                            </strong>
-                            {item.canDelete && (
-                                <button
-                                    className="text-button"
-                                    disabled={action.processing}
-                                    aria-label={`Delete comment by ${item.user.name}`}
-                                    onClick={() =>
-                                        action.delete(
-                                            `${base}/comments/${item.id}`,
-                                            visitOptions,
+            {user && (
+                <section className="conversation panel" id="comments">
+                    <div className="section-heading">
+                        <h2>Comments</h2>
+                        {record.canEditNotes && (
+                            <Link href="/settings">Comment controls</Link>
+                        )}
+                    </div>
+                    <p className="muted" id="body-help">
+                        Anyone who can view this collection can read its
+                        comments.
+                    </p>
+                    {comments.data.map((item) => (
+                        <article className="comment" key={item.id}>
+                            <div className="section-heading">
+                                <strong>
+                                    <Link href={item.user.profileUrl}>
+                                        {item.user.name}
+                                    </Link>
+                                </strong>
+                                {item.canDelete && (
+                                    <button
+                                        className="text-button"
+                                        disabled={action.processing}
+                                        aria-label={`Delete comment by ${item.user.name}`}
+                                        onClick={() =>
+                                            action.delete(
+                                                `${base}/comments/${item.id}`,
+                                                visitOptions,
+                                            )
+                                        }
+                                    >
+                                        Delete
+                                    </button>
+                                )}
+                            </div>
+                            <p className="comment-body">{item.body}</p>
+                        </article>
+                    ))}
+                    <Pagination
+                        prev_page_url={
+                            comments.prev_page_url
+                                ? `${comments.prev_page_url}${fragment}`
+                                : null
+                        }
+                        next_page_url={
+                            comments.next_page_url
+                                ? `${comments.next_page_url}${fragment}`
+                                : null
+                        }
+                        only={only}
+                    />
+                    {!record.commentsEnabled ? (
+                        <p>
+                            New comments are turned off by the collection owner.
+                        </p>
+                    ) : (
+                        <form
+                            className="stack"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                comment.post(`${base}/comments`, {
+                                    ...visitOptions,
+                                    onSuccess: () => comment.reset(),
+                                });
+                            }}
+                        >
+                            <label htmlFor="body">
+                                Add a comment
+                                <textarea
+                                    id="body"
+                                    name="body"
+                                    aria-invalid={Boolean(comment.errors.body)}
+                                    aria-describedby={`body-help${comment.errors.body ? ' body-error' : ''}`}
+                                    rows={3}
+                                    maxLength={2000}
+                                    value={comment.data.body}
+                                    onChange={(event) =>
+                                        comment.setData(
+                                            'body',
+                                            event.target.value,
                                         )
                                     }
-                                >
-                                    Delete
-                                </button>
-                            )}
-                        </div>
-                        <p className="comment-body">{item.body}</p>
-                    </article>
-                ))}
-                <Pagination
-                    prev_page_url={
-                        comments.prev_page_url
-                            ? `${comments.prev_page_url}${fragment}`
-                            : null
-                    }
-                    next_page_url={
-                        comments.next_page_url
-                            ? `${comments.next_page_url}${fragment}`
-                            : null
-                    }
-                    only={only}
-                />
-                {!record.commentsEnabled ? (
-                    <p>New comments are turned off by the collection owner.</p>
-                ) : user ? (
-                    <form
-                        className="stack"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            comment.post(`${base}/comments`, {
-                                ...visitOptions,
-                                onSuccess: () => comment.reset(),
-                            });
-                        }}
-                    >
-                        <label htmlFor="body">
-                            Add a comment
-                            <textarea
-                                id="body"
-                                name="body"
-                                aria-invalid={Boolean(comment.errors.body)}
-                                aria-describedby={`body-help${comment.errors.body ? ' body-error' : ''}`}
-                                rows={3}
-                                maxLength={2000}
-                                value={comment.data.body}
-                                onChange={(event) =>
-                                    comment.setData('body', event.target.value)
-                                }
-                                required
+                                    required
+                                />
+                            </label>
+                            <FieldError
+                                id="body-error"
+                                message={comment.errors.body}
                             />
-                        </label>
-                        <FieldError
-                            id="body-error"
-                            message={comment.errors.body}
-                        />
-                        <button
-                            className="button"
-                            disabled={comment.processing}
-                        >
-                            Post comment
-                        </button>
-                    </form>
-                ) : (
-                    <p>
-                        <Link href="/login">Sign in</Link> to join the
-                        conversation.
-                    </p>
-                )}
-            </section>
+                            <button
+                                className="button"
+                                disabled={comment.processing}
+                            >
+                                Post comment
+                            </button>
+                        </form>
+                    )}
+                </section>
+            )}
         </>
     );
 }
