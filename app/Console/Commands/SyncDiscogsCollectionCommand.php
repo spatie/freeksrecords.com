@@ -29,12 +29,18 @@ class SyncDiscogsCollectionCommand extends Command
         RecordCoverImages $images,
         EdgeCache $edgeCache,
     ): int {
-        if (User::freek()->discogs_token) {
-            SyncUserCollection::dispatch(User::freek()->id);
+        $owner = User::query()->where('legacy_owner', true)->first();
+        if (! $owner) {
+            $this->comment('No legacy collection owner; skipping Discogs sync.');
 
             return self::SUCCESS;
         }
-        if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
+        if ($owner->discogs_token) {
+            SyncUserCollection::dispatch($owner->id);
+
+            return self::SUCCESS;
+        }
+        if (! CollectionRecord::legacy()->exists() && $owner->collection_imported_at === null) {
             $this->call('records:import-snapshot');
         }
 
@@ -102,7 +108,7 @@ class SyncDiscogsCollectionCommand extends Command
         }
 
         $removed = $this->removeDeletedRecords($collection, $seenInstanceIds, $response['pagination']['items'] ?? null);
-        User::freek()->update(['collection_imported_at' => now(), 'last_synced_at' => now()]);
+        $owner->update(['collection_imported_at' => now(), 'last_synced_at' => now()]);
 
         $this->call('records:sync-dates');
         $this->call('records:copy-covers');
