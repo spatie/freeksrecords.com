@@ -26,6 +26,6 @@ class CollectionVisibilityController extends Controller
             return response()->json(['visibility' => $user->visibility]);
         }
 
-        return redirect()->route('profile', $user->handle)->with('collection_visibility_saved', true);
+        return redirect()->back(fallback: route('profile', $user->handle))->with('collection_visibility_saved', true);
     }
 }

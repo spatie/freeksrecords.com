@@ -1,5 +1,6 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
 
+import { CollectionSharing } from '@/modules/social/CollectionSharing';
 import { FieldError } from '@/modules/social/FieldError';
 import { ImportStatus } from '@/modules/social/ImportStatus';
 import { SocialSwitch } from '@/modules/social/SocialSwitch';
@@ -10,7 +11,6 @@ export function SettingsPage() {
     const user = auth.user!;
     const form = useForm({
         handle: user.handle,
-        visibility: user.visibility,
         comments_enabled: user.commentsEnabled,
         digest_enabled: user.digestEnabled,
     });
@@ -28,6 +28,10 @@ export function SettingsPage() {
                         className="stack"
                         onSubmit={(event) => {
                             event.preventDefault();
+                            form.transform((data) => ({
+                                ...data,
+                                visibility: user.visibility,
+                            }));
                             form.patch('/settings');
                         }}
                     >
@@ -56,40 +60,6 @@ export function SettingsPage() {
                             id="handle-error"
                             message={form.errors.handle}
                         />
-                        <label htmlFor="visibility">
-                            Who can see your collection?
-                            <select
-                                id="visibility"
-                                name="visibility"
-                                aria-invalid={Boolean(form.errors.visibility)}
-                                aria-describedby={`visibility-help${form.errors.visibility ? ' visibility-error' : ''}`}
-                                value={form.data.visibility}
-                                onChange={(event) =>
-                                    form.setData(
-                                        'visibility',
-                                        event.target
-                                            .value as typeof user.visibility,
-                                    )
-                                }
-                            >
-                                {!user.legacyOwner && (
-                                    <>
-                                        <option value="only_me">Only me</option>
-                                        <option value="friends">Friends</option>
-                                    </>
-                                )}
-                                <option value="everyone">Everyone</option>
-                            </select>
-                            <small id="visibility-help">
-                                {user.legacyOwner
-                                    ? 'Freek’s original collection stays public to preserve existing links and previews.'
-                                    : 'Friends are mutual. Everyone includes visitors who aren’t signed in.'}
-                            </small>
-                        </label>
-                        <FieldError
-                            id="visibility-error"
-                            message={form.errors.visibility}
-                        />
                         <SocialSwitch
                             checked={form.data.comments_enabled}
                             label="Allow comments on my records"
@@ -110,6 +80,13 @@ export function SettingsPage() {
                             Save preferences
                         </button>
                     </form>
+                    <div className="settings-sharing">
+                        <h3>Who can see your collection?</h3>
+                        <CollectionSharing user={user} />
+                        <p>
+                            Changes to collection visibility save immediately.
+                        </p>
+                    </div>
                 </section>
                 <div className="settings-connections">
                     <section className="connection-section" id="discogs">

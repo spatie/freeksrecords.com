@@ -23,6 +23,24 @@ it('saves only the signed-in collectors visibility immediately and confirms the 
         ->and($other->fresh()->visibility)->toBe('friends');
 })->with(['only_me', 'friends', 'everyone']);
 
+it('changes sharing from anywhere without leaving the current page or changing import state', function (string $path, string $component) {
+    $owner = socialUser('sharing_owner');
+    $owner->update(['sync_status' => 'Syncing', 'collection_imported_at' => null]);
+
+    $this->actingAs($owner)->from($path)->patch(route('collection.visibility.update'), ['visibility' => 'friends'])
+        ->assertRedirect($path)->assertSessionHasNoErrors();
+
+    $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component($component)->where('auth.user.visibility', 'friends'));
+    expect($owner->fresh()->visibility)->toBe('friends')
+        ->and($owner->fresh()->sync_status)->toBe('Syncing')
+        ->and($owner->fresh()->collection_imported_at)->toBeNull();
+})->with([
+    ['/feed', 'social/FeedPage'],
+    ['/settings', 'social/SettingsPage'],
+    ['/collections', 'social/CollectionsPage'],
+]);
+
 it('requires authentication and verification before changing sharing', function () {
     $owner = socialUser('sharing_owner');
     $this->patch(route('collection.visibility.update'), ['visibility' => 'everyone'])->assertRedirect('/login');
