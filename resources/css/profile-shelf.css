@@ -343,6 +343,10 @@
         inset: 0;
         z-index: 100;
     }
+    .record-focus.is-settled {
+        /* Safari samples the fixed layer's solid color for its status bar. */
+        background-color: var(--record-primary, #c9b8ef);
+    }
     .record-focus-backdrop {
         position: absolute;
         inset: 0;
