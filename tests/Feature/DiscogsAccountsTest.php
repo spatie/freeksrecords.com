@@ -26,7 +26,8 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
         'api.discogs.com/oauth/identity' => Http::response(['username' => 'discogs-owner']),
     ]);
     $this->actingAs($user)->post('/discogs/connect')->assertRedirect('https://www.discogs.com/oauth/authorize?oauth_token=request-token');
-    $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertRedirect('/feed')->assertSessionHasNoErrors();
+    $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertRedirect('/feed')->assertSessionHasNoErrors()
+        ->assertSessionHas('status', 'Discogs connected.');
     $fresh = $user->fresh();
     expect($fresh->discogs_username)->toBe('discogs-owner')->and($fresh->discogs_token)->toBe('access-token');
     $stored = DB::table('users')->where('id', $user->id)->first();
@@ -36,6 +37,7 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
     Http::assertSent(fn (Request $request) => $request->url() === 'https://api.discogs.com/oauth/access_token' && $request->method() === 'POST' && str_contains($request->header('Authorization')[0], 'oauth_verifier="verified"') && str_contains($request->header('Authorization')[0], 'oauth_signature_method="HMAC-SHA1"'));
     $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertForbidden();
     Http::assertSentCount(3);
+    $this->actingAs($user->fresh())->post('/discogs/sync')->assertRedirect()->assertSessionHas('status', 'Collection sync requested.');
     $this->delete('/discogs')->assertRedirect();
     expect($user->fresh()->discogs_token)->toBeNull()->and($user->fresh()->discogs_username)->toBe('discogs-owner');
 });

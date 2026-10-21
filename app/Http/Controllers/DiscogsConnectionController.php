@@ -78,7 +78,7 @@ class DiscogsConnectionController extends Controller
         }
         SyncUserCollection::dispatch($request->user()->id);
 
-        return redirect('/feed')->with('status', 'Discogs connected. Your collection import is queued.');
+        return redirect('/feed')->with('status', 'Discogs connected.');
     }
 
     public function status(Request $request): JsonResponse
@@ -105,7 +105,7 @@ class DiscogsConnectionController extends Controller
         abort_unless($request->user()->discogs_token !== null, 422);
         SyncUserCollection::dispatch($request->user()->id);
 
-        return back()->with('status', 'Collection sync queued.');
+        return back()->with('status', 'Collection sync requested.');
     }
 
     public function disconnect(Request $request): RedirectResponse
