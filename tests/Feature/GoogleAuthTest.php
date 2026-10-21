@@ -80,6 +80,27 @@ it('creates a private verified Google account and sends it straight to importing
         ->where('auth.user.avatarUrl', $this->googleProfile['picture']));
 });
 
+it('lets a deleted legacy owner start fresh through Google without restoring the old collection', function () {
+    $previous = User::freek();
+    socialRecord($previous);
+    $this->googleProfile['email'] = $previous->email;
+    $previous->delete();
+
+    $this->get(route('google.redirect'));
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/feed');
+
+    $user = User::query()->where('email', $previous->email)->firstOrFail();
+    $this->assertAuthenticatedAs($user);
+    expect($user->id)->not->toBe($previous->id)
+        ->and($user->legacy_owner)->toBeFalse()
+        ->and($user->visibility)->toBe('only_me')
+        ->and($user->collection_imported_at)->toBeNull()
+        ->and($user->discogs_token)->toBeNull();
+    $this->assertDatabaseCount('collection_records', 0);
+    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0));
+    $this->get('/collection')->assertNotFound();
+});
+
 it('signs in by Google subject without changing profile email or confusing another email-matched account', function () {
     $linked = socialUser('linked');
     $linked->update(['google_id' => 'google-sub-123', 'google_avatar_url' => 'https://lh3.googleusercontent.com/old-photo']);

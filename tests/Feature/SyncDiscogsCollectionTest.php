@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use App\Support\RecordCollection;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Http\Client\Request;
@@ -14,6 +15,16 @@ beforeEach(function () {
     $this->disk = Storage::fake('public');
     $this->collection = app(RecordCollection::class);
     $this->existing = $this->collection->snapshot()[0];
+});
+
+it('does not restore or sync a deleted legacy collection', function () {
+    $this->collection->store($this->existing);
+    User::freek()->delete();
+
+    $this->artisan('records:sync-discogs')->assertSuccessful();
+
+    $this->assertDatabaseCount('users', 0);
+    $this->assertDatabaseCount('collection_records', 0);
 });
 
 it('imports additions and preserves existing records on repeated runs', function () {
