@@ -1121,12 +1121,6 @@
     .landing-enter:hover {
         transform: rotate(-8deg) scale(1.05);
     }
-    .landing-signoff {
-        position: absolute;
-        right: 4.5vw;
-        bottom: 25px;
-        font-size: 14px;
-    }
     .landing-empty {
         position: absolute;
         top: 43%;
@@ -1298,10 +1292,6 @@
             font-size: 25px;
             top: 49%;
             right: 7%;
-        }
-        .landing-signoff {
-            right: 5vw;
-            font-size: 14px;
         }
     }
     @media (prefers-reduced-motion: reduce) {
