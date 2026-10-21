@@ -74,6 +74,9 @@ export function ListeningView({
     const label = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const [shareStatus, setShareStatus] = useState('');
+    const [artworkTheme, setArtworkTheme] = useState<Record<string, string>>(
+        {},
+    );
     const { refs, phase, putAway } = useRecordTransition({
         instanceId: record.instanceId,
         clubLayout,
@@ -163,7 +166,7 @@ export function ListeningView({
     }
 
     return (
-        <div className={`record-focus ${motionClasses}`}>
+        <div className={`record-focus ${motionClasses}`} style={artworkTheme}>
             <button
                 ref={refs.backdrop}
                 className="record-focus-backdrop"
@@ -232,20 +235,12 @@ export function ListeningView({
                                     <img
                                         alt={`${record.displayTitle} sleeve`}
                                         onLoad={(event) => {
-                                            if (clubLayout && dialog.current) {
-                                                for (const [
-                                                    name,
-                                                    value,
-                                                ] of Object.entries(
+                                            if (clubLayout)
+                                                setArtworkTheme(
                                                     artworkThemeStyle(
                                                         event.currentTarget,
                                                     ),
-                                                ))
-                                                    dialog.current.style.setProperty(
-                                                        name,
-                                                        value,
-                                                    );
-                                            }
+                                                );
                                             if (label.current)
                                                 Object.assign(
                                                     label.current.style,
