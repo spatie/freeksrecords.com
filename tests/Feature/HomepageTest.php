@@ -3,6 +3,7 @@
 use App\Models\Friendship;
 use App\Models\User;
 use App\Support\RecordCollection;
+use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('welcomes visitors with linked public artwork and private response headers', function () {
@@ -173,3 +174,31 @@ it('previews unapproved terms locally without publishing them', function () {
     app()->detectEnvironment(fn () => 'production');
     $this->get(route('terms'))->assertNotFound();
 });
+
+it('offers a safe way back from missing pages without revealing private collections', function () {
+    config(['app.debug' => false]);
+    $record = socialRecord(socialUser('private_error_owner'), 'Never disclose this album');
+
+    foreach (['/missing/page', "/shelves/{$record->id}"] as $path) {
+        $this->get($path)->assertNotFound()
+            ->assertSee('This one skipped.')
+            ->assertSee('Back to the club')
+            ->assertSee('href="/collections"', false)
+            ->assertDontSee('Never disclose this album')
+            ->assertDontSee('private_error_owner');
+    }
+
+    $this->getJson('/missing/page')->assertNotFound()->assertJsonStructure(['message'])
+        ->assertDontSee('<html', false);
+});
+
+it('keeps error status codes and hides internal messages on branded error pages', function (int $status) {
+    config(['app.debug' => false]);
+    Route::get('/test-playback-error', fn () => abort($status, 'Do not expose internal details'));
+
+    $this->get('/test-playback-error')->assertStatus($status)
+        ->assertSee('Plaat Club')
+        ->assertSee("{$status} / Playback interrupted")
+        ->assertSee('Back to the club')
+        ->assertDontSee('Do not expose internal details');
+})->with([401, 403, 419, 429, 500, 503]);
