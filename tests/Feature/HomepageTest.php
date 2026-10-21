@@ -5,14 +5,14 @@ use App\Models\User;
 use App\Support\RecordCollection;
 use Inertia\Testing\AssertableInertia as Assert;
 
-it('welcomes visitors with public collections and private response headers', function () {
+it('welcomes visitors with linked public artwork and private response headers', function () {
     $record = socialRecord(User::freek(), 'A real public record');
     $response = $this->get(route('home'));
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page->component('social/HomePage')
-        ->where('collectors.0.records.0.cover', $record->payload['cover'])
-        ->where('collectors.0.records.0.url', '/shelves/'.$record->id)
-        ->where('collectors.0.profileUrl', '/freek'));
+        ->where('artwork.0.cover', $record->payload['cover'])
+        ->where('artwork.0.url', '/shelves/'.$record->id)
+        ->missing('collectors'));
 
     expect(route('home'))->toBe(url('/'))
         ->and(route('collection'))->toBe(url('/collection'))
@@ -50,9 +50,6 @@ it('uses only live public records for linked artwork and never falls back to the
             ->and($item['url'])->toBe('/shelves/'.$record->id)
             ->and($item['title'])->toBe($record->payload['artist'].' — '.$record->payload['displayTitle']);
     }
-    if ($path === '/') {
-        expect($artwork->pluck('cover')->intersect($records->slice(24)->pluck('payload.cover')))->toBeEmpty();
-    }
     $link = $artwork->first()['url'];
     $this->get($link)->assertOk();
     $selected = $records->firstWhere('id', (int) basename($link));
@@ -68,7 +65,7 @@ it('uses only live public records for linked artwork and never falls back to the
     }
 })->with(['/', '/login', '/register', '/forgot-password', '/reset-password/test-token', '/verify-email']);
 
-it('previews at most three nonempty public collections with their latest additions first', function () {
+it('previews nonempty public collections with their latest additions first', function () {
     socialUser('aaaempty', 'everyone');
     $expected = [];
     foreach (['delta', 'charlie', 'bravo', 'alpha'] as $handle) {
@@ -80,15 +77,13 @@ it('previews at most three nonempty public collections with their latest additio
         $expected[$handle] = array_map(fn ($index) => '/shelves/'.$records[$index]->id, [3, 5, 1, 4, 7, 0]);
     }
 
-    $collectors = $this->get('/')->assertOk()->inertiaProps('collectors');
-    expect(array_column($collectors, 'handle'))->toBe(['alpha', 'bravo', 'charlie']);
+    $collectors = $this->get('/collections')->assertOk()->inertiaProps('collectors.data');
+    expect(array_column($collectors, 'handle'))->toBe(['alpha', 'bravo', 'charlie', 'delta']);
     foreach ($collectors as $collector) {
         expect($collector['recordCount'])->toBe(8)
             ->and(array_column($collector['records'], 'url'))->toBe($expected[$collector['handle']])
             ->and(array_keys($collector))->toBe(['id', 'name', 'handle', 'profileUrl', 'recordCount', 'records']);
     }
-    $this->get('/collections')->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('collectors.data.0.records', $collectors[0]['records']));
 });
 
 it('paginates public collections alphabetically without including empty shelves', function () {
@@ -115,16 +110,13 @@ it('removes collections and their artwork from discovery immediately when privac
 
     foreach (['/', '/collections'] as $path) {
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->where($path === '/' ? 'collectors.0.records.0.cover' : 'collectors.data.0.records.0.cover', '/images/discovery-only-cover.jpg'));
+            ->where($path === '/' ? 'artwork.0.cover' : 'collectors.data.0.records.0.cover', '/images/discovery-only-cover.jpg'));
     }
     $owner->update(['visibility' => $visibility]);
     foreach (['/', '/collections'] as $path) {
         $this->get($path)->assertOk()->assertDontSee('discoverable')->assertDontSee('Discoverable record')
             ->assertInertia(function (Assert $page) use ($path): void {
-                $page->has($path === '/' ? 'collectors' : 'collectors.data', 0);
-                if ($path === '/') {
-                    $page->has('artwork', 0);
-                }
+                $page->has($path === '/' ? 'artwork' : 'collectors.data', 0);
             });
     }
     $this->actingAs($viewer)->get('/collections')->assertOk()->assertDontSee('discoverable')

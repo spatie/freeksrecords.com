@@ -16,7 +16,9 @@ export type RecordTransitionPhase = 'moving' | 'settled' | 'returning';
 type RecordTransitionOptions = {
     instanceId: number;
     origin: SleeveOrigin | null;
-    /** Skip the entrance, for a record the server already rendered in place. */
+    returnOrigin?: () => SleeveOrigin | null;
+    clubLayout?: boolean;
+    /** Skip the cover's entrance flight for a record rendered in place. */
     instant: boolean;
     onSettled: () => void;
     onReturned: () => void;
@@ -28,6 +30,8 @@ type RecordTransitionOptions = {
 export function useRecordTransition({
     instanceId,
     origin,
+    returnOrigin,
+    clubLayout = false,
     instant,
     onSettled,
     onReturned,
@@ -48,18 +52,20 @@ export function useRecordTransition({
 
     useLayoutEffect(() => {
         if (!stage.current || !sleeve.current || !vinyl.current) return;
-        const duration = instant || prefersReducedMotion() ? 0 : 420;
+        const reducedMotion = prefersReducedMotion();
+        const duration = instant || reducedMotion ? 0 : clubLayout ? 650 : 420;
         const target = stage.current.getBoundingClientRect();
         const animate = (
             element: HTMLElement | null,
             frames: Keyframe[],
             delay = 0,
+            animationDuration = duration,
         ) => {
             if (!element) return;
             animations.current.push(
                 element.animate(frames, {
-                    duration: Math.max(0, duration - delay),
-                    delay: duration === 0 ? 0 : delay,
+                    duration: Math.max(0, animationDuration - delay),
+                    delay: animationDuration === 0 ? 0 : delay,
                     easing: restingEase,
                     fill: 'both',
                 }),
@@ -75,12 +81,25 @@ export function useRecordTransition({
         ]);
         animate(sleeve.current, [
             { transform: 'none' },
-            { transform: sleeveRest },
+            {
+                transform: clubLayout
+                    ? 'translate(-8%, 5%) rotate(-9deg)'
+                    : sleeveRest,
+            },
         ]);
+        const vinylDelay = clubLayout ? (duration > 0 ? 300 : 0) : 50;
         animate(
             vinyl.current,
-            [{ transform: 'none' }, { transform: vinylRest }],
-            50,
+            [
+                { transform: 'none' },
+                {
+                    transform: clubLayout
+                        ? 'translateX(43%) rotate(80deg)'
+                        : vinylRest,
+                },
+            ],
+            vinylDelay,
+            clubLayout && !reducedMotion ? vinylDelay + 650 : duration,
         );
         animate(surface.current, [{ opacity: 0 }, { opacity: 1 }]);
         animate(backdrop.current, [{ opacity: 0 }, { opacity: 1 }]);
@@ -95,18 +114,20 @@ export function useRecordTransition({
             animations.current.forEach((animation) => animation.cancel());
             animations.current = [];
         };
-    }, [origin, instant]);
+    }, [origin, instant, clubLayout]);
 
     async function putAway() {
         if (returning.current) return;
         returning.current = true;
         setPhase('returning');
-        const duration = prefersReducedMotion() ? 0 : 190;
+        const duration = prefersReducedMotion() ? 0 : clubLayout ? 500 : 190;
         const elements = [stage.current, sleeve.current, vinyl.current];
         const transforms = elements.map((element) =>
             element ? getComputedStyle(element).transform : 'none',
         );
-        const destination = origin ?? sleeveOrigin(instanceId);
+        const destination = returnOrigin
+            ? returnOrigin()
+            : (origin ?? sleeveOrigin(instanceId));
         const target = stage.current;
         const opacityElements = [surface.current, backdrop.current];
         const opacities = opacityElements.map((element) =>
@@ -126,6 +147,7 @@ export function useRecordTransition({
                                 index === 0 && destination && stageBounds
                                     ? originTransform(destination, stageBounds)
                                     : 'none',
+                            opacity: index === 0 && !destination ? 0 : 1,
                         },
                     ],
                     {

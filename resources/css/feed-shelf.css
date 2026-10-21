@@ -1,23 +1,150 @@
-/* Attribution is part of the label flow, never a fixed-height overlay. */
-.feed-record-room .catalog-record-label {
-    min-height: 112px;
+.feed-tickets {
+    position: relative;
+}
+.feed-ticket {
+    --record-primary: #dbee8d;
+    --record-secondary: #c9b8ef;
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr);
+    align-items: center;
+    position: relative;
+    border-top: 1px solid #202016;
+    min-height: 175px;
+    isolation: isolate;
+    color: #1e1e15;
+    background: var(--record-primary);
+    transition: background-color 300ms;
+}
+.feed-ticket:nth-child(3n + 2) {
+    --record-primary: #c9b8ef;
+    --record-secondary: #fff0cf;
+}
+.feed-ticket:nth-child(3n) {
+    --record-primary: #ffab78;
+    --record-secondary: #dbee8d;
+}
+.feed-ticket::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--record-secondary);
+    clip-path: polygon(42% 0, 72% 0, 54% 100%, 24% 100%);
+    transition: background-color 300ms;
+}
+.feed-ticket:nth-child(even)::before {
+    clip-path: polygon(68% 0, 100% 0, 100% 100%, 42% 100%);
+}
+.feed-ticket:last-child {
+    border-bottom: 1px solid #202016;
+}
+.feed-ticket:hover,
+.feed-ticket:focus-within {
+    z-index: 2;
+}
+.ticket-who {
+    align-self: start;
+    padding: 28px 10px 20px 16px;
+    font-size: 16px;
     overflow-wrap: anywhere;
 }
-
-.feed-record-room .catalog-record-label strong {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-}
-
-.feed-record-room .catalog-record-activity {
+.ticket-who time {
     display: block;
-    color: #d7c2a2;
-    font-size: 11px;
-    line-height: 1.5;
+    margin-top: 5px;
+    font-size: 16px;
 }
-
-.feed-record-room .has-single-shelf .catalog-record-activity {
-    color: var(--muted);
+.ticket-record {
+    min-width: 0;
+}
+.ticket-record > a {
+    position: relative;
+    display: flex;
+    min-height: 175px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 25px 210px 25px 10px;
+    text-decoration: none;
+}
+.ticket-title {
+    display: block;
+    font:
+        700 clamp(42px, 6vw, 100px)/0.85 'Club Display',
+        sans-serif;
+    letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
+}
+.ticket-album {
+    font-size: 18px;
+    margin-top: 14px;
+}
+.ticket-art {
+    position: absolute;
+    right: 65px;
+    top: calc(50% - 62px);
+    display: block;
+    width: 125px;
+    height: 125px;
+    transform: rotate(-7deg);
+    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 4px 9px 12px #20201644;
+}
+.feed-ticket:nth-child(even) .ticket-art {
+    transform: rotate(6deg);
+}
+.ticket-art img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.ticket-record > a:hover .ticket-art,
+.ticket-record > a:focus-visible .ticket-art {
+    transform: rotate(8deg) scale(1.18);
+}
+.ticket-arrow {
+    position: absolute;
+    right: 20px;
+    top: calc(50% - 18px);
+    font-size: 30px;
+}
+@media (max-width: 600px) {
+    .feed-ticket {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: 195px;
+    }
+    .ticket-who {
+        position: relative;
+        padding: 15px 12px 0;
+        z-index: 1;
+    }
+    .ticket-who time {
+        display: inline;
+        margin-left: 8px;
+    }
+    .ticket-record > a {
+        min-height: 145px;
+        padding: 20px 120px 25px 12px;
+    }
+    .ticket-title {
+        font-size: 40px;
+    }
+    .ticket-album {
+        margin-top: 10px;
+    }
+    .ticket-art {
+        width: 85px;
+        height: 85px;
+        right: 24px;
+        top: calc(50% - 42px);
+    }
+    .ticket-arrow {
+        right: 5px;
+        font-size: 20px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .feed-ticket,
+    .ticket-art {
+        transition: none;
+    }
 }

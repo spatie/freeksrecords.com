@@ -9,7 +9,10 @@ import {
     type ReactNode,
 } from 'react';
 
-import { artworkLabelStyle } from '@/components/records/artworkLabel';
+import {
+    artworkLabelStyle,
+    artworkThemeStyle,
+} from '@/components/records/artworkLabel';
 import type { SleeveOrigin } from '@/components/records/recordMotion';
 import { RecordDetails } from '@/components/records/RecordDetails';
 import type {
@@ -19,6 +22,8 @@ import type {
 import { useRecordTransition } from '@/components/records/useRecordTransition';
 
 type ListeningViewProps = {
+    clubLayout?: boolean;
+    returnOrigin?: () => SleeveOrigin | null;
     instant: boolean;
     onBack: () => void;
     onArtist: (artist: string) => void;
@@ -55,6 +60,8 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 export function ListeningView({
+    clubLayout = false,
+    returnOrigin,
     instant,
     onBack,
     onArtist,
@@ -69,6 +76,8 @@ export function ListeningView({
     const [shareStatus, setShareStatus] = useState('');
     const { refs, phase, putAway } = useRecordTransition({
         instanceId: record.instanceId,
+        clubLayout,
+        returnOrigin,
         origin,
         instant,
         onSettled: () =>
@@ -223,6 +232,20 @@ export function ListeningView({
                                     <img
                                         alt={`${record.displayTitle} sleeve`}
                                         onLoad={(event) => {
+                                            if (clubLayout && dialog.current) {
+                                                for (const [
+                                                    name,
+                                                    value,
+                                                ] of Object.entries(
+                                                    artworkThemeStyle(
+                                                        event.currentTarget,
+                                                    ),
+                                                ))
+                                                    dialog.current.style.setProperty(
+                                                        name,
+                                                        value,
+                                                    );
+                                            }
                                             if (label.current)
                                                 Object.assign(
                                                     label.current.style,

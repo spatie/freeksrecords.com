@@ -86,7 +86,7 @@ it('shares all media together without a format filter and preserves canonical fo
         $response = $this->get('/people/shelfformats'.$query)->assertOk()
             ->assertSee('Vinyl album')->assertSee('CD and tape bundle')->assertSee('Unknown medium')
             ->assertDontSee('name="format"', false);
-        $summaries = collect($response->inertiaProps('records'))->keyBy('title');
+        $summaries = collect($response->inertiaProps('records.data'))->keyBy('title');
         expect($summaries['Vinyl album']['mediaFormats'])->toBe(['Vinyl'])
             ->and($summaries['CD and tape bundle']['mediaFormats'])->toBe(['CD', 'Cassette'])
             ->and($summaries['Unknown medium']['mediaFormats'])->toBe([]);

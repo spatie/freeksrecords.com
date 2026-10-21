@@ -55,14 +55,17 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
     const overlay = usePage<SocialProps>().props.recordOverlay;
     const [origin, setOrigin] = useState<SleeveOrigin | null>(null);
     const source = useRef<HTMLElement | null>(null);
+    const sourceArtwork = useRef<HTMLElement | null>(null);
     const opened = Boolean(overlay);
 
     useLayoutEffect(() => {
         if (!opened) return;
+        if (sourceArtwork.current?.isConnected)
+            setOrigin(artworkOrigin(sourceArtwork.current));
         const previous = document.body.style.overflow;
         const artwork =
             source.current?.querySelector<HTMLElement>('.catalog-record-art') ??
-            source.current;
+            sourceArtwork.current;
         const visibility = artwork?.style.visibility ?? '';
         if (artwork) artwork.style.visibility = 'hidden';
         document.body.style.overflow = 'hidden';
@@ -75,10 +78,8 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
 
     function open(url: string, element?: HTMLElement | null) {
         source.current = element?.closest<HTMLElement>('a, button') ?? null;
-        const artwork =
-            element?.closest<HTMLElement>('.floating-sleeve') ??
-            element?.querySelector<HTMLElement>('.catalog-record-art') ??
-            element;
+        const artwork = element?.querySelector<HTMLElement>('img') ?? element;
+        sourceArtwork.current = artwork ?? null;
         setOrigin(artwork ? artworkOrigin(artwork) : null);
         const destination = new URL(window.location.href);
         destination.searchParams.set('record', url.split('/').pop()!);
@@ -112,6 +113,12 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
                     <Head title={overlay.record.payload.displayTitle} />
                     <ListeningView
                         key={overlay.record.id}
+                        clubLayout
+                        returnOrigin={() =>
+                            sourceArtwork.current?.isConnected
+                                ? artworkOrigin(sourceArtwork.current)
+                                : null
+                        }
                         instant={origin === null}
                         origin={origin}
                         record={{

@@ -67,28 +67,30 @@ export function RecordDetails({
 
             <div className="album-listen-links">
                 <a
+                    aria-label={
+                        record.appleMusicSearch
+                            ? 'Find this release on Apple Music'
+                            : 'Open this release on Apple Music'
+                    }
                     href={record.appleMusicUrl}
                     rel="noopener noreferrer"
                     target="_blank"
+                    title="Apple Music"
                 >
-                    <AppleIcon size={20} />
-                    <span>
-                        {record.appleMusicSearch
-                            ? 'Find on Apple Music'
-                            : 'Apple Music'}
-                    </span>
-                    <ArrowUpRight size={18} />
+                    <AppleIcon size={24} />
                 </a>
                 <a
+                    aria-label={
+                        record.spotifySearch
+                            ? 'Find this release on Spotify'
+                            : 'Open this release on Spotify'
+                    }
                     href={record.spotifyUrl}
                     rel="noopener noreferrer"
                     target="_blank"
+                    title="Spotify"
                 >
-                    <SpotifyIcon />
-                    <span>
-                        {record.spotifySearch ? 'Find on Spotify' : 'Spotify'}
-                    </span>
-                    <ArrowUpRight size={18} />
+                    <SpotifyIcon size={24} />
                 </a>
             </div>
             <div className="listening-tracklist">
@@ -140,32 +142,6 @@ export function RecordDetails({
                             <span className="track-duration">
                                 {track.duration}
                             </span>
-                            <a
-                                aria-label={`${track.appleMusicSearch ? 'Find' : 'Play'} ${track.title} on Apple Music`}
-                                href={track.appleMusicUrl}
-                                rel="noopener noreferrer"
-                                target="_blank"
-                                title={
-                                    track.appleMusicSearch
-                                        ? 'Search this track on Apple Music'
-                                        : 'Open this track on Apple Music'
-                                }
-                            >
-                                <AppleIcon size={19} />
-                            </a>
-                            <a
-                                aria-label={`${track.spotifySearch ? 'Find' : 'Play'} ${track.title} on Spotify`}
-                                href={track.spotifyUrl}
-                                rel="noopener noreferrer"
-                                target="_blank"
-                                title={
-                                    track.spotifySearch
-                                        ? 'Search this track on Spotify'
-                                        : 'Open this track on Spotify'
-                                }
-                            >
-                                <SpotifyIcon size={19} />
-                            </a>
                         </li>
                     ))}
                 </ol>

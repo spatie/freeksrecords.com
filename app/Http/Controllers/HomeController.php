@@ -23,15 +23,8 @@ class HomeController
 
     public function intro(): Response
     {
-        $collectors = $this->publicCollectors()->limit(3)->get();
-        $previewCovers = array_values(array_filter(
-            $collectors->flatMap(fn (User $collector) => $collector->records->take(4)->pluck('payload.cover'))->all(),
-            'is_string',
-        ));
-
         return Inertia::render('social/HomePage', [
-            'collectors' => $collectors->map(SocialData::collector(...))->all(),
-            'artwork' => SocialData::publicArtwork($previewCovers),
+            'artwork' => SocialData::publicArtwork(),
         ]);
     }
 

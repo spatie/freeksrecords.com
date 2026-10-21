@@ -4,7 +4,13 @@ import { CollectionSharing } from '@/modules/social/CollectionSharing';
 import { ProfileShelf } from '@/modules/social/ProfileShelf';
 import type { ProfileProps, SocialProps } from '@/modules/social/types';
 
-export function ProfilePage({ person, records, visible }: ProfileProps) {
+export function ProfilePage({
+    person,
+    records,
+    visible,
+    groups,
+    browse,
+}: ProfileProps) {
     const user = usePage<SocialProps>().props.auth.user;
     const owner = user?.id === person.id;
     return (
@@ -34,8 +40,13 @@ export function ProfilePage({ person, records, visible }: ProfileProps) {
                         collector’s name and username are public.
                     </p>
                 </section>
-            ) : records?.length ? (
-                <ProfileShelf key={person.id} records={records} />
+            ) : records && (records.data.length > 0 || browse.query) ? (
+                <ProfileShelf
+                    key={person.id}
+                    records={records}
+                    groups={groups}
+                    browse={browse}
+                />
             ) : (
                 <section className="empty panel">
                     <h2>No records in this collection yet.</h2>

@@ -51,7 +51,7 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
         ->assertInertia(fn (Assert $page) => $page->has('records.data', 2));
 });
 
-it('loads the whole visible shelf with owner-specific social links and only safe summary fields', function () {
+it('loads visible shelf pages with owner-specific social links and only safe summary fields', function () {
     $owner = socialUser('shelfowner', 'everyone');
     $other = socialUser('othershelf', 'everyone');
     $overlap = socialRecord($other, 'Other owner album', instance: 1);
@@ -65,13 +65,13 @@ it('loads the whole visible shelf with owner-specific social links and only safe
         'private_note' => 'Injected payload secret', 'oauth_token' => 'Injected credential',
     ]]);
     $response = $this->get(route('profile', $owner->handle))->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->has('records', 30)->where('person.name', 'Shelfowner'))
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 30)->where('person.name', 'Shelfowner'))
         ->assertDontSee('name="format"', false)
         ->assertDontSee('Other owner album')->assertDontSee('Secret personal note')
         ->assertDontSee('Shared detail only')->assertDontSee('Injected payload secret')
         ->assertDontSee('Injected credential')->assertDontSee($owner->email)
         ->assertDontSee('</script><script>alert', false);
-    $summaries = $response->inertiaProps('records');
+    $summaries = $response->inertiaProps('records.data');
     expect($summaries)->toHaveCount(30);
     $copy = $owner->records()->where('instance_id', 1)->firstOrFail();
     expect(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->toBe('/shelves/'.$copy->id)
@@ -82,6 +82,54 @@ it('loads the whole visible shelf with owner-specific social links and only safe
     $this->get(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->assertOk()->assertSee('Shelf album 1');
     $owner->update(['visibility' => 'only_me']);
     $this->get(route('profile', $owner->handle))->assertOk()->assertDontSee('profile-shelf-data')->assertDontSee('Trimmed album')->assertDontSee('Shelf album');
+});
+
+it('pages a large collection and jumps across sections without filtering other artists out', function () {
+    $owner = socialUser('large_shelf', 'everyone');
+    foreach (range(1, 80) as $instance) {
+        $copy = socialRecord($owner, "Album {$instance}", instance: $instance);
+        $copy->update(['payload' => [...$copy->payload, 'artist' => $instance <= 40 ? 'Alpha' : 'Zulu', 'artists' => [$instance <= 40 ? 'Alpha' : 'Zulu']]]);
+    }
+    $first = $this->get('/large_shelf?mode=artist')->assertOk();
+    expect($first->inertiaProps('records.data'))->toHaveCount(36)
+        ->and($first->inertiaProps('records.total'))->toBe(80)
+        ->and($first->inertiaProps('groups'))->toBe([
+            ['name' => 'Alpha', 'count' => 40, 'offset' => 0],
+            ['name' => 'Zulu', 'count' => 40, 'offset' => 40],
+        ]);
+    $jump = $this->get('/large_shelf?mode=artist&group=Zulu')->assertOk();
+    expect($jump->inertiaProps('records.current_page'))->toBe(2)
+        ->and(array_unique(array_column($jump->inertiaProps('records.data'), 'section')))->toBe([0 => 'Alpha', 4 => 'Zulu']);
+    $last = $this->get('/large_shelf?mode=artist&group=&recordsPage=3')->assertOk();
+    $all = [...$first->inertiaProps('records.data'), ...$jump->inertiaProps('records.data'), ...$last->inertiaProps('records.data')];
+    expect(array_unique(array_column($all, 'key')))->toHaveCount(80)
+        ->and($last->inertiaProps('records.next_page_url'))->toBeNull();
+    $owner->update(['visibility' => 'only_me']);
+    $this->get('/large_shelf?mode=artist&recordsPage=2', [
+        'X-Inertia' => 'true', 'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'social/ProfilePage', 'X-Inertia-Partial-Data' => 'records,groups',
+    ])
+        ->assertOk()->assertJsonPath('props.records', null)->assertJsonPath('props.groups', []);
+});
+
+it('preserves collection search and multi-genre grouping across server pages', function () {
+    $owner = socialUser('search_shelf', 'everyone');
+    $copy = socialRecord($owner, 'Blue Room', instance: 1);
+    $copy->update(['payload' => [...$copy->payload, 'artist' => 'Comité Hypnotisé', 'artists' => ['Comité Hypnotisé'],
+        'genres' => ['Jazz', 'Electronic', 'Jazz'], 'originalYear' => 1974, 'year' => 2025,
+        'tracks' => [['title' => 'A Strange Morning']]]]);
+    socialRecord($owner, 'Unrelated album', instance: 2);
+    $result = $this->get('/search_shelf?mode=genre&q=comite+strange+1974')->assertOk();
+    expect(array_column($result->inertiaProps('groups'), 'name'))->toBe(['Electronic', 'Jazz'])
+        ->and(array_column($result->inertiaProps('groups'), 'count'))->toBe([1, 1])
+        ->and(array_column($result->inertiaProps('records.data'), 'displayTitle'))->toBe(['Blue Room', 'Blue Room']);
+    $this->get('/search_shelf?mode=decade&q=comite')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', '1970s')->has('records.data', 1));
+    $this->get('/search_shelf?q=notfound')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
+    $copy->update(['payload' => [...$copy->payload, 'artist' => '808', 'artists' => ['808']]]);
+    $this->get('/search_shelf?mode=artist&q=blue')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', '808')->where('records.data.0.section', '808'));
 });
 
 it('uses root profile URLs while retaining the old profile alias without redirects', function () {
@@ -126,7 +174,7 @@ it('keeps the selected copy and social actions in its own cupboard without expos
     $response = $this->actingAs($viewer)->get($url)->assertOk()
         ->assertDontSee('Different private copy')->assertDontSee('Owner-only modal note')
         ->assertInertia(fn (Assert $page) => $page->component('social/ProfilePage')
-            ->where('person.id', $owner->id)->has('records', 1)
+            ->where('person.id', $owner->id)->has('records.data', 1)
             ->where('recordOverlay.record.id', $record->id)
             ->where('recordOverlay.record.sharedNote', 'Shared modal note')
             ->missing('recordOverlay.record.privateNote')
@@ -163,10 +211,10 @@ it('enforces the full collection visibility matrix on profiles and record pages'
     $cupboard = $this->get('/owner?record='.$record->id);
     $elsewhere = $this->get('/collections?record='.$record->id);
     if ($allowed) {
-        $profile->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page->has('records', 1));
+        $profile->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
         $response->assertOk()->assertSee('Private Test Album');
         $cupboard->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->component('social/ProfilePage')->has('records', 1)
+            ->component('social/ProfilePage')->has('records.data', 1)
             ->where('recordOverlay.record.id', $record->id)
             ->where('recordOverlay.record.canEditNotes', $viewerKind === 'owner'));
         $elsewhere->assertOk()->assertInertia(fn (Assert $page) => $page

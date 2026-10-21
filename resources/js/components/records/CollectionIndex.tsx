@@ -13,6 +13,7 @@ type IndexMode = Exclude<CollectionMode, 'recent'>;
 
 type CollectionIndexProps = {
     browseBasePath?: string;
+    groupHref?: (group: string) => string;
     mode: IndexMode;
     query: string;
     groups: CollectionGroup[];
@@ -32,6 +33,7 @@ const labels: Record<IndexMode, { heading: string; plural: string }> = {
  */
 export function CollectionIndex({
     browseBasePath = collection.url(),
+    groupHref,
     mode,
     query,
     groups,
@@ -156,7 +158,10 @@ export function CollectionIndex({
                         aria-current={
                             activeGroup === group.name ? 'true' : undefined
                         }
-                        href={`${browseBasePath}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`}
+                        href={
+                            groupHref?.(group.name) ??
+                            `${browseBasePath}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`
+                        }
                         key={group.name}
                         onClick={(event) => {
                             if (

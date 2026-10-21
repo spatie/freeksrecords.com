@@ -10,7 +10,6 @@ export function CollectionsPage({ collectors }: CollectionsProps) {
         <>
             <Head title="Public collections" />
             <div className="page-heading">
-                <p className="page-eyebrow">Public</p>
                 <h1>Public collections.</h1>
                 <p>Collections shared with everyone.</p>
             </div>

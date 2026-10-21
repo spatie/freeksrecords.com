@@ -1,57 +1,40 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
-import { CollectionPreview } from '@/modules/social/CollectionPreview';
 import { HeroArtwork } from '@/modules/social/HeroArtwork';
-import type { HomeProps } from '@/modules/social/types';
+import type { HomeProps, SocialProps } from '@/modules/social/types';
 
-export function HomePage({ collectors, artwork }: HomeProps) {
+export function HomePage({ artwork }: HomeProps) {
+    const user = usePage<SocialProps>().props.auth.user;
+
     return (
         <>
-            <Head title="A shelf for every record" />
-            <section className="landing-hero">
-                <div className="landing-copy">
-                    <h1>
-                        Good records.
-                        <br />
-                        Better company.
-                    </h1>
-                    <p className="lede">
-                        Keep collecting on Discogs. Sync your collection here
-                        and choose who gets to see it.
-                    </p>
-                    <div className="landing-actions">
-                        <Link className="button" href="/register">
-                            Create account
-                        </Link>
-                        <Link href="/collections">Browse collections</Link>
+            <Head title="Good taste is contagious." />
+            <section className="landing-hero" aria-labelledby="landing-title">
+                <h1 id="landing-title">Good taste</h1>
+                <p className="landing-bottom-type">is contagious.</p>
+                {artwork.length > 0 ? (
+                    <div
+                        className="landing-records"
+                        aria-label="Records from public collections"
+                    >
+                        <HeroArtwork records={artwork} moving />
                     </div>
-                    <p className="landing-note">
-                        Already a member? <Link href="/login">Sign in</Link>
+                ) : (
+                    <p className="landing-empty">
+                        Every great collection starts somewhere.
                     </p>
-                </div>
-                <HeroArtwork records={artwork} />
-            </section>
-            <section
-                className="public-collections"
-                aria-labelledby="collections-title"
-            >
-                <div className="section-heading">
-                    <div>
-                        <h2 id="collections-title">Public collections</h2>
-                    </div>
-                </div>
-                <div className="collection-previews">
-                    {collectors.length ? (
-                        collectors.map((collector) => (
-                            <CollectionPreview
-                                key={collector.id}
-                                collector={collector}
-                            />
-                        ))
-                    ) : (
-                        <p className="muted">No public collections yet</p>
-                    )}
-                </div>
+                )}
+                <Link
+                    className="landing-enter"
+                    href={user ? user.profileUrl : '/register'}
+                >
+                    Step
+                    <br />
+                    inside ↗
+                </Link>
+                <p className="landing-signoff">
+                    For the love of records. And people.
+                </p>
             </section>
         </>
     );

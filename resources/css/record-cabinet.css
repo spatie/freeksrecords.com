@@ -805,32 +805,24 @@
     margin: 30px 0 37px;
 }
 .album-listen-links a {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    font-size: 15px;
-    min-height: 52px;
-    padding: 8px 15px;
-    border: 1px solid var(--ink);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--ink);
     transition:
         transform 0.25s,
         background-color 0.25s;
 }
-.album-listen-links a:first-child {
-    background: var(--ink);
-    color: var(--room);
-}
-.album-listen-links a:last-child {
-    background: var(--paper);
-}
 .album-listen-links a:hover {
+    background: #20201612;
     transform: translateY(-3px);
 }
-.album-listen-links a > svg:last-child {
-    width: 16px;
-    margin-left: auto;
+.album-listen-links a:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
 .tracks-heading {
     display: grid;
@@ -856,7 +848,7 @@
 }
 .listening-tracklist li {
     display: grid;
-    grid-template-columns: 29px minmax(0, 1fr) 39px 58px 58px;
+    grid-template-columns: 29px minmax(0, 1fr) 39px;
     align-items: center;
     gap: 0;
     border-bottom: 1px solid var(--line);
@@ -880,24 +872,6 @@
 .track-duration {
     color: var(--muted);
     font-size: 12px;
-}
-.listening-tracklist li > a {
-    height: 44px;
-    width: 44px;
-    display: grid;
-    place-items: center;
-    justify-self: center;
-    color: var(--muted);
-    border-radius: 50%;
-    transition:
-        color 0.2s,
-        background-color 0.2s,
-        transform 0.2s;
-}
-.listening-tracklist li > a:hover {
-    color: var(--accent);
-    background: var(--paper);
-    transform: scale(1.08);
 }
 .listening-tracklist li:hover .track-name {
     color: var(--accent);
@@ -1023,15 +997,11 @@ html[data-transition='collection']::view-transition-new(root) {
     .album-listen-links {
         gap: 9px;
     }
-    .album-listen-links a {
-        font-size: 14px;
-        padding-inline: 10px;
-    }
     .tracks-heading {
         grid-template-columns: 1fr 48px 48px;
     }
     .listening-tracklist li {
-        grid-template-columns: 26px minmax(0, 1fr) 35px 48px 48px;
+        grid-template-columns: 26px minmax(0, 1fr) 35px;
     }
 }
 @media (max-width: 860px) {
@@ -1118,7 +1088,7 @@ html[data-transition='collection']::view-transition-new(root) {
         grid-template-columns: 1fr 58px 58px;
     }
     .listening-tracklist li {
-        grid-template-columns: 30px minmax(0, 1fr) 40px 58px 58px;
+        grid-template-columns: 30px minmax(0, 1fr) 40px;
     }
 }
 @media (max-width: 560px) {
@@ -1302,14 +1272,6 @@ html[data-transition='collection']::view-transition-new(root) {
         margin: 24px 0 30px;
         gap: 9px;
     }
-    .album-listen-links a {
-        font-size: 13px;
-        gap: 7px;
-        padding-inline: 10px;
-    }
-    .album-listen-links a > svg:last-child {
-        display: none;
-    }
     .tracks-heading {
         grid-template-columns: 1fr 44px 44px;
     }
@@ -1317,7 +1279,7 @@ html[data-transition='collection']::view-transition-new(root) {
         font-size: 11px;
     }
     .listening-tracklist li {
-        grid-template-columns: 24px minmax(0, 1fr) 30px 44px 44px;
+        grid-template-columns: 24px minmax(0, 1fr) 30px;
     }
     .track-name {
         font-size: 15px;
@@ -1933,11 +1895,6 @@ html[data-transition='return']::view-transition-new(selected-sleeve) {
 .album-listen-links {
     margin: 22px 0 26px;
 }
-.album-listen-links a {
-    min-height: 44px;
-    font-size: 13px;
-    padding: 6px 12px;
-}
 .tracks-heading {
     display: block;
     padding-bottom: 9px;
@@ -1953,36 +1910,12 @@ html[data-transition='return']::view-transition-new(selected-sleeve) {
     scrollbar-color: #b9aa90 transparent;
 }
 .listening-tracklist li {
-    grid-template-columns: 24px minmax(0, 1fr) 35px 36px 36px;
+    grid-template-columns: 24px minmax(0, 1fr) 35px;
     min-height: 46px;
 }
 .track-name {
     font-size: 14px;
     padding-block: 10px;
-}
-.listening-tracklist li > a {
-    height: 36px;
-    width: 36px;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(3px);
-    transition:
-        opacity 0.15s,
-        transform 0.15s,
-        color 0.15s;
-}
-.listening-tracklist li:hover > a,
-.listening-tracklist li:focus-within > a {
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
-}
-@media (hover: none) {
-    .listening-tracklist li > a {
-        opacity: 1;
-        pointer-events: auto;
-        transform: none;
-    }
 }
 @media (max-width: 760px) {
     .listening-view {

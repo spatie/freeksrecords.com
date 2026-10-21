@@ -29,6 +29,7 @@ export type CollectionBrowserHandle = {
 };
 
 type CollectionBrowserProps = {
+    draggable?: boolean;
     browseBasePath?: string;
     browse: BrowseState;
     onBrowse: (update: BrowseUpdate) => void;
@@ -50,6 +51,7 @@ function resultsAnnouncement(
 }
 
 export function CollectionBrowser({
+    draggable = false,
     browseBasePath,
     browse,
     onBrowse,
@@ -61,6 +63,14 @@ export function CollectionBrowser({
     const browser = useRef<HTMLElement>(null);
     const controls = useRef<HTMLDivElement>(null);
     const heading = useRef<HTMLHeadingElement>(null);
+    const wall = useRef<HTMLDivElement>(null);
+    const drag = useRef<{
+        x: number;
+        y: number;
+        left: number;
+        top: number;
+        moved: boolean;
+    } | null>(null);
     const stopAnimation = useRef<(() => void) | null>(null);
     const query = useDeferredValue(browse.query);
     const view = useMemo(
@@ -132,6 +142,7 @@ export function CollectionBrowser({
         }
         const update = () => {
             flushSync(() => onBrowse({ ...next, visibleCount: 25 }));
+            wall.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             if (next.group) scrollToCollection();
         };
         if (!browser.current) {
@@ -146,6 +157,7 @@ export function CollectionBrowser({
 
     function changeQuery(nextQuery: string) {
         stopAnimation.current?.();
+        wall.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         onBrowse({ query: nextQuery, group: null, visibleCount: 25 });
     }
 
@@ -186,7 +198,69 @@ export function CollectionBrowser({
                         query={query}
                     />
                 )}
-                <div className="collection-main">
+                <div
+                    className={`collection-main${draggable ? ' is-draggable' : ''}`}
+                    ref={wall}
+                    role={draggable ? 'region' : undefined}
+                    aria-label={
+                        draggable
+                            ? 'Record wall. Drag to explore, or use arrow keys.'
+                            : undefined
+                    }
+                    tabIndex={draggable ? 0 : undefined}
+                    onPointerDown={(event) => {
+                        drag.current = null;
+                        if (
+                            !draggable ||
+                            event.pointerType !== 'mouse' ||
+                            event.button !== 0
+                        )
+                            return;
+                        if ((event.target as HTMLElement).closest('a, input'))
+                            return;
+                        drag.current = {
+                            x: event.clientX,
+                            y: event.clientY,
+                            left: event.currentTarget.scrollLeft,
+                            top: event.currentTarget.scrollTop,
+                            moved: false,
+                        };
+                    }}
+                    onPointerMove={(event) => {
+                        const start = drag.current;
+                        if (!start || event.buttons !== 1) return;
+                        const x = event.clientX - start.x;
+                        const y = event.clientY - start.y;
+                        if (!start.moved && Math.hypot(x, y) < 8) return;
+                        start.moved = true;
+                        event.preventDefault();
+                        event.currentTarget.dataset.dragging = 'true';
+                        event.currentTarget.setPointerCapture(event.pointerId);
+                        event.currentTarget.scrollLeft = start.left - x;
+                        event.currentTarget.scrollTop = start.top - y;
+                    }}
+                    onPointerUp={(event) => {
+                        delete event.currentTarget.dataset.dragging;
+                        if (
+                            event.currentTarget.hasPointerCapture(
+                                event.pointerId,
+                            )
+                        )
+                            event.currentTarget.releasePointerCapture(
+                                event.pointerId,
+                            );
+                    }}
+                    onPointerCancel={(event) => {
+                        drag.current = null;
+                        delete event.currentTarget.dataset.dragging;
+                    }}
+                    onClickCapture={(event) => {
+                        if (event.detail && drag.current?.moved) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                    }}
+                >
                     {(activeGroup || query) && (
                         <div className="collection-heading">
                             <h2 ref={heading} tabIndex={-1}>
