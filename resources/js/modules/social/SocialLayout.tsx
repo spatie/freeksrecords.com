@@ -22,8 +22,42 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     const onboarding = component === 'social/FeedPage' && settingUpCollection;
     const recordOpen =
         component === 'social/RecordPage' || Boolean(props.recordOverlay);
+    const layoutRef = useRef<HTMLDivElement>(null);
     const navigationRef = useRef<HTMLElement>(null);
     const indicatorRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        const layout = layoutRef.current;
+        if (!layout) return;
+        let compact = false;
+        const update = (event?: Event) => {
+            const shelf = event
+                ? event.target
+                : layout.querySelector(
+                      '.collection-stream, .collection-main.is-draggable',
+                  );
+            if (
+                !(shelf instanceof HTMLElement) ||
+                !shelf.matches(
+                    '.collection-stream, .collection-main.is-draggable',
+                )
+            )
+                return;
+            const next = shelf.scrollTop > (compact ? 12 : 72);
+            if (next === compact) return;
+            compact = next;
+            layout.dataset.collectionCompact = String(compact);
+        };
+        update();
+        layout.addEventListener('scroll', update, {
+            capture: true,
+            passive: true,
+        });
+        return () => {
+            layout.removeEventListener('scroll', update, true);
+            delete layout.dataset.collectionCompact;
+        };
+    }, [path]);
 
     useLayoutEffect(() => {
         const navigation = navigationRef.current;
@@ -78,7 +112,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
     }, [path]);
 
     return (
-        <div className={`social-app ${pageClass}`}>
+        <div ref={layoutRef} className={`social-app ${pageClass}`}>
             <Head>
                 <meta name="robots" content="noindex, nofollow" />
             </Head>

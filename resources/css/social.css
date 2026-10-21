@@ -694,6 +694,9 @@
         font-weight: 400;
     }
     .import-record {
+        position: relative;
+        top: -1px;
+        flex-shrink: 0;
         width: 20px;
         height: 20px;
         border-radius: 50%;
@@ -738,6 +741,49 @@
     .collection-visibility {
         margin-left: auto;
         font-size: 15px;
+    }
+    :scope.collection-page .site-header,
+    :scope.feed-page .site-header {
+        transition:
+            min-height 650ms cubic-bezier(0.4, 0, 0.2, 1),
+            padding-block 650ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    :scope.collection-page .page,
+    :scope.feed-page .page {
+        transition: padding-top 650ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .collector-heading {
+        transition:
+            padding-bottom 650ms cubic-bezier(0.4, 0, 0.2, 1),
+            margin-bottom 650ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .collector-heading h1,
+    .importing-collection > h1 {
+        transition:
+            font-size 650ms cubic-bezier(0.4, 0, 0.2, 1),
+            margin-bottom 650ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .importing-collection .import-status {
+        transition: margin-block 650ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    :scope[data-collection-compact='true'] .site-header {
+        min-height: 76px;
+        padding-block: 9px;
+    }
+    :scope[data-collection-compact='true'] .page {
+        padding-top: 14px;
+    }
+    :scope[data-collection-compact='true'] .collector-heading {
+        padding-bottom: 14px;
+        margin-bottom: 10px;
+    }
+    :scope[data-collection-compact='true'] .collector-heading h1,
+    :scope[data-collection-compact='true'] .importing-collection > h1 {
+        font-size: 36px;
+        margin-bottom: 0;
+    }
+    :scope[data-collection-compact='true'] .import-status {
+        margin-block: 12px;
     }
     .settings-layout {
         display: grid;
