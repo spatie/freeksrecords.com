@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import { legacyCollectionUrl } from '@/lib/record-history';
 import { AccountMenu } from '@/modules/social/AccountMenu';
+import { CollectionSharing } from '@/modules/social/CollectionSharing';
 import { NotificationsPopover } from '@/modules/social/NotificationsPopover';
 import { RecordOverlay } from '@/modules/social/RecordOverlay';
 import type { SocialProps } from '@/modules/social/types';
@@ -97,20 +98,27 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 className="main-navigation"
                                 aria-label="Main navigation"
                             >
-                                <Link
-                                    href={
-                                        settingUpCollection
-                                            ? '/feed'
-                                            : user.profileUrl
-                                    }
-                                    aria-current={
-                                        path === user.profileUrl || onboarding
-                                            ? 'page'
-                                            : undefined
-                                    }
-                                >
-                                    My collection
-                                </Link>
+                                <div className="my-collection-navigation">
+                                    <Link
+                                        href={
+                                            settingUpCollection
+                                                ? '/feed'
+                                                : user.profileUrl
+                                        }
+                                        aria-current={
+                                            path === user.profileUrl ||
+                                            onboarding
+                                                ? 'page'
+                                                : undefined
+                                        }
+                                    >
+                                        My collection
+                                    </Link>
+                                    <CollectionSharing
+                                        key={user.id}
+                                        user={user}
+                                    />
+                                </div>
                                 <Link
                                     href={
                                         settingUpCollection

@@ -1,32 +1,42 @@
 import { Link, router } from '@inertiajs/react';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Globe2, LockKeyhole, Users } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import type { Viewer, Visibility } from '@/modules/social/types';
 
-const choices: { value: Visibility; label: string; description: string }[] = [
+const choices = [
     {
         value: 'only_me',
         label: 'Only me',
         description: 'Private to you',
+        icon: LockKeyhole,
     },
     {
         value: 'friends',
         label: 'Friends',
         description: 'Accepted friends only',
+        icon: Users,
     },
     {
         value: 'everyone',
         label: 'Everyone',
         description: 'Anyone, including visitors',
+        icon: Globe2,
     },
-];
+] satisfies {
+    value: Visibility;
+    label: string;
+    description: string;
+    icon: typeof LockKeyhole;
+}[];
 
 export function CollectionSharing({ user }: { user: Viewer }) {
     const [pending, setPending] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [saved, setSaved] = useState(false);
     const details = useRef<HTMLDetailsElement>(null);
+    const choice = choices.find((choice) => choice.value === user.visibility)!;
+    const Icon = choice.icon;
     useEffect(() => {
         function close(event: MouseEvent | KeyboardEvent) {
             if (!details.current?.open) return;
@@ -104,16 +114,18 @@ export function CollectionSharing({ user }: { user: Viewer }) {
         );
     }
     return (
-        <>
-            <details className="collection-sharing" ref={details}>
-                <summary className="collection-visibility">
-                    <span className="sharing-label">
-                        {
-                            choices.find(
-                                (choice) => choice.value === user.visibility,
-                            )?.label
-                        }
-                    </span>
+        <div className="collection-sharing">
+            <details ref={details}>
+                <summary
+                    className="collection-visibility"
+                    aria-label={`Collection visibility: ${choice.label}`}
+                >
+                    <Icon
+                        className="sharing-icon"
+                        size={15}
+                        aria-hidden="true"
+                    />
+                    <span className="sharing-label">{choice.label}</span>
                     <ChevronDown
                         className="sharing-chevron"
                         size={14}
@@ -121,6 +133,7 @@ export function CollectionSharing({ user }: { user: Viewer }) {
                     />
                 </summary>
                 <div className="sharing-panel">
+                    <p className="sharing-title">Who can see it?</p>
                     {user.legacyOwner ? (
                         <div className="sharing-public">
                             <strong>Everyone · Always public</strong>
@@ -151,6 +164,7 @@ export function CollectionSharing({ user }: { user: Viewer }) {
                                     }
                                     onClick={() => save(choice.value)}
                                 >
+                                    <choice.icon size={19} aria-hidden="true" />
                                     <span>
                                         <strong>{choice.label}</strong>
                                         <small>{choice.description}</small>
@@ -162,18 +176,16 @@ export function CollectionSharing({ user }: { user: Viewer }) {
                             ))}
                         </fieldset>
                     )}
+                    {feedback && !saved && !pending && (
+                        <p className="sharing-feedback">{feedback}</p>
+                    )}
                 </div>
             </details>
             {feedback && (
-                <p
-                    className={
-                        saved || pending ? 'sharing-status' : 'sharing-feedback'
-                    }
-                    role="status"
-                >
+                <p className="sharing-status" role="status">
                     {feedback}
                 </p>
             )}
-        </>
+        </div>
     );
 }

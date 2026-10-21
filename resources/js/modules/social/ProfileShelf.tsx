@@ -15,6 +15,7 @@ import {
 import { CollectionBrowser } from '@/components/records/CollectionBrowser';
 import { CollectionControls } from '@/components/records/CollectionControls';
 import { CollectionIndex } from '@/components/records/CollectionIndex';
+import { formatReleaseDate } from '@/components/records/collection';
 import { motionScrollBehavior } from '@/components/records/recordMotion';
 import { RecordSleeve } from '@/components/records/RecordSleeve';
 import type { CollectionRecordSummary } from '@/components/records/types';
@@ -204,7 +205,11 @@ export function ProfileShelf({
                                             }
                                             tabIndex={-1}
                                         >
-                                            {record.section}
+                                            {browse.mode === 'recent'
+                                                ? formatReleaseDate(
+                                                      record.section,
+                                                  )
+                                                : record.section}
                                         </h2>
                                     )}
                                     <RecordSleeve

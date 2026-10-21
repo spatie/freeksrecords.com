@@ -175,9 +175,16 @@
         justify-self: center;
         gap: 2px !important;
     }
-    .main-navigation > a {
+    .main-navigation > a,
+    .my-collection-navigation > a {
         padding: 10px 18px;
         white-space: nowrap;
+    }
+    .my-collection-navigation {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding-right: 14px;
     }
     .navigation-indicator {
         position: absolute;
@@ -580,6 +587,29 @@
     .panel {
         padding: 32px;
         background: var(--page-accent);
+    }
+    .settings-sharing {
+        border-top: 1px solid;
+        margin-top: 32px;
+        padding-top: 24px;
+    }
+    .settings-sharing h3 {
+        font-size: 26px;
+        margin: 0 0 16px;
+    }
+    .settings-sharing .collection-sharing summary {
+        min-height: 48px;
+        padding-inline: 16px;
+        background: var(--cream);
+        font-size: 16px;
+    }
+    .settings-sharing .sharing-panel {
+        top: auto;
+        bottom: calc(100% + 10px);
+    }
+    .settings-sharing > p {
+        margin: 12px 0 0;
+        font-size: 13px;
     }
     .empty {
         max-width: 760px;
@@ -1208,6 +1238,9 @@
             flex: 1;
             justify-content: center;
         }
+        .my-collection-navigation {
+            padding-right: 8px;
+        }
         .site-header:has(.guest-navigation) {
             padding-bottom: 18px;
         }
@@ -1257,9 +1290,13 @@
         .notifications-popover {
             right: 16px;
         }
-        .main-navigation > a {
-            padding-inline: 10px;
+        .main-navigation > a,
+        .my-collection-navigation > a {
+            padding-inline: 6px;
             font-size: 15px;
+        }
+        .my-collection-navigation {
+            padding-right: 4px;
         }
         .page {
             padding: 30px 5vw 60px;

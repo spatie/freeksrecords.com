@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -69,7 +70,7 @@ class ProfileCollection
         }
         // Read only small indexing fields; hydrate full payloads for the requested page only.
         $rows = DB::table('collection_records')->where('user_id', $this->user->id)
-            ->select(['id as copyId', 'discogs_release_id as id', ...array_map(fn ($field) => "payload->{$field} as {$field}", $fields)])
+            ->select(['id as copyId', 'discogs_release_id as id', 'added_at', ...array_map(fn ($field) => "payload->{$field} as {$field}", $fields)])
             ->orderByDesc('added_at')->orderByDesc('collection_records.id')->get();
         $metadata = $rows->map(function (object $row): array {
             $record = (array) $row;
@@ -100,13 +101,17 @@ class ProfileCollection
                 'artist' => $record['artists'],
                 'genre' => $record['genres'] ?: ['Unclassified'],
                 'decade' => [$record['originalYear'] ? (intdiv((int) $record['originalYear'], 10) * 10).'s' : 'Unknown year'],
-                default => ['Recently added'],
+                default => [CarbonImmutable::parse($record['added_at'], 'UTC')->setTimezone('Europe/Brussels')->toDateString()],
             };
             foreach (array_unique($names) as $name) {
                 $sections[$name][] = $record;
             }
         }
-        uksort($sections, fn ($a, $b) => $state['mode'] === 'decade' ? (int) $b <=> (int) $a : strnatcasecmp(Str::ascii($a), Str::ascii($b)));
+        uksort($sections, fn ($a, $b) => match ($state['mode']) {
+            'recent' => strcmp($b, $a),
+            'decade' => (int) $b <=> (int) $a,
+            default => strnatcasecmp(Str::ascii($a), Str::ascii($b)),
+        });
         $this->entries = [];
         foreach ($sections as $name => $records) {
             $name = (string) $name;

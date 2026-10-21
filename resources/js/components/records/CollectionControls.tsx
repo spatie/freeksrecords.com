@@ -13,9 +13,9 @@ type CollectionControlsProps = {
 
 const modes: { key: CollectionMode; label: string }[] = [
     { key: 'recent', label: 'Latest additions' },
+    { key: 'artist', label: 'Artist' },
     { key: 'decade', label: 'Decade' },
     { key: 'genre', label: 'Genre' },
-    { key: 'artist', label: 'Artist' },
 ];
 
 export function CollectionControls({

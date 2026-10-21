@@ -145,6 +145,29 @@ export function recordsByYear(
         );
 }
 
+export function recordsByAddedDate(
+    records: CollectionRecordSummary[],
+): { date: string; records: CollectionRecordSummary[] }[] {
+    const calendar = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Brussels',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+    const days = new Map<string, CollectionRecordSummary[]>();
+    for (const record of records.toSorted(
+        (first, second) =>
+            Date.parse(second.addedAt) - Date.parse(first.addedAt) ||
+            second.instanceId - first.instanceId,
+    )) {
+        const date = calendar.format(new Date(record.addedAt));
+        const entries = days.get(date) ?? [];
+        entries.push(record);
+        days.set(date, entries);
+    }
+    return [...days].map(([date, records]) => ({ date, records }));
+}
+
 export function formatReleaseDate(date: string): string {
     if (date.length === 4) return date;
     const [year, month, day] = date.split('-').map(Number);
