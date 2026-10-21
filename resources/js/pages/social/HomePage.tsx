@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { ArrowUpRight } from 'lucide-react';
 
 import { HeroArtwork } from '@/modules/social/HeroArtwork';
 import type { HomeProps, SocialProps } from '@/modules/social/types';
@@ -28,12 +29,15 @@ export function HomePage({ artwork }: HomeProps) {
                     className="landing-enter"
                     href={user ? user.profileUrl : '/register'}
                 >
-                    Step
-                    <br />
-                    inside ↗
+                    <span>
+                        Step
+                        <br />
+                        inside{' '}
+                        <ArrowUpRight aria-hidden="true" strokeWidth={3} />
+                    </span>
                 </Link>
                 <Link className="landing-about" href="/about">
-                    About ↗
+                    About <ArrowUpRight aria-hidden="true" />
                 </Link>
             </section>
         </>

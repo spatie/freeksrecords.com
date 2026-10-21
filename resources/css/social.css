@@ -1246,12 +1246,20 @@
     .landing-enter:hover {
         transform: rotate(-8deg) scale(1.05);
     }
+    .landing-enter svg,
+    .landing-about svg {
+        display: inline-block;
+        width: 0.85em;
+        height: 0.85em;
+        vertical-align: -0.05em;
+    }
     .landing-about {
         position: absolute;
         left: 4.5vw;
         bottom: 18px;
         display: inline-flex;
         align-items: center;
+        gap: 4px;
         min-height: 44px;
         font-size: 18px;
     }
@@ -1353,6 +1361,24 @@
         }
         .collector-heading {
             gap: 8px 14px;
+        }
+        :scope.collection-page .site-header {
+            row-gap: 4px;
+        }
+        :scope.collection-page .page {
+            padding-top: 18px;
+        }
+        :scope.collection-page .collector-heading {
+            gap: 6px 12px;
+            padding: 0 0 12px;
+            margin-bottom: 8px;
+        }
+        :scope.collection-page .collector-heading h1 {
+            font-size: clamp(30px, 9vw, 48px);
+            max-width: none;
+        }
+        :scope.collection-page .collector-heading p {
+            font-size: 14px;
         }
         .collection-visibility {
             margin-left: 0;
