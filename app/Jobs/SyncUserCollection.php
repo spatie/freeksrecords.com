@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\Interruptible;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
-    public int $timeout = 7200;
+    public int $timeout = 300;
 
     public int $uniqueFor = 7500;
 
@@ -55,9 +56,9 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
     }
 
     /** @phpstan-impure Shutdown signals can change the flag between requests. */
-    protected function releaseIfInterrupted(): bool
+    protected function releaseIfNeeded(int $imported, float $startedAt): bool
     {
-        if (! $this->shouldStop) {
+        if (! $this->shouldStop && $imported < 25 && microtime(true) - $startedAt < 60) {
             return false;
         }
 
@@ -90,19 +91,37 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
             if (! $user->discogs_token) {
                 return;
             }
-            $user->update(['sync_status' => 'Syncing', 'sync_total' => null]);
+            $state = $user->discogs_sync_state;
+            if ($state === null || $state['startedAt'] < now()->subDay()->timestamp) {
+                $state = ['page' => 1, 'seen' => [], 'total' => null, 'pages' => null, 'startedAt' => now()->timestamp];
+                $user->sync_total = null;
+            }
+            $user->update(['sync_status' => 'Syncing', 'discogs_sync_state' => $state]);
             $discogs = new Discogs($user);
-            $seen = [];
-            $page = 1;
+            $seen = $state['seen'];
+            $page = $state['page'];
+            $imported = 0;
+            $pagesProcessed = 0;
+            $startedAt = microtime(true);
             $initial = $user->collection_imported_at === null;
             do {
+                if ($this->releaseIfNeeded($imported, $startedAt)) {
+                    return;
+                }
                 $response = $discogs->get('users/'.rawurlencode($user->discogs_username).'/collection/folders/0/releases', ['page' => $page, 'per_page' => 100]);
                 if (! isset($response['releases'], $response['pagination']['pages'], $response['pagination']['items']) || ! is_array($response['releases'])) {
+                    $user->update(['discogs_sync_state' => null]);
                     throw new RuntimeException('Incomplete collection response');
                 }
-                $user->update(['sync_total' => $response['pagination']['items']]);
+                if ($state['total'] !== null && ($state['total'] !== $response['pagination']['items'] || $state['pages'] !== $response['pagination']['pages'])) {
+                    $user->update(['discogs_sync_state' => null]);
+                    throw new RuntimeException('Collection changed during pagination');
+                }
+                $state['total'] = $response['pagination']['items'];
+                $state['pages'] = $response['pagination']['pages'];
+                $user->update(['sync_total' => $state['total'], 'discogs_sync_state' => $state]);
                 foreach ($response['releases'] as $entry) {
-                    if ($this->releaseIfInterrupted()) {
+                    if ($this->releaseIfNeeded($imported, $startedAt)) {
                         return;
                     }
                     $instance = $entry['instance_id'];
@@ -113,7 +132,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                         continue;
                     }
                     $release = $discogs->get('releases/'.$entry['basic_information']['id']);
-                    if ($this->releaseIfInterrupted()) {
+                    if ($this->releaseIfNeeded($imported, $startedAt)) {
                         return;
                     }
                     $master = empty($entry['basic_information']['master_id']) ? [] : $discogs->get('masters/'.$entry['basic_information']['master_id']);
@@ -126,22 +145,38 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                         'payload' => $payload, 'is_activity' => ! $initial,
                     ]);
                     $changed = true;
+                    $imported++;
                 }
                 $page++;
+                $pagesProcessed++;
+                if ($page <= $state['pages']) {
+                    $state['page'] = $page;
+                    $state['seen'] = array_values(array_unique($seen));
+                    $user->update(['discogs_sync_state' => $state]);
+                }
+                if ($page <= $state['pages'] && $pagesProcessed >= 5) {
+                    $this->release(1);
+
+                    return;
+                }
             } while ($page <= $response['pagination']['pages']);
 
             if (count(array_unique($seen)) !== $response['pagination']['items']) {
+                $user->update(['discogs_sync_state' => null]);
                 throw new RuntimeException('Incomplete collection response');
             }
             DB::transaction(function () use ($user, $seen, &$changed): void {
                 $removed = $user->records()->whereNotIn('instance_id', $seen)->delete();
                 $changed = $changed || $removed > 0;
-                $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date']);
+                $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date', 'discogs_sync_state' => null]);
             });
         } catch (Throwable $exception) {
             $user->update(['sync_status' => 'Retrying automatically. Existing records were kept.']);
             // Never serialize HTTP exceptions containing OAuth headers into failed_jobs/logs.
             $reason = $exception instanceof RequestException ? 'HTTP '.$exception->response->status() : class_basename($exception);
+            if ($exception instanceof ConnectionException && preg_match('/cURL error (\d+)/', $exception->getMessage(), $matches)) {
+                $reason .= ' (cURL error '.$matches[1].')';
+            }
             throw new RuntimeException('Discogs sync failed for user '.$this->userId.': '.$reason.'. Retry or reconnect.');
         } finally {
             if ($user->legacy_owner) {

@@ -135,12 +135,20 @@ promote an initial import to activity. Removals only apply after complete pagina
 including a confirmed empty collection. Credentials are not serialized into jobs or errors.
 On graceful worker shutdown (including Cloud deploys), imports release their job at the
 next request boundary and resume on another worker, skipping already saved copies.
-Deploy interruptions do not consume the three-exception retry budget; imports have a
+Runs also yield after 25 new copies, five listing pages, or a 60-second work budget
+(checked between requests). Completed-page checkpoints are stored privately on the user;
+an unfinished page is replayed safely. Checkpoints expire after a day, and changed listing
+totals restart the scan without pruning. Copies keep their complete tracks and original-year
+metadata. Public release/master responses are cached for a week across collectors; private
+collection listings and OAuth responses are never cached. Connection errors, HTTP 429 and
+5xx responses receive up to three request attempts with backoff before queue-level retries.
+Normal yields and deploy interruptions do not consume the three-exception retry budget; imports have a
 24-hour retry deadline. Automatic retries are shown as retrying, not paused; only
 exhausted retries require manual action. Diagnostics retain HTTP status or exception
-class, never provider response bodies, OAuth headers or credentials.
+class (and a cURL error number when available), never provider response bodies, OAuth headers or credentials.
 Keep queue visibility/retry time greater than the job timeout: the database queue defaults
-to 7500 seconds, with workers using `--timeout=7200`. Configure equivalent timeouts for
+to 7500 seconds; collection jobs have a 300-second timeout (workers may still use
+`--timeout=7200` for other jobs). Configure equivalent timeouts for
 other queue backends. Forced kills cannot run cleanup and recover after that visibility
 and lock timeout. Large first imports take time because Discogs rate limits requests.
 

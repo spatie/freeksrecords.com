@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
  * @property ?CarbonImmutable $last_synced_at
  * @property ?string $sync_status
  * @property ?int $sync_total
+ * @property ?array{page: int, seen: list<int>, total: ?int, pages: ?int, startedAt: int} $discogs_sync_state
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -45,7 +46,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $guarded = ['id'];
 
-    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'google_avatar_url', 'discogs_token', 'discogs_secret'];
+    protected $hidden = ['password', 'remember_token', 'email', 'google_id', 'google_avatar_url', 'discogs_token', 'discogs_secret', 'discogs_sync_state'];
 
     protected static function booted(): void
     {
@@ -78,6 +79,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'discogs_token' => 'encrypted', 'discogs_secret' => 'encrypted',
             'collection_imported_at' => 'immutable_datetime', 'last_synced_at' => 'immutable_datetime',
             'sync_total' => 'integer',
+            'discogs_sync_state' => 'array',
         ];
     }
 

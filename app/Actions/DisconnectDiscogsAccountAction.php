@@ -16,7 +16,7 @@ class DisconnectDiscogsAccountAction
         }
 
         try {
-            $user->update(['discogs_token' => null, 'discogs_secret' => null]);
+            $user->update(['discogs_token' => null, 'discogs_secret' => null, 'discogs_sync_state' => null]);
         } finally {
             $lock->release();
         }

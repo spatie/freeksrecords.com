@@ -3,8 +3,10 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
 
@@ -18,15 +20,32 @@ class Discogs
      */
     public function get(string $path, array $query = []): array
     {
+        if ($this->user !== null && $query === [] && preg_match('#^(releases|masters)/[0-9]+$#', $path)) {
+            return Cache::remember('discogs-public-v1:'.$path, now()->addWeek(), fn () => $this->fetch($path, $query));
+        }
+
+        return $this->fetch($path, $query);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    protected function fetch(string $path, array $query): array
+    {
         if ($this->user !== null) {
-            try {
-                $response = app(DiscogsOAuth::class)->request('GET', $path, $this->user->discogs_token, $this->user->discogs_secret, query: $query);
-            } catch (RequestException $exception) {
-                if ($exception->response->status() !== 429) {
-                    throw $exception;
+            for ($attempt = 0; ; $attempt++) {
+                try {
+                    $response = app(DiscogsOAuth::class)->request('GET', $path, $this->user->discogs_token, $this->user->discogs_secret, query: $query);
+
+                    break;
+                } catch (ConnectionException|RequestException $exception) {
+                    $status = $exception instanceof RequestException ? $exception->response->status() : null;
+                    if ($attempt >= 2 || ($status !== null && $status !== 429 && $status < 500)) {
+                        throw $exception;
+                    }
+                    Sleep::for($status === 429 ? 60 : 2 ** ($attempt + 1))->seconds();
                 }
-                Sleep::for(60)->seconds();
-                $response = app(DiscogsOAuth::class)->request('GET', $path, $this->user->discogs_token, $this->user->discogs_secret, query: $query);
             }
             Sleep::for(1)->seconds();
 

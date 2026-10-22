@@ -25,6 +25,7 @@ class ConnectDiscogsAccountAction
                 'discogs_username' => $username,
                 'discogs_token' => $token,
                 'discogs_secret' => $secret,
+                'discogs_sync_state' => null,
             ]);
         });
     }

@@ -173,6 +173,8 @@ it('preserves collections and initial-import suppression through partial respons
         'api.discogs.com/users/*' => Http::sequence()
             ->push(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$entry]])
             ->push(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$entry, $second]])
+            ->push([], 503)
+            ->push([], 503)
             ->push([], 503),
         'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
     ]);
@@ -186,6 +188,136 @@ it('preserves collections and initial-import suppression through partial respons
     expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_total)->toBeNull();
     $job->failed(new RuntimeException('Retries exhausted'));
     expect($user->fresh()->sync_status)->toStartWith('Sync failed');
+});
+
+it('finishes a large initial collection over multiple real queue reservations without premature pruning or activity', function () {
+    config(['queue.default' => 'database']);
+    $user = socialUser('bounded');
+    $user->update(['discogs_username' => 'bounded', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    socialRecord($user, 'Keep until the full listing is checked', false, instance: 9999);
+    $entries = collect(range(1, 126))->map(fn ($instance) => discogsCollectionEntry($instance, 2000 + $instance));
+    Http::fake([
+        'api.discogs.com/users/*' => function (Request $request) use ($entries) {
+            return Http::response(['pagination' => ['pages' => 5, 'items' => 126], 'releases' => $entries->slice(($request['page'] - 1) * 30, 30)->values()->all()]);
+        },
+        'api.discogs.com/releases/*' => Http::response(['tracklist' => [['title' => 'Complete track', 'position' => 'A1']]]),
+        'api.discogs.com/masters/*' => Http::response(['year' => 1974]),
+    ]);
+    SyncUserCollection::dispatch($user->id);
+    foreach (range(1, 6) as $run) {
+        $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+        expect($user->records()->where('is_activity', true)->count())->toBe(0);
+        if ($run < 6) {
+            expect($user->fresh()->collection_imported_at)->toBeNull()
+                ->and($user->records()->count())->toBe(1 + 25 * $run)
+                ->and($user->records()->where('instance_id', 9999)->exists())->toBeTrue()
+                ->and($user->fresh()->toArray())->not->toHaveKey('discogs_sync_state');
+        }
+        $this->travel(2)->seconds();
+    }
+    expect($user->records()->count())->toBe(126)
+        ->and($user->records()->where('instance_id', 9999)->exists())->toBeFalse()
+        ->and($user->fresh()->collection_imported_at)->not->toBeNull()
+        ->and($user->fresh()->last_synced_at)->not->toBeNull()
+        ->and($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->records()->where('instance_id', 126)->firstOrFail()->payload['originalYear'])->toBe(1974)
+        ->and($user->records()->where('instance_id', 126)->firstOrFail()->payload['tracks'][0]['title'])->toBe('Complete track');
+    $this->assertDatabaseCount('jobs', 0);
+    $this->assertDatabaseCount('failed_jobs', 0);
+});
+
+it('resumes the unfinished page after exhausted connection retries and reuses already fetched public details', function () {
+    $user = socialUser('checkpoint');
+    $user->update(['discogs_username' => 'checkpoint', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    $first = discogsCollectionEntry(301, 401);
+    $first['basic_information']['master_id'] = 0;
+    $second = discogsCollectionEntry(302, 402);
+    Http::fake([
+        'api.discogs.com/users/*' => Http::sequence()
+            ->push(['pagination' => ['pages' => 2, 'items' => 2], 'releases' => [$first]])
+            ->push(['pagination' => ['pages' => 2, 'items' => 2], 'releases' => [$second]])
+            ->push(['pagination' => ['pages' => 2, 'items' => 2], 'releases' => [$second]]),
+        'api.discogs.com/releases/*' => Http::sequence()
+            ->push(['tracklist' => [['title' => 'Cached complete track', 'position' => 'A1']]])
+            ->push(['tracklist' => [['title' => 'Cached complete track', 'position' => 'A1']]]),
+        'api.discogs.com/masters/*' => Http::sequence()
+            ->pushResponse(Http::failedConnection('cURL error 28: OAuth private-secret must not be logged'))
+            ->pushResponse(Http::failedConnection('cURL error 28: OAuth private-secret must not be logged'))
+            ->pushResponse(Http::failedConnection('cURL error 28: OAuth private-secret must not be logged'))
+            ->push(['year' => 1968]),
+    ]);
+    expect(fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))
+        ->toThrow(RuntimeException::class, 'ConnectionException (cURL error 28)');
+    expect($user->records()->pluck('instance_id')->all())->toBe([301])
+        ->and($user->fresh()->collection_imported_at)->toBeNull();
+    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $record = $user->records()->where('instance_id', 302)->firstOrFail();
+    expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($record->payload['originalYear'])->toBe(1968)
+        ->and($record->payload['tracks'][0]['title'])->toBe('Cached complete track')
+        ->and($user->records()->where('is_activity', true)->count())->toBe(0);
+});
+
+it('recovers transient Discogs request errors without restarting the collection', function (string $failure) {
+    $user = socialUser('transient');
+    $user->update(['discogs_username' => 'transient', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    $entry = discogsCollectionEntry(101, 201);
+    $entry['basic_information']['master_id'] = 0;
+    $release = ['year' => 1982, 'tracklist' => [['position' => 'A1', 'title' => 'Recovered']]];
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [$entry]]),
+        'api.discogs.com/releases/*' => Http::sequence()
+            ->pushResponse($failure === 'connection' ? Http::failedConnection() : Http::response([], (int) $failure))
+            ->push($release),
+    ]);
+    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    expect($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Recovered');
+})->with(['connection', '503', '429']);
+
+it('shares only public release details between collectors while fetching each private collection separately', function () {
+    $first = socialUser('cachefirst');
+    $second = socialUser('cachesecond');
+    foreach ([$first, $second] as $user) {
+        $user->update(['discogs_username' => $user->handle, 'discogs_token' => 'access-'.$user->id, 'discogs_secret' => 'secret']);
+    }
+    Http::fake([
+        'api.discogs.com/users/cachefirst/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [discogsCollectionEntry(101, 201)]]),
+        'api.discogs.com/users/cachesecond/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [discogsCollectionEntry(202, 201)]]),
+        'api.discogs.com/releases/*' => Http::sequence()->push(['tracklist' => [['title' => 'Shared public song', 'position' => 'A1']]]),
+        'api.discogs.com/masters/*' => Http::sequence()->push(['year' => 1971]),
+    ]);
+    foreach ([$first, $second] as $user) {
+        (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+        expect($user->fresh()->sync_status)->toBe('Up to date')
+            ->and($user->records()->sole()->payload['originalYear'])->toBe(1971)
+            ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Shared public song');
+    }
+    expect($first->records()->pluck('instance_id')->all())->toBe([101])
+        ->and($second->records()->pluck('instance_id')->all())->toBe([202]);
+});
+
+it('restarts a changed paginated snapshot without applying incomplete removals', function () {
+    $user = socialUser('changing');
+    $user->update(['discogs_username' => 'changing', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    socialRecord($user, 'Keep until a complete fresh snapshot', false, instance: 999);
+    $first = discogsCollectionEntry(101, 201);
+    $second = discogsCollectionEntry(102, 202);
+    Http::fake([
+        'api.discogs.com/users/*' => Http::sequence()
+            ->push(['pagination' => ['pages' => 2, 'items' => 2], 'releases' => [$first]])
+            ->push(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [$second]])
+            ->push(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [$second]]),
+        'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
+        'api.discogs.com/masters/*' => Http::response(['year' => 1973]),
+    ]);
+    expect(fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
+    expect($user->records()->pluck('instance_id')->all())->toBe([101, 999])
+        ->and($user->fresh()->collection_imported_at)->toBeNull();
+    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    expect($user->records()->pluck('instance_id')->all())->toBe([102])
+        ->and($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->records()->where('is_activity', true)->count())->toBe(0);
 });
 
 it('fails safely without OAuth configuration or with malformed provider responses', function () {
