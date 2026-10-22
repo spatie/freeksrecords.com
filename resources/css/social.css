@@ -988,6 +988,10 @@
         object-fit: cover;
         box-shadow: 4px 9px 12px #20201633;
     }
+    .collection-preview-link {
+        display: block;
+        text-decoration: none;
+    }
     .collection-preview-caption {
         padding-top: 18px;
         border-top: 1px solid;
@@ -1000,9 +1004,6 @@
     .collection-preview-caption p {
         margin: 0;
         font-size: 15px;
-    }
-    .collection-preview-link:hover h2 {
-        text-decoration: underline;
     }
     .conversation {
         margin-top: 32px;
