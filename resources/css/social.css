@@ -1092,6 +1092,11 @@
         display: grid;
         padding-bottom: 16px;
         border-bottom: 1px solid;
+        text-decoration: none;
+    }
+    .about-projects strong {
+        text-decoration: underline;
+        text-underline-offset: 5px;
     }
     .about-legal {
         display: flex;

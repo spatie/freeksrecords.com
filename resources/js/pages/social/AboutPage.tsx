@@ -13,6 +13,10 @@ export function AboutPage() {
                     first. Appreciate a record, leave a comment, or get a weekly
                     catch-up by email.
                 </p>
+                <p>
+                    “Plaat” is Dutch for a record—an album on vinyl. Hence Plaat
+                    Club: a place for people who love records.
+                </p>
                 <div className="about-maker-heading">
                     <img
                         src="/images/freek.webp"
