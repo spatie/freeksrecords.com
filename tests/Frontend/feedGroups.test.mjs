@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { groupFeedRecords } from '../../resources/js/modules/social/feedGroups.ts';
 
-await test('feed shelves group only consecutive additions by friend and Brussels calendar date', () => {
+await test('feed shelves collect each friend’s finds across dates, ordered by their latest find', () => {
     const first = { name: 'Same name', profileUrl: '/first', avatarUrl: null };
     const second = {
         name: 'Same name',
@@ -42,23 +42,19 @@ await test('feed shelves group only consecutive additions by friend and Brussels
     assert.deepEqual(
         groups.map((group) => ({
             friend: group.owner.profileUrl,
-            date: group.date,
             records: group.records.map((record) => record.shareUrl),
         })),
         [
             {
                 friend: '/first',
-                date: '2026-10-22',
-                records: ['/record/1', '/record/2'],
+                records: ['/record/1', '/record/2', '/record/4', '/record/5'],
             },
-            { friend: '/second', date: '2026-10-22', records: ['/record/3'] },
-            { friend: '/first', date: '2026-10-22', records: ['/record/4'] },
-            { friend: '/first', date: '2026-10-21', records: ['/record/5'] },
+            { friend: '/second', records: ['/record/3'] },
         ],
     );
     assert.deepEqual(
-        groups.flatMap((group) => group.records),
-        records,
+        records.map((record) => record.shareUrl),
+        ['/record/1', '/record/2', '/record/3', '/record/4', '/record/5'],
     );
     assert.deepEqual(groupFeedRecords([]), []);
 });

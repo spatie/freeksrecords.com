@@ -97,7 +97,7 @@ export function FeedPage({ importRecords, records }: FeedProps) {
                     <h1>Friends’ finds.</h1>
                     <p className="lede">
                         The latest additions to your friends’ collections,
-                        newest first.
+                        grouped by friend.
                     </p>
                 </div>
             )}

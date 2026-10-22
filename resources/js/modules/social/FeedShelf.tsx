@@ -6,6 +6,13 @@ import { Avatar } from '@/modules/social/Avatar';
 import { groupFeedRecords } from '@/modules/social/feedGroups';
 import { RecordLink } from '@/modules/social/RecordOverlay';
 
+const additionDate = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Europe/Brussels',
+});
+
 export function FeedShelf({ records }: { records: CollectionRecordSummary[] }) {
     return (
         <div className="feed-shelves">
@@ -21,14 +28,6 @@ export function FeedShelf({ records }: { records: CollectionRecordSummary[] }) {
                                 <h2>{group.owner.name}</h2>
                             </Link>
                         )}
-                        <time dateTime={group.date}>
-                            {new Intl.DateTimeFormat('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                                timeZone: 'Europe/Brussels',
-                            }).format(new Date(group.records[0].addedAt))}
-                        </time>
                     </header>
                     <ul className="feed-shelf-records">
                         {group.records.map((record) => (
@@ -48,6 +47,14 @@ export function FeedShelf({ records }: { records: CollectionRecordSummary[] }) {
                                     <span className="feed-album">
                                         {record.displayTitle}
                                     </span>
+                                    <time
+                                        className="feed-record-date"
+                                        dateTime={record.addedAt}
+                                    >
+                                        {additionDate.format(
+                                            new Date(record.addedAt),
+                                        )}
+                                    </time>
                                 </RecordLink>
                             </li>
                         ))}
