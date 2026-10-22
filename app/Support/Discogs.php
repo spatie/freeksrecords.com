@@ -41,7 +41,16 @@ class Discogs
                 continue;
             }
 
-            $details = $this->get("artists/{$id}");
+            try {
+                $details = $this->get("artists/{$id}");
+            } catch (RequestException $exception) {
+                if ($exception->response->status() !== 404) {
+                    throw $exception;
+                }
+
+                $details = [];
+            }
+
             $bios[$id] = [
                 'id' => $id,
                 'name' => app(DiscogsRecordMapper::class)->artistName($details['name'] ?? $artist['name']),

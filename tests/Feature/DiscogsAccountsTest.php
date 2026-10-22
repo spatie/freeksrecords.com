@@ -314,6 +314,41 @@ it('shares only public release details between collectors while fetching each pr
         ->and($second->records()->pluck('instance_id')->all())->toBe([202]);
 });
 
+it('imports records without missing artist profiles but does not hide other artist request failures', function (int $status) {
+    $user = socialUser('missingartist');
+    $user->update(['discogs_username' => 'missingartist', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    $entry = discogsCollectionEntry(101, 2828974);
+    $entry['basic_information']['master_id'] = 0;
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [$entry]]),
+        'api.discogs.com/releases/*' => Http::response([
+            'artists' => [['id' => 194, 'name' => 'Various'], ['id' => 634, 'name' => 'Brian Eno']],
+            'tracklist' => [['position' => 'A1', 'title' => 'Still imported']],
+        ]),
+        'api.discogs.com/artists/194' => Http::response(['message' => 'Artist not found.'], $status),
+        'api.discogs.com/artists/634' => Http::response(['name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.']),
+    ]);
+    $import = fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+
+    if ($status !== 404) {
+        expect($import)->toThrow(RuntimeException::class, 'HTTP '.$status);
+        expect($user->records()->count())->toBe(0)
+            ->and($user->fresh()->collection_imported_at)->toBeNull();
+
+        return;
+    }
+
+    $import();
+
+    expect($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->fresh()->collection_imported_at)->not->toBeNull()
+        ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Still imported')
+        ->and($user->records()->sole()->payload['artistBios'])->toBe([
+            ['id' => 194, 'name' => 'Various', 'profile' => '', 'discogsUrl' => 'https://www.discogs.com/artist/194'],
+            ['id' => 634, 'name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.', 'discogsUrl' => 'https://www.discogs.com/artist/634'],
+        ]);
+})->with([404, 403, 503]);
+
 it('restarts a changed paginated snapshot without applying incomplete removals', function () {
     $user = socialUser('changing');
     $user->update(['discogs_username' => 'changing', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
