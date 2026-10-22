@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 
 beforeEach(function () {
     Http::preventStrayRequests();
@@ -41,6 +42,8 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
     $this->actingAs($user->fresh())->post('/discogs/sync')->assertRedirect()->assertSessionHas('status', 'Collection sync requested.');
     $this->delete('/discogs')->assertRedirect();
     expect($user->fresh()->discogs_token)->toBeNull()->and($user->fresh()->discogs_username)->toBe('discogs-owner');
+    expect(Activity::query()->orderBy('id')->pluck('event')->all())->toBe(['discogs_connected', 'discogs_disconnected']);
+    expect(Activity::all()->toJson())->not->toContain('access-token', 'access-secret', 'request-secret');
 });
 
 it('reports only the signed-in collector’s import progress through completion and failure', function () {
@@ -129,6 +132,10 @@ it('imports paginated collections silently, isolates duplicate copy ids, then mi
     expect($other->records()->first()->payload['title'])->toBe('Other copy');
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect($user->records()->count())->toBe(0)->and($other->records()->count())->toBe(1)->and($user->fresh()->sync_total)->toBe(0);
+    $activities = Activity::query()->where('log_name', 'discogs')->orderBy('id')->get();
+    expect($activities->pluck('event')->all())->toBe(['initial_import_started', 'initial_import_completed'])
+        ->and($activities->last()->getProperty('records_count'))->toBe(2)
+        ->and($activities->pluck('causer_id')->unique()->all())->toBe([$user->id]);
 });
 
 it('resumes a deployment-interrupted import without removing records or announcing initial additions', function () {
@@ -152,6 +159,8 @@ it('resumes a deployment-interrupted import without removing records or announci
     expect($user->records()->pluck('instance_id')->all())->toBe([301, 303])
         ->and($user->fresh()->collection_imported_at)->toBeNull()
         ->and($user->fresh()->sync_status)->toBe('Syncing');
+    $this->assertDatabaseCount('activity_log', 1);
+    $this->assertDatabaseHas('activity_log', ['event' => 'initial_import_started', 'causer_id' => $user->id]);
     Http::fake([
         'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$first, $second]]),
         'api.discogs.com/releases/402' => Http::response(['tracklist' => []]),
@@ -161,6 +170,8 @@ it('resumes a deployment-interrupted import without removing records or announci
         ->and($user->records()->where('is_activity', true)->count())->toBe(0)
         ->and($user->fresh()->sync_status)->toBe('Up to date')
         ->and($user->fresh()->collection_imported_at)->not->toBeNull();
+    $this->assertDatabaseCount('activity_log', 2);
+    $this->assertDatabaseHas('activity_log', ['event' => 'initial_import_completed', 'causer_id' => $user->id]);
 });
 
 it('preserves collections and initial-import suppression through partial responses and interrupted retries', function () {
@@ -251,6 +262,10 @@ it('resumes the unfinished page after exhausted connection retries and reuses al
         ->toThrow(RuntimeException::class, 'ConnectionException (cURL error 28)');
     expect($user->records()->pluck('instance_id')->all())->toBe([301])
         ->and($user->fresh()->collection_imported_at)->toBeNull();
+    (new SyncUserCollection($user->id))->failed(new RuntimeException('OAuth private-secret'));
+    $this->assertDatabaseHas('activity_log', ['event' => 'initial_import_failed', 'causer_id' => $user->id]);
+    $this->assertDatabaseMissing('activity_log', ['event' => 'initial_import_completed']);
+    expect(Activity::all()->toJson())->not->toContain('private-secret');
     (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     $record = $user->records()->where('instance_id', 302)->firstOrFail();
     expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_status)->toBe('Up to date')

@@ -3,9 +3,13 @@
 namespace App\Providers;
 
 use App\Listeners\FulfillInvitationsListener;
+use App\Listeners\LogAuthenticationActivityListener;
 use App\Listeners\SendNewUserMailListener;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -27,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Registered::class, [FulfillInvitationsListener::class, 'fulfill']);
         Event::listen(Registered::class, [SendNewUserMailListener::class, 'send']);
         Event::listen(Verified::class, [FulfillInvitationsListener::class, 'fulfill']);
+        Event::listen([Login::class, Logout::class, Registered::class, Verified::class, PasswordReset::class], [LogAuthenticationActivityListener::class, 'log']);
 
         VerifyEmail::toMailUsing(fn (User $user, string $url): MailMessage => (new MailMessage)
             ->subject('One more spin. Verify your Plaat Club email.')

@@ -15,5 +15,7 @@ class DeleteRecordCommentAction
         abort_if($user->id !== $comment->user_id && $user->id !== $record->user_id, 403);
 
         $comment->delete();
+        activity('social')->causedBy($user)->performedOn($record)->withProperties(['comment_id' => $comment->id])
+            ->event('comment_deleted')->log('Record comment deleted');
     }
 }

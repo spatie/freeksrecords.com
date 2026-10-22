@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\URL;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 
 it('shows local demo login controls only on the login page', function () {
     app()->detectEnvironment(fn () => 'local');
@@ -136,6 +137,12 @@ it('registers a friends-only account, verifies the inbox, and authenticates secu
     $this->post('/login', ['email' => $user->email, 'password' => 'a-long-demo-password'])->assertRedirect('/settings');
     $this->assertAuthenticatedAs($user);
     Notification::assertSentOnDemandTimes(NewUserRegistered::class, 1);
+    foreach (['registered', 'email_verified', 'logout'] as $event) {
+        $this->assertDatabaseHas('activity_log', ['event' => $event, 'causer_id' => $user->id, 'subject_id' => $user->id]);
+    }
+    $this->assertDatabaseCount('activity_log', 5);
+    expect(Activity::query()->where('event', 'login')->count())->toBe(2);
+    expect(Activity::all()->toJson())->not->toContain('a-long-demo-password', 'remember_token');
 });
 
 it('registers with only an email and password and lets the username change in settings', function () {

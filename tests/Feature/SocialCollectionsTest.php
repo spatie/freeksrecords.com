@@ -6,6 +6,7 @@ use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 
 it('renders only the current authorized feed page with distinct mixed-owner copies and safe attribution', function () {
     $viewer = socialUser('feedviewer');
@@ -330,6 +331,12 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
         $this->actingAs($action === 'cancel' ? $a : $b)->post('/friends/'.($action === 'cancel' ? $b->id : $a->id), ['action' => $action])->assertRedirect();
         $this->assertDatabaseCount('friendships', 0);
     }
+    $activities = Activity::query()->where('log_name', 'social')->orderBy('id')->get();
+    expect($activities->pluck('event')->all())->toBe([
+        'friend_request_sent', 'friend_request_accepted', 'unfriended',
+        'friend_request_sent', 'friend_request_cancelled', 'friend_request_sent', 'friend_request_declined',
+    ])->and($activities->pluck('causer_id')->all())->toBe([$a->id, $b->id, $a->id, $a->id, $a->id, $a->id, $b->id])
+        ->and($activities->pluck('subject_id')->all())->toBe([$b->id, $a->id, $b->id, $b->id, $b->id, $b->id, $a->id]);
 });
 
 it('finds an exact username with the displayed at prefix and optional whitespace', function (string $input, string $handle) {

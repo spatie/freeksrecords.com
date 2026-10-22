@@ -1,5 +1,7 @@
 <?php
 
+use App\Filament\Resources\ActivityResource;
+use App\Filament\Resources\ActivityResource\Pages\ListActivities;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Filament\Resources\UserResource\Pages\ViewUser;
 use App\Filament\Widgets\CommunityStats;
@@ -24,7 +26,8 @@ it('only allows the verified freek@spatie.be account into every admin page', fun
 
     $this->actingAs($user);
     $allowed ? $this->get('/admin')->assertRedirect('/admin/users') : $this->get('/admin')->assertForbidden();
-    foreach (['/admin/users', '/admin/users/'.$user->id] as $path) {
+    $activity = activity()->causedBy($user)->log('Test activity');
+    foreach (['/admin/users', '/admin/users/'.$user->id, '/admin/activities', '/admin/activities/'.$activity->id] as $path) {
         $response = $this->get($path);
         $allowed ? $response->assertOk() : $response->assertForbidden();
     }
@@ -37,7 +40,7 @@ it('only allows the verified freek@spatie.be account into every admin page', fun
 
 it('redirects guests to admin login and rejects non-admin credentials there', function () {
     $user = socialUser('collector');
-    foreach (['/admin', '/admin/users', '/admin/users/'.$user->id] as $path) {
+    foreach (['/admin', '/admin/users', '/admin/users/'.$user->id, '/admin/activities'] as $path) {
         $this->get($path)->assertRedirect('/admin/login');
     }
 
@@ -45,6 +48,27 @@ it('redirects guests to admin login and rejects non-admin credentials there', fu
         ->fillForm(['email' => $user->email, 'password' => 'a-long-demo-password'])
         ->call('authenticate')->assertHasFormErrors(['email']);
     $this->assertGuest();
+});
+
+it('shows a read-only searchable and filterable activity log with details', function () {
+    $freek = User::freek();
+    $freek->update(['email_verified_at' => now()]);
+    $collector = socialUser('collector');
+    $login = activity('authentication')->causedBy($collector)->performedOn($collector)->event('login')->log('Logged in');
+    $import = activity('discogs')->causedBy($freek)->performedOn($freek)->event('initial_import_completed')
+        ->withProperties(['records_count' => 42])->log('Initial collection import completed');
+    $this->actingAs($freek);
+
+    Livewire::test(ListActivities::class)
+        ->assertCanSeeTableRecords([$login, $import])
+        ->searchTable('Collector')->assertCanSeeTableRecords([$login])->assertCanNotSeeTableRecords([$import])
+        ->searchTable('')->filterTable('log_name', 'discogs')->assertCanSeeTableRecords([$import])->assertCanNotSeeTableRecords([$login])
+        ->resetTableFilters()->filterTable('event', 'login')->assertCanSeeTableRecords([$login])->assertCanNotSeeTableRecords([$import]);
+    $this->get('/admin/activities/'.$import->id)->assertOk()->assertSee('records_count')->assertSee('42');
+    expect(ActivityResource::canCreate())->toBeFalse()
+        ->and(ActivityResource::canEdit($import))->toBeFalse()
+        ->and(ActivityResource::canDelete($import))->toBeFalse()
+        ->and(ActivityResource::canDeleteAny())->toBeFalse();
 });
 
 it('lists searchable collectors and shows accepted friends from either side of a friendship', function () {

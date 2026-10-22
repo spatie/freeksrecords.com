@@ -71,6 +71,11 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
     public function failed(?Throwable $exception): void
     {
         User::query()->whereKey($this->userId)->update(['sync_status' => 'Sync failed. Reconnect if access was revoked, then retry. Existing records were kept.']);
+        $user = User::query()->find($this->userId);
+        if ($user && $user->collection_imported_at === null) {
+            activity('discogs')->causedBy($user)->performedOn($user)
+                ->event('initial_import_failed')->log('Initial collection import failed');
+        }
     }
 
     public function handle(DiscogsRecordMapper $mapper, RecordCollection $legacy): void
@@ -92,19 +97,26 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
             if (! $user->discogs_token) {
                 return;
             }
+            $initial = $user->collection_imported_at === null;
             $state = $user->discogs_sync_state;
-            if ($state === null || $state['startedAt'] < now()->subDay()->timestamp) {
+            $starting = $state === null || $state['startedAt'] < now()->subDay()->timestamp;
+            if ($starting) {
                 $state = ['page' => 1, 'seen' => [], 'total' => null, 'pages' => null, 'startedAt' => now()->timestamp];
                 $user->sync_total = null;
             }
-            $user->update(['sync_status' => 'Syncing', 'discogs_sync_state' => $state]);
+            DB::transaction(function () use ($user, $state, $initial, $starting): void {
+                $user->update(['sync_status' => 'Syncing', 'discogs_sync_state' => $state]);
+                if ($initial && $starting) {
+                    activity('discogs')->causedBy($user)->performedOn($user)
+                        ->event('initial_import_started')->log('Initial collection import started');
+                }
+            });
             $discogs = new Discogs($user);
             $seen = $state['seen'];
             $page = $state['page'];
             $imported = 0;
             $pagesProcessed = 0;
             $startedAt = microtime(true);
-            $initial = $user->collection_imported_at === null;
             do {
                 if ($this->releaseIfNeeded($imported, $startedAt)) {
                     return;
@@ -167,10 +179,14 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 $user->update(['discogs_sync_state' => null]);
                 throw new RuntimeException('Incomplete collection response');
             }
-            DB::transaction(function () use ($user, $seen, &$changed): void {
+            DB::transaction(function () use ($user, $seen, $initial, &$changed): void {
                 $removed = $user->records()->whereNotIn('instance_id', $seen)->delete();
                 $changed = $changed || $removed > 0;
                 $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date', 'discogs_sync_state' => null]);
+                if ($initial) {
+                    activity('discogs')->causedBy($user)->performedOn($user)->withProperties(['records_count' => count($seen)])
+                        ->event('initial_import_completed')->log('Initial collection import completed');
+                }
             });
         } catch (DiscogsRateLimitException $exception) {
             $this->release($exception->retryAfter);

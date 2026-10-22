@@ -7,6 +7,7 @@ use App\Notifications\FriendRequestAccepted;
 use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Activitylog\Models\Activity;
 
 it('emails one verified recipient per new friend request with signed accept and decline links', function () {
     Notification::fake();
@@ -73,6 +74,10 @@ it('confirms email responses without signing in, never mutates on GET and consum
     }
     expect(Friendship::query()->whereNotNull('accepted_at')->count())->toBe($action === 'accept' ? 1 : 0);
     $this->get('/shelves/'.$sender->records()->first()->id)->assertRedirect('/login');
+    $responses = Activity::query()->whereIn('event', ['friend_request_accepted', 'friend_request_declined'])->get();
+    expect($responses)->toHaveCount(1)
+        ->and($responses->first()->causer_id)->toBe($recipient->id)
+        ->and($responses->first()->subject_id)->toBe($sender->id);
 })->with(['accept', 'decline']);
 
 it('emails the requester once with a collection link only when the accepted friends collection is visible', function (bool $requesterCreatedFirst, string $visibility) {

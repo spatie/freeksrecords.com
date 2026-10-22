@@ -60,6 +60,8 @@ class InvitationsController
             }
 
             Notification::route('mail', $email)->notify(new InvitationMail($invitation->id, $token));
+            activity('social')->causedBy($sender)->performedOn($invitation)
+                ->event('invitation_sent')->log('Invitation sent');
         }, 3);
 
         return back()->with('status', 'Invitation sent. If your friend is already on Plaat Club, they’ll find your friend request there.');

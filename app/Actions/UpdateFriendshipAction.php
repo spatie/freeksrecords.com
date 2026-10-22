@@ -25,6 +25,8 @@ class UpdateFriendshipAction
             if ($action === 'request') {
                 if ($friendship === null) {
                     $friendship = Friendship::query()->create([...$pair, 'requested_by' => $viewer->id]);
+                    activity('social')->causedBy($viewer)->performedOn($user)
+                        ->event('friend_request_sent')->log('Friend request sent');
                     SocialNotification::send($user, $viewer, 'friend_request');
                     $user->notify(new FriendRequest($friendship->id));
                 }
@@ -47,6 +49,9 @@ class UpdateFriendshipAction
                 default => false,
             }, 403);
             $friendship->delete();
+            activity('social')->causedBy($viewer)->performedOn($user)
+                ->event($action === 'cancel' ? 'friend_request_cancelled' : 'unfriended')
+                ->log($action === 'cancel' ? 'Friend request cancelled' : 'Friend removed');
         });
     }
 }

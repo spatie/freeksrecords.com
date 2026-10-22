@@ -16,7 +16,12 @@ class DisconnectDiscogsAccountAction
         }
 
         try {
+            $connected = $user->discogs_token !== null;
             $user->update(['discogs_token' => null, 'discogs_secret' => null, 'discogs_sync_state' => null]);
+            if ($connected) {
+                activity('discogs')->causedBy($user)->performedOn($user)
+                    ->event('discogs_disconnected')->log('Discogs account disconnected');
+            }
         } finally {
             $lock->release();
         }

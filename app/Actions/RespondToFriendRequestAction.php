@@ -20,6 +20,11 @@ class RespondToFriendRequestAction
                 && in_array($recipient->id, [$pending->user_low, $pending->user_high], true)
                 && in_array($action, ['accept', 'decline'], true), 403);
 
+            $requester = User::query()->findOrFail($pending->requested_by);
+            activity('social')->causedBy($recipient)->performedOn($requester)
+                ->event($action === 'decline' ? 'friend_request_declined' : 'friend_request_accepted')
+                ->log($action === 'decline' ? 'Friend request declined' : 'Friend request accepted');
+
             if ($action === 'decline') {
                 $pending->delete();
 
@@ -27,7 +32,6 @@ class RespondToFriendRequestAction
             }
 
             $pending->update(['accepted_at' => now()]);
-            $requester = User::query()->findOrFail($pending->requested_by);
             SocialNotification::send($requester, $recipient, 'friend_accepted');
             $requester->notify(new FriendRequestAccepted($pending->id));
         });

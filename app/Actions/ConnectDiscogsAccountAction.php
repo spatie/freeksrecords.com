@@ -27,6 +27,8 @@ class ConnectDiscogsAccountAction
                 'discogs_secret' => $secret,
                 'discogs_sync_state' => null,
             ]);
+            activity('discogs')->causedBy($user)->performedOn($user)->withProperties(['username' => $username])
+                ->event('discogs_connected')->log('Discogs account connected');
         });
     }
 }
