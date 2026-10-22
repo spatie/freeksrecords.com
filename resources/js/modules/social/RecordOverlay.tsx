@@ -74,7 +74,9 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
 
     function open(url: string, element?: HTMLElement | null) {
         source.current = element?.closest<HTMLElement>('a, button') ?? null;
-        const artwork = element?.querySelector<HTMLElement>('img') ?? element;
+        const artwork =
+            element?.querySelector<HTMLElement>('.catalog-record-art, img') ??
+            element;
         sourceArtwork.current = artwork ?? null;
         setOrigin(artwork ? artworkOrigin(artwork) : null);
         const destination = new URL(window.location.href);
