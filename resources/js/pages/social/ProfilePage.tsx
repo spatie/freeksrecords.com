@@ -22,7 +22,7 @@ export function ProfilePage({
                 }
                 user={owner ? user : null}
             >
-                <p>@{person.handle}</p>
+                {!owner && <p>@{person.handle}</p>}
                 {!owner && user?.verified && (
                     <Link
                         className="collection-visibility"
