@@ -80,6 +80,26 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             <Head>
                 <meta name="robots" content="noindex, nofollow" />
             </Head>
+            {props.impersonating && (
+                <aside
+                    className="impersonation-banner"
+                    aria-label="Impersonation"
+                >
+                    <span>
+                        Viewing as{' '}
+                        <strong>{user?.name ?? 'a signed-out user'}</strong>.
+                        Changes affect this account.
+                    </span>
+                    <form method="post" action="/admin/impersonation/stop">
+                        <input
+                            type="hidden"
+                            name="_token"
+                            value={props.csrfToken}
+                        />
+                        <button type="submit">Return to admin</button>
+                    </form>
+                </aside>
+            )}
             <a className="skip" href="#main" inert={recordOpen}>
                 Skip to content
             </a>

@@ -6,6 +6,7 @@ use App\Http\Controllers\RecordDetailsController;
 use App\Http\Controllers\RecordShareImageController;
 use App\Http\Controllers\ShowCollectionController;
 use App\Http\Controllers\ShowRecordController;
+use App\Http\Controllers\StopImpersonationController;
 use App\Http\Middleware\CacheAtEdge;
 use App\Http\Middleware\EnsureCollectionAccess;
 use App\Http\Middleware\PrivateResponse;
@@ -13,6 +14,9 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+Route::post('admin/impersonation/stop', StopImpersonationController::class)
+    ->middleware(PrivateResponse::class)->name('impersonation.stop');
 
 Route::get('/', HomeController::class)->middleware([PrivateResponse::class, EnsureCollectionAccess::class])->name('home');
 

@@ -1,5 +1,26 @@
 @import 'tailwindcss';
 
+.impersonation-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 24px;
+    padding: 12px 20px;
+    background: #fef3c7;
+    color: #78350f;
+    font:
+        14px/1.5 'Club Sans',
+        sans-serif;
+}
+
+.impersonation-banner button {
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 @font-face {
     font-family: 'Club Display';
     src: url('/fonts/barlow-condensed-bold.ttf') format('truetype');

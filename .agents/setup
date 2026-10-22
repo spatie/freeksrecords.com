@@ -11,6 +11,10 @@ if ! command -v php >/dev/null || ! php -r 'exit(PHP_VERSION_ID >= 80500 ? 0 : 1
     sudo apt-get update -qq
     sudo apt-get install -y -qq php8.5-cli php8.5-sqlite3 php8.5-mbstring php8.5-xml php8.5-curl php8.5-gd php8.5-zip
 fi
+if ! php -m | grep -qi '^intl$'; then
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq php8.5-intl
+fi
 if ! command -v composer >/dev/null; then
     curl -fsSL https://getcomposer.org/installer -o /tmp/freeks-composer.php
     curl -fsSL https://composer.github.io/installer.sig -o /tmp/freeks-composer.sig

@@ -1,0 +1,137 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+@font-face {
+    font-family: 'Club Sans';
+    src: url('/fonts/dm-sans-regular.ttf') format('truetype');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Club Sans';
+    src: url('/fonts/dm-sans-semibold.ttf') format('truetype');
+    font-weight: 600 800;
+    font-display: swap;
+}
+
+.fi-body {
+    background: #f8f6f1;
+    font-family: 'Club Sans', sans-serif;
+}
+
+.fi-topbar {
+    background: #fffefa;
+    box-shadow: none;
+    border-bottom: 1px solid #e7e2d9;
+    padding-inline: max(24px, calc((100vw - 1152px) / 2 + 32px));
+}
+
+.fi-logo {
+    font-size: 16px;
+    letter-spacing: -0.035em;
+}
+
+.fi-header-heading {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+}
+
+.fi-header-subheading {
+    font-size: 15px;
+    color: #797468;
+}
+
+.fi-page-header-main-ctn {
+    gap: 24px;
+    padding-block: 24px;
+}
+
+.fi-page-content {
+    row-gap: 24px;
+}
+
+.fi-section,
+.fi-ta-ctn {
+    box-shadow: none;
+    border: 1px solid #e7e2d9;
+    --tw-ring-shadow: 0 0 transparent;
+}
+
+.fi-wi-stats-overview {
+    overflow: hidden;
+    border: 1px solid #e7e2d9;
+    border-radius: 12px;
+    background: #fffefa;
+}
+
+.fi-wi-stats-overview .fi-sc-grid {
+    gap: 0;
+}
+
+.fi-wi-stats-overview-stat {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    padding: 16px;
+    --tw-ring-shadow: 0 0 transparent;
+}
+
+.fi-wi-stats-overview-stat-label,
+.fi-wi-stats-overview-stat-description {
+    font-size: 12px;
+}
+
+.fi-wi-stats-overview-stat-value {
+    font-size: 27px;
+    font-weight: 600;
+}
+
+.admin-friends {
+    display: grid;
+    gap: 4px;
+}
+
+.admin-friend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-inline: -10px;
+    transition: background 120ms;
+}
+
+.admin-friend:hover,
+.admin-friend:focus-visible {
+    background: #f8f3eb;
+}
+
+.admin-friend-name {
+    color: #a64028;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.admin-friend-handle,
+.admin-friend-records {
+    display: block;
+    color: #797468;
+    font-size: 12px;
+}
+
+@media (min-width: 640px) {
+    .fi-ta-text:not(.fi-inline) {
+        padding-block: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-friend {
+        transition: none;
+    }
+}

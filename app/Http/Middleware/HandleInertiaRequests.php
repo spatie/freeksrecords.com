@@ -7,6 +7,7 @@ use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\SocialData;
 use App\Support\SocialPreview;
+use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
@@ -37,6 +38,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'socialPreview' => fn () => app(SocialPreview::class)->metadata($request),
             'auth' => ['user' => fn () => $request->user() ? SocialData::viewer($request->user()) : null],
+            'adminUrl' => fn () => $request->user()?->canAccessPanel(Filament::getPanel('admin')) ? '/admin' : null,
+            'impersonating' => fn () => $request->session()->has('impersonator_id'),
             'csrfToken' => fn () => $request->session()->token(),
             'googleEnabled' => filled(config('services.google.client_id')) && filled(config('services.google.client_secret')),
             'notificationCount' => fn () => $request->user()

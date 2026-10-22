@@ -1,12 +1,13 @@
-import { Link, router } from '@inertiajs/react';
-import { ChevronDown, LogOut, Settings, Users } from 'lucide-react';
+import { Link, router, usePage } from '@inertiajs/react';
+import { ChevronDown, LogOut, Settings, Shield, Users } from 'lucide-react';
 import { useRef } from 'react';
 
 import { Avatar } from '@/modules/social/Avatar';
-import type { Viewer } from '@/modules/social/types';
+import type { SocialProps, Viewer } from '@/modules/social/types';
 
 export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
     const popover = useRef<HTMLDivElement>(null);
+    const { adminUrl } = usePage<SocialProps>().props;
 
     return (
         <>
@@ -45,6 +46,12 @@ export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
                         <Settings size={16} aria-hidden="true" />
                         Settings
                     </Link>
+                )}
+                {adminUrl && (
+                    <a href={adminUrl}>
+                        <Shield size={16} aria-hidden="true" />
+                        Admin
+                    </a>
                 )}
                 <button
                     type="button"

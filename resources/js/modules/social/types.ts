@@ -35,6 +35,8 @@ export type Viewer = Person & {
 export type SocialProps = {
     [key: string]: unknown;
     auth: { user: Viewer | null };
+    adminUrl: string | null;
+    impersonating: boolean;
     csrfToken: string;
     googleEnabled: boolean;
     notificationCount: number;

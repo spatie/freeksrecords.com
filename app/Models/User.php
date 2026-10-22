@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Carbon\CarbonImmutable;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -33,12 +35,12 @@ use Illuminate\Support\Str;
  * @property ?int $sync_total
  * @property ?array{page: int, seen: list<int>, total: ?int, pages: ?int, startedAt: int} $discogs_sync_state
  */
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     use Notifiable;
 
     public const RESERVED_HANDLES = [
-        'about', 'api', 'auth', 'build', 'collection', 'collections', 'community', 'demo', 'discogs',
+        'about', 'admin', 'api', 'auth', 'build', 'collection', 'collections', 'community', 'demo', 'discogs',
         'email', 'favicon', 'feed', 'fonts', 'friends', 'images', 'index', 'login', 'logout',
         'notifications', 'people', 'privacy', 'record', 'register', 'robots', 'settings', 'share',
         'shelves', 'storage', 'terms', 'up',
@@ -86,6 +88,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public static function freek(): self
     {
         return static::query()->where('legacy_owner', true)->firstOrFail();
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->email === 'freek@spatie.be' && $this->hasVerifiedEmail();
     }
 
     /** @return HasMany<CollectionRecord, $this> */

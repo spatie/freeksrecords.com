@@ -178,6 +178,22 @@ All other profiles and shelf pages are private/no-store, even when publicly visi
 no private collection share images are generated. The existing collection sync commands
 remain Freek-only, and switch to his OAuth import after he connects.
 
+### Admin
+
+The Filament admin panel lives at `/admin`, also linked from Freek's account menu.
+Only the verified `freek@spatie.be` account can enter it, including in local development.
+Sign in with the site's existing account or the admin login form; Google sign-in remains
+available through the site's login page. PHP's `intl` extension is required by Filament.
+`composer install` publishes Filament's assets automatically.
+
+The panel opens directly to the user list, with compact stats for collectors, records,
+Discogs connections, friendships, comments and appreciations. Users are searchable by name, username or email, with
+verification, connection and visibility filters. Each read-only profile shows collection
+details and links to accepted friends; extra sync and email details are collapsed by default. “View as user” requires confirmation
+and signs you into their account with their normal permissions: changes are real.
+The warning banner's “Return to admin” restores Freek's session. Signing out instead
+ends the whole session, including the ability to switch back without signing in again.
+
 ### Amp orb preview
 
 `.agents/setup` installs PHP 8.5/extensions, Composer, locked dependencies, SQLite and
