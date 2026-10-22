@@ -35,7 +35,8 @@
         text-decoration: none;
     }
     .feed-shelf-heading > .feed-collection-link {
-        gap: 4px;
+        display: block;
+        align-content: center;
         min-height: 44px;
         font-size: 14px;
         text-decoration: underline;
