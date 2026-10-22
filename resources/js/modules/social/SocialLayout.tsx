@@ -6,6 +6,7 @@ import { AccountMenu } from '@/modules/social/AccountMenu';
 import { isSettingUpCollection } from '@/modules/social/collectionSetup';
 import { NotificationsPopover } from '@/modules/social/NotificationsPopover';
 import { RecordOverlay } from '@/modules/social/RecordOverlay';
+import { SocialPreviewHead } from '@/modules/social/SocialPreviewHead';
 import type { SocialProps } from '@/modules/social/types';
 import '../../../css/social.css';
 import '../../../css/auth.css';
@@ -75,6 +76,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
 
     return (
         <div ref={layoutRef} className={`social-app ${pageClass}`}>
+            <SocialPreviewHead preview={props.socialPreview} />
             <Head>
                 <meta name="robots" content="noindex, nofollow" />
             </Head>

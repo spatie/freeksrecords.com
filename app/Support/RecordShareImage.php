@@ -10,6 +10,55 @@ use RuntimeException;
 
 class RecordShareImage
 {
+    /** @param list<array<string, mixed>> $records */
+    public function renderClub(string $title, string $subtitle, array $records = []): string
+    {
+        $image = imagecreatetruecolor(1200, 630);
+        $red = $this->color($image, 245, 68, 42);
+        $ink = $this->color($image, 30, 30, 21);
+        $acid = $this->color($image, 219, 238, 141);
+        $cream = $this->color($image, 255, 240, 207);
+        $display = public_path('fonts/barlow-condensed-bold.ttf');
+        $body = public_path('fonts/dm-sans-regular.ttf');
+        imagefill($image, 0, 0, $red);
+        imagefilledpolygon($image, [0, 440, 1200, 280, 1200, 630, 0, 630], $acid);
+        imagettftext($image, 32, 0, 54, 82, $ink, $display, 'Plaat Club.');
+
+        $size = $records === [] ? 100 : 70;
+        $lines = $this->wrap($title, $display, $size, 1090, 2);
+        foreach ($lines as $index => $line) {
+            imagettftext($image, $size, 0, 54, 205 + $index * ($size + 8), $ink, $display, $line);
+        }
+
+        if ($records === []) {
+            imagefilledellipse($image, 969, 421, 340, 340, $ink);
+            for ($diameter = 328; $diameter > 106; $diameter -= 12) {
+                imageellipse($image, 969, 421, $diameter, $diameter, $this->color($image, 65, 65, 52));
+            }
+            imagefilledellipse($image, 969, 421, 98, 98, $red);
+            imagefilledellipse($image, 969, 421, 10, 10, $cream);
+            foreach ($this->wrap($subtitle, public_path('fonts/instrument-serif-italic.ttf'), 58, 720, 2) as $index => $line) {
+                imagettftext($image, 58, 0, 54, 390 + $index * 72, $ink, public_path('fonts/instrument-serif-italic.ttf'), $line);
+            }
+            imagettftext($image, 21, 0, 54, 578, $ink, $body, 'A listening circle for record collectors.');
+
+            return $this->toJpeg($image);
+        }
+
+        foreach ($records as $index => $record) {
+            $left = 54 + $index * 220;
+            imagefilledrectangle($image, $left + 6, 348, $left + 206, 548, $ink);
+            imagefilledrectangle($image, $left, 342, $left + 200, 542, $cream);
+            $cover = $this->cover($record['cover'] ?? '');
+            if ($cover) {
+                imagecopyresampled($image, $cover, $left, 342, 0, 0, 200, 200, imagesx($cover), imagesy($cover));
+            }
+        }
+        imagettftext($image, 23, 0, 54, 597, $ink, $body, $subtitle);
+
+        return $this->toJpeg($image);
+    }
+
     /** @param array<int, array<string, mixed>> $records */
     public function renderCollection(array $records): string
     {

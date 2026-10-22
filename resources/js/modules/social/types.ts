@@ -42,6 +42,14 @@ export type SocialProps = {
     flash: { status: string | null };
     errors: Record<string, string>;
     recordOverlay: RecordProps | null;
+    socialPreview: {
+        title: string;
+        description: string;
+        url: string;
+        image: string;
+        imageAlt: string;
+        type: string;
+    };
 };
 
 export type Pagination<T> = {

@@ -64,6 +64,27 @@
                 <meta data-inertia="twitter:image" name="twitter:image" content="{{ $image }}">
                 <meta data-inertia="twitter:image:alt" name="twitter:image:alt" content="{{ $imageAlt }}">
                 <link data-inertia="canonical" rel="canonical" href="{{ $url }}">
+            @elseif(isset($page['props']['socialPreview']))
+                @php($preview = $page['props']['socialPreview'])
+                <title>{{ $preview['title'] }}</title>
+                <meta data-inertia="description" name="description" content="{{ $preview['description'] }}">
+                @foreach([
+                    'og:site_name' => 'Plaat Club', 'og:type' => $preview['type'],
+                    'og:title' => $preview['title'], 'og:description' => $preview['description'],
+                    'og:url' => $preview['url'], 'og:image' => $preview['image'],
+                    'og:image:alt' => $preview['imageAlt'], 'og:image:width' => '1200',
+                    'og:image:height' => '630', 'og:image:type' => 'image/jpeg',
+                ] as $property => $content)
+                    <meta data-inertia="{{ $property }}" property="{{ $property }}" content="{{ $content }}">
+                @endforeach
+                @foreach([
+                    'twitter:card' => 'summary_large_image', 'twitter:title' => $preview['title'],
+                    'twitter:description' => $preview['description'], 'twitter:image' => $preview['image'],
+                    'twitter:image:alt' => $preview['imageAlt'],
+                ] as $name => $content)
+                    <meta data-inertia="{{ $name }}" name="{{ $name }}" content="{{ $content }}">
+                @endforeach
+                <link data-inertia="canonical" rel="canonical" href="{{ $preview['url'] }}">
             @else
                 <title>{{ config('app.name', 'Laravel') }}</title>
             @endif

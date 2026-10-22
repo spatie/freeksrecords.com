@@ -6,6 +6,7 @@ use App\Models\CollectionRecord;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\SocialData;
+use App\Support\SocialPreview;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Middleware;
@@ -34,6 +35,7 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            'socialPreview' => fn () => app(SocialPreview::class)->metadata($request),
             'auth' => ['user' => fn () => $request->user() ? SocialData::viewer($request->user()) : null],
             'csrfToken' => fn () => $request->session()->token(),
             'googleEnabled' => filled(config('services.google.client_id')) && filled(config('services.google.client_secret')),

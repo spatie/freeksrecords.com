@@ -10,6 +10,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\RecordCoverController;
 use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
+use App\Http\Controllers\SocialPreviewController;
 use App\Http\Middleware\PrivateResponse;
 use App\Support\SocialData;
 use Illuminate\Http\Request;
@@ -32,6 +33,11 @@ Route::middleware(PrivateResponse::class)->group(function () {
     Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');
     Route::get('/shelves/{record}/cover', RecordCoverController::class)->whereNumber('record')->name('shelf.cover');
+    Route::middleware('throttle:shareImages')->group(function () {
+        Route::get('share/site.jpg', [SocialPreviewController::class, 'home'])->name('socialPreview.home');
+        Route::get('share/collections/{user:handle}.jpg', [SocialPreviewController::class, 'collection'])->name('socialPreview.collection');
+        Route::get('share/shelves/{record}.jpg', [SocialPreviewController::class, 'record'])->whereNumber('record')->name('socialPreview.record');
+    });
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:20,1')->name('google.callback');
 
     Route::match(['get', 'post'], '/friends/respond/{friendship}/{recipient}/{action}', FriendRequestResponseController::class)
