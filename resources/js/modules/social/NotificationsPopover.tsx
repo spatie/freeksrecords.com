@@ -166,7 +166,7 @@ export function NotificationsPopover() {
                                         ) : (
                                             <Avatar
                                                 className="notification-avatar"
-                                                label={notification.actor.name}
+                                                person={notification.actor}
                                             />
                                         )}
                                         <span className="notification-copy">

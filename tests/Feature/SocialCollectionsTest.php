@@ -367,6 +367,32 @@ it('prioritizes importing a first collection without empty feed and request clut
         ->where('auth.user.syncStatus', 'Syncing')->where('auth.user.discogsConnected', true));
 });
 
+it('shows collection counts on the friends page only while the viewer has access', function (string $visibility, bool $accepted, int $count, ?int $expected) {
+    $viewer = socialUser('count_viewer');
+    $owner = socialUser('count_owner', $visibility);
+    $connection = socialFriends($owner, $viewer);
+    if (! $accepted) {
+        $connection->update(['accepted_at' => null]);
+    }
+    for ($instance = 1; $instance <= $count; $instance++) {
+        socialRecord($owner, instance: $instance, activity: false);
+    }
+
+    $this->actingAs($viewer)->get('/friends')->assertInertia(fn (Assert $page) => $page
+        ->has('people.data', 1)->where('people.data.0.id', $owner->id)
+        ->where('people.data.0.recordCount', $expected));
+    $connection->delete();
+    $this->get('/friends?q=count_owner')->assertInertia(fn (Assert $page) => $page
+        ->where('people.data.0.recordCount', $visibility === 'everyone' ? $count : null));
+})->with([
+    'public friend' => ['everyone', true, 3, 3],
+    'friends collection' => ['friends', true, 2, 2],
+    'private friend' => ['only_me', true, 4, null],
+    'pending friends collection' => ['friends', false, 5, null],
+    'pending public collection' => ['everyone', false, 1, 1],
+    'empty visible collection' => ['friends', true, 0, 0],
+]);
+
 it('keeps the normal feed after importing even an empty collection', function (bool $hasRecords) {
     $viewer = socialUser('returningcollector');
     $hasRecords
@@ -464,6 +490,7 @@ it('shows only the recipient’s currently visible notifications and scopes read
 it('keeps older notifications accessible in the popover', function () {
     $viewer = socialUser('viewer');
     $actor = socialUser('actor');
+    $actor->update(['google_avatar_url' => 'https://lh3.googleusercontent.com/actor-photo', 'google_id' => 'hidden-subject']);
     SocialNotification::send($viewer, $actor, 'friend_accepted');
     foreach (range(1, 15) as $index) {
         SocialNotification::send($viewer, $actor, 'friend_request');
@@ -471,9 +498,15 @@ it('keeps older notifications accessible in the popover', function () {
 
     $this->actingAs($viewer)->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
         ->assertSee('sent you a friend request')->assertDontSee('accepted your friend request')
+        ->assertJsonPath('notifications.data.0.actor.avatarUrl', $actor->google_avatar_url)
+        ->assertDontSee('hidden-subject')->assertDontSee($actor->email)
         ->assertSee('page=2', false)->assertJsonPath('unreadCount', 16)->assertJsonCount(15, 'notifications.data');
     $this->get('/notifications?page=2', ['X-Requested-With' => 'XMLHttpRequest'])
-        ->assertSee('accepted your friend request')->assertDontSee('sent you a friend request');
+        ->assertSee('accepted your friend request')->assertDontSee('sent you a friend request')
+        ->assertJsonPath('notifications.data.0.actor.avatarUrl', $actor->google_avatar_url);
+    $actor->update(['google_avatar_url' => null]);
+    $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertJsonPath('notifications.data.0.actor.avatarUrl', null);
 });
 
 it('isolates legacy collection copies, snapshot fallback, and all legacy URLs from other owners', function () {
@@ -516,29 +549,32 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
         'X-Inertia' => 'true', 'X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'text/html',
         'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
     ];
-    $personKeys = ['id', 'name', 'handle', 'profileUrl'];
+    $personKeys = ['id', 'name', 'handle', 'profileUrl', 'avatarUrl'];
 
     foreach (['/community', '/collections', '/contract_owner', '/feed', '/friends', '/settings', '/shelves/'.$record->id] as $path) {
         $response = $this->actingAs($viewer)->get($path, $headers)->assertOk()->assertHeader('X-Inertia', 'true');
         $response->assertJsonPath('props.auth.user.email', $viewer->email)
             ->assertJsonPath('props.auth.user.googleConnected', true)->assertJsonPath('props.auth.user.discogsConnected', true)
             ->assertJsonPath('props.auth.user.avatarUrl', $viewer->google_avatar_url)
-            ->assertDontSee('private-google-photo-'.$owner->id)
             ->assertDontSee($owner->email)->assertDontSee('contract-private-note')
             ->assertDontSee('google-subject-')->assertDontSee('discogs-access-')->assertDontSee('discogs-secret-')
             ->assertDontSee('remember-secret-')->assertDontSee($viewer->password)->assertDontSee($owner->password)
             ->assertDontSee('injected-note')->assertDontSee('injected-token')->assertDontSee('injected-track-token');
         expect(array_keys($response->json('props.auth.user')))->toBe([
             ...$personKeys, 'email', 'verified', 'visibility', 'legacyOwner', 'commentsEnabled', 'digestEnabled',
-            'googleConnected', 'avatarUrl', 'discogsConnected', 'discogsUsername', 'importedAt', 'lastSyncedAt', 'syncStatus', 'syncTotal', 'collectionCount',
+            'googleConnected', 'discogsConnected', 'discogsUsername', 'importedAt', 'lastSyncedAt', 'syncStatus', 'syncTotal', 'collectionCount',
         ])->and($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
     }
 
-    $profile = $this->get('/contract_owner', $headers)->assertJsonPath('props.visible', true);
+    $profile = $this->get('/contract_owner', $headers)->assertJsonPath('props.visible', true)
+        ->assertJsonPath('props.person.avatarUrl', $owner->google_avatar_url);
+    $this->get('/friends', $headers)->assertJsonPath('props.people.data.0.avatarUrl', $owner->google_avatar_url);
     expect(array_keys($profile->json('props.person')))->toBe($personKeys);
     $release = $this->get('/shelves/'.$record->id, $headers)
         ->assertJsonMissingPath('props.record.privateNote')->assertJsonPath('props.record.canEditNotes', false)
         ->assertJsonPath('props.record.sharedNote', 'contract-shared-note')
+        ->assertJsonPath('props.record.owner.avatarUrl', $owner->google_avatar_url)
+        ->assertJsonPath('props.comments.data.0.user.avatarUrl', $viewer->google_avatar_url)
         ->assertJsonPath('props.comments.data.0.id', $comment->id)->assertJsonPath('props.comments.data.0.canDelete', true);
     expect(array_keys($release->json('props.record.owner')))->toBe($personKeys)
         ->and(array_keys($release->json('props.comments.data.0')))->toBe(['id', 'body', 'user', 'canDelete'])

@@ -98,11 +98,14 @@ class SocialController extends Controller
             } else {
                 $builder->whereIn('id', $connections->map(fn (Friendship $friendship) => $friendship->user_low === $user->id ? $friendship->user_high : $friendship->user_low));
             }
-        })->orderBy('handle')->paginate(30)->withQueryString();
+        })->withCount('records')->orderBy('handle')->paginate(30)->withQueryString();
 
         return Inertia::render('social/FriendsPage', [
             'query' => $query,
-            'people' => SocialData::pagination($people, $people->getCollection()->map(SocialData::person(...))->all()),
+            'people' => SocialData::pagination($people, $people->getCollection()->map(fn (User $person) => [
+                ...SocialData::person($person),
+                'recordCount' => $person->canViewCollection($user) ? $person->records_count : null,
+            ])->all()),
             'connections' => $connections->map(fn (Friendship $friendship) => [
                 'user_low' => $friendship->user_low,
                 'user_high' => $friendship->user_high,

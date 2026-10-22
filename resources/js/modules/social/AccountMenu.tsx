@@ -16,11 +16,7 @@ export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
                 popoverTarget="account-popover"
                 aria-label={`Account menu for ${user.handle}`}
             >
-                <Avatar
-                    className="account-avatar"
-                    label={user.handle}
-                    imageUrl={user.avatarUrl}
-                />
+                <Avatar className="account-avatar" person={user} />
                 <span className="account-name">{user.handle}</span>
                 <ChevronDown size={14} aria-hidden="true" />
             </button>

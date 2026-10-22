@@ -71,6 +71,7 @@ class SocialData
             'name' => $user->name,
             'handle' => $user->handle,
             'profileUrl' => route('profile', $user->handle, false),
+            'avatarUrl' => $user->google_avatar_url,
         ];
     }
 
@@ -120,7 +121,6 @@ class SocialData
             'commentsEnabled' => $user->comments_enabled ?? true,
             'digestEnabled' => $user->digest_enabled ?? true,
             'googleConnected' => filled($user->google_id),
-            'avatarUrl' => $user->google_avatar_url,
             'discogsConnected' => filled($user->discogs_token),
             'discogsUsername' => $user->discogs_username,
             'importedAt' => $user->collection_imported_at?->toIso8601String(),

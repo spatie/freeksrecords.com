@@ -84,7 +84,7 @@ it('previews nonempty public collections with their latest additions first', fun
     foreach ($collectors as $collector) {
         expect($collector['recordCount'])->toBe(8)
             ->and(array_column($collector['records'], 'url'))->toBe($expected[$collector['handle']])
-            ->and(array_keys($collector))->toBe(['id', 'name', 'handle', 'profileUrl', 'recordCount', 'records']);
+            ->and(array_keys($collector))->toBe(['id', 'name', 'handle', 'profileUrl', 'avatarUrl', 'recordCount', 'records']);
     }
 });
 

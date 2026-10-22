@@ -12,6 +12,7 @@ export type Person = {
     name: string;
     handle: string;
     profileUrl: string;
+    avatarUrl: string | null;
 };
 
 export type Viewer = Person & {
@@ -22,7 +23,6 @@ export type Viewer = Person & {
     commentsEnabled: boolean;
     digestEnabled: boolean;
     googleConnected: boolean;
-    avatarUrl: string | null;
     discogsConnected: boolean;
     discogsUsername: string | null;
     importedAt: string | null;
@@ -90,7 +90,7 @@ export type FeedProps = {
 };
 export type FriendsProps = {
     query: string;
-    people: Pagination<Person>;
+    people: Pagination<Person & { recordCount: number | null }>;
     connections: {
         user_low: number;
         user_high: number;

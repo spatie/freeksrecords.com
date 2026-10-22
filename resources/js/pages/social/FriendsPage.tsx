@@ -88,7 +88,7 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                     <button className="button" disabled={search.processing}>
                         Search
                     </button>
-                    <Link href="/friends">My connections</Link>
+                    {query && <Link href="/friends">Clear search</Link>}
                 </div>
             </form>
             {groups
@@ -141,7 +141,7 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                                         <div className="person-identity">
                                             <Avatar
                                                 className="person-avatar"
-                                                label={person.handle}
+                                                person={person}
                                             />
                                             <div>
                                                 <h2>
@@ -151,7 +151,20 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                                                         {person.name}
                                                     </Link>
                                                 </h2>
-                                                <p>@{person.handle}</p>
+                                                <p>
+                                                    @{person.handle}
+                                                    {person.recordCount !==
+                                                        null && (
+                                                        <>
+                                                            {' · '}
+                                                            {person.recordCount.toLocaleString()}{' '}
+                                                            {person.recordCount ===
+                                                            1
+                                                                ? 'item'
+                                                                : 'items'}
+                                                        </>
+                                                    )}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className="actions">

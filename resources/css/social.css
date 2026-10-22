@@ -236,24 +236,26 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .account-avatar {
+    .avatar {
         position: relative;
+        overflow: hidden;
+    }
+    .avatar img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .account-avatar {
         flex: none;
         display: grid;
         place-items: center;
         width: 34px;
         height: 34px;
         border-radius: 50%;
-        overflow: hidden;
         background: var(--ink);
         color: var(--cream);
-    }
-    .account-avatar img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
     }
     .notifications-trigger {
         anchor-name: --notifications;
@@ -378,7 +380,7 @@
     .notification-item > a:hover {
         background: var(--acid);
     }
-    .notification-item img,
+    .notification-item > a > img,
     .notification-avatar {
         width: 48px;
         height: 48px;

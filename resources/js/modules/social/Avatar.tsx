@@ -1,18 +1,19 @@
+import type { Person } from '@/modules/social/types';
+
 export function Avatar({
-    label,
-    imageUrl,
+    person,
     className,
 }: {
-    label: string;
-    imageUrl?: string | null;
+    person: Pick<Person, 'name' | 'avatarUrl'>;
     className: string;
 }) {
     return (
-        <span className={className} aria-hidden="true">
-            {Array.from(label)[0]?.toLocaleUpperCase()}
-            {imageUrl && (
+        <span className={`avatar ${className}`} aria-hidden="true">
+            {Array.from(person.name)[0]?.toLocaleUpperCase()}
+            {person.avatarUrl && (
                 <img
-                    src={imageUrl}
+                    key={person.avatarUrl}
+                    src={person.avatarUrl}
                     alt=""
                     referrerPolicy="no-referrer"
                     onError={(event) => {
