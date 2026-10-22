@@ -53,6 +53,7 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
     const [origin, setOrigin] = useState<SleeveOrigin | null>(null);
     const source = useRef<HTMLElement | null>(null);
     const sourceArtwork = useRef<HTMLElement | null>(null);
+    const returnUrl = useRef<string | null>(null);
     const opened = Boolean(overlay);
 
     useLayoutEffect(() => {
@@ -79,8 +80,11 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
             element;
         sourceArtwork.current = artwork ?? null;
         setOrigin(artwork ? artworkOrigin(artwork) : null);
-        const destination = new URL(window.location.href);
-        destination.searchParams.set('record', url.split('/').pop()!);
+        returnUrl.current = window.location.href;
+        const destination = new URL(url, window.location.href);
+        destination.search = window.location.search;
+        destination.hash = window.location.hash;
+        destination.searchParams.delete('record');
         destination.searchParams.delete('commentsPage');
         router.visit(destination.href, {
             only: ['recordOverlay'],
@@ -90,7 +94,10 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
     }
 
     function close() {
-        const destination = new URL(window.location.href);
+        const destination = new URL(
+            returnUrl.current ?? overlay!.collectionUrl,
+            window.location.href,
+        );
         destination.searchParams.delete('record');
         destination.searchParams.delete('commentsPage');
         router.replace({

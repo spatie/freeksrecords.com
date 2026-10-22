@@ -67,8 +67,9 @@ export function PrivacyPage() {
                 </p>
                 <h2>What other people can see</h2>
                 <p>
-                    New collections start private. Your display name and handle
-                    remain public. Collection visibility choices are:
+                    New collections are shared with accepted friends by default.
+                    Your display name and handle remain public. Collection
+                    visibility choices are:
                 </p>
                 <ul>
                     <li>

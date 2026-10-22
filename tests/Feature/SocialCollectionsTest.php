@@ -40,7 +40,7 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
     $summaries = $response->inertiaProps('records.data');
     expect($summaries)->toHaveCount(24)
         ->and(array_column(array_slice($summaries, 0, 2), 'instanceId'))->toBe([500, 500])
-        ->and(array_column(array_slice($summaries, 0, 2), 'shareUrl'))->toBe(['/shelves/'.$newer->id, '/shelves/'.$older->id])
+        ->and(array_column(array_slice($summaries, 0, 2), 'shareUrl'))->toBe([$newer->url(false), $older->url(false)])
         ->and($summaries[0]['owner'])->toBe(['name' => $second->name, 'profileUrl' => '/secondfriend'])
         ->and($summaries[1]['owner'])->toBe(['name' => $first->name, 'profileUrl' => '/firstfriend'])
         ->and($summaries[0]['addedAt'])->toBe($newer->added_at->toIso8601String())
@@ -74,8 +74,8 @@ it('loads visible shelf pages with owner-specific social links and only safe sum
     $summaries = $response->inertiaProps('records.data');
     expect($summaries)->toHaveCount(30);
     $copy = $owner->records()->where('instance_id', 1)->firstOrFail();
-    expect(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->toBe('/shelves/'.$copy->id)
-        ->not->toBe('/shelves/'.$overlap->id)
+    expect(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->toBe($copy->url(false))
+        ->not->toBe($overlap->url(false))
         ->and($summaries[0]['addedAt'])->toBe($record->added_at->toIso8601String())
         ->and($summaries[0])->not->toHaveKey('tracks')
         ->and($summaries[0]['trackTitles'])->toContain($record->payload['tracks'][0]['title']);
@@ -169,6 +169,39 @@ it('uses root profile URLs while retaining the old profile alias without redirec
     $this->get('/feed')->assertRedirect('/login');
 });
 
+it('uses readable owner-scoped record urls and retains old links with the correct public preview', function () {
+    $owner = socialUser('nice_urls', 'everyone');
+    $other = socialUser('wrong_owner', 'everyone');
+    $record = socialRecord($owner, 'A Blue Album!');
+    $url = '/nice_urls/records/'.$record->id.'/george-harrison-a-blue-album';
+
+    expect($record->url(false))->toBe($url);
+    foreach ([$url, '/nice_urls?record='.$record->id, '/shelves/'.$record->id] as $path) {
+        $this->get($path)->assertOk()
+            ->assertSee('property="og:title" content="A Blue Album! by George Harrison"', false)
+            ->assertSee('rel="canonical" href="'.url($url).'"', false);
+    }
+    $this->get('/wrong_owner/records/'.$record->id.'/george-harrison-a-blue-album')->assertNotFound();
+    $this->get('/nice_urls/records/'.$record->id.'/an-old-title')->assertOk();
+});
+
+it('retains the background component for partial record navigation without exposing restricted data', function (string $component) {
+    $owner = socialUser('partial_record', 'everyone');
+    $viewer = socialUser('partial_viewer');
+    $record = socialRecord($owner);
+    $headers = [
+        'X-Inertia' => 'true', 'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => $component, 'X-Inertia-Partial-Data' => 'recordOverlay',
+    ];
+
+    $this->actingAs($viewer)->get($record->url(false).'?mode=artist&q=blue', $headers)->assertOk()
+        ->assertJsonPath('component', $component)
+        ->assertJsonPath('props.recordOverlay.record.id', $record->id)
+        ->assertJsonMissingPath('props.recordOverlay.record.privateNote');
+    $owner->update(['visibility' => 'only_me']);
+    $this->get($record->url(false), $headers)->assertRedirect('/partial_record');
+})->with(['social/ProfilePage', 'social/HomePage', 'social/CollectionsPage', 'social/FeedPage']);
+
 it('preserves shelf browsing context in the record return link without allowing external destinations', function () {
     $owner = socialUser('browsingcollector', 'everyone');
     $record = socialRecord($owner);
@@ -227,6 +260,7 @@ it('enforces the full collection visibility matrix on profiles and record pages'
     }
     $profile = $this->get(route('profile', $owner->handle));
     $response = $this->get('/shelves/'.$record->id);
+    $readable = $this->get($record->url(false));
     $cover = $this->get('/shelves/'.$record->id.'/cover');
     $cupboard = $this->get('/owner?record='.$record->id);
     $elsewhere = $this->get('/collections?record='.$record->id);
@@ -234,6 +268,7 @@ it('enforces the full collection visibility matrix on profiles and record pages'
         $profile->assertOk()->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page
             ->where('person.name', 'Owner')->where('person.handle', 'owner')->where('visible', true)->has('records.data', 1));
         $response->assertOk()->assertSee('Private Test Album');
+        $readable->assertOk()->assertInertia(fn (Assert $page) => $page->where('recordOverlay.record.id', $record->id));
         $cover->assertOk()->assertHeader('Content-Type', 'image/jpeg');
         expect($profile->inertiaProps('records.data.0.cover'))->toBe('/shelves/'.$record->id.'/cover')
             ->and($response->inertiaProps('record.payload.cover'))->toBe($profile->inertiaProps('records.data.0.cover'));
@@ -247,13 +282,13 @@ it('enforces the full collection visibility matrix on profiles and record pages'
         $profile->assertDontSee('Private Test Album')->assertDontSee($owner->email);
         $cover->assertNotFound();
         if ($viewerKind === 'guest') {
-            foreach ([$profile, $response, $cupboard, $elsewhere] as $denied) {
+            foreach ([$profile, $response, $cupboard, $elsewhere, $readable] as $denied) {
                 $denied->assertRedirect('/login');
             }
         } else {
             $profile->assertOk()->assertInertia(fn (Assert $page) => $page
                 ->where('visible', false)->where('records', null)->where('friendsOnly', $visibility === 'friends'));
-            foreach ([$response, $cupboard, $elsewhere] as $denied) {
+            foreach ([$response, $cupboard, $elsewhere, $readable] as $denied) {
                 $denied->assertRedirect('/owner')->assertDontSee('Private Test Album');
             }
         }
@@ -405,7 +440,7 @@ it('shows only the recipient’s currently visible notifications and scopes read
     $this->actingAs($viewer)->get('/notifications')->assertRedirect('/feed?notifications=1');
     $this->get('/settings')->assertInertia(fn (Assert $page) => $page->where('notificationCount', 1));
     $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
-        ->assertOk()->assertJsonCount(1, 'notifications.data')->assertJsonPath('notifications.data.0.url', '/shelves/'.$record->id.'#comments')
+        ->assertOk()->assertJsonCount(1, 'notifications.data')->assertJsonPath('notifications.data.0.url', $record->url(false).'#comments')
         ->assertJsonPath('notifications.data.0.text', 'commented on your record.')
         ->assertJsonPath('notifications.data.0.record.title', 'Visible notification album')
         ->assertJsonPath('notifications.data.0.record.artist', 'Notification Artist')
@@ -420,7 +455,7 @@ it('shows only the recipient’s currently visible notifications and scopes read
     $owner->update(['visibility' => 'friends']);
     $this->post('/notifications/read', [], ['X-Requested-With' => 'XMLHttpRequest'])->assertNoContent();
     $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
-        ->assertJsonPath('notifications.data.0.url', '/shelves/'.$record->id.'#comments')
+        ->assertJsonPath('notifications.data.0.url', $record->url(false).'#comments')
         ->assertJsonPath('notifications.data.0.unread', false)->assertJsonPath('unreadCount', 0);
     expect(SocialNotification::query()->where('user_id', $viewer->id)->first()->read_at)->not->toBeNull()
         ->and(SocialNotification::query()->where('user_id', $owner->id)->first()->read_at)->toBeNull();

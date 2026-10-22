@@ -46,6 +46,20 @@ class SocialController extends Controller
         return Inertia::render('social/RecordPage', SocialData::record($request, $record));
     }
 
+    public function profileRecord(Request $request, User $user, CollectionRecord $record): InertiaResponse
+    {
+        abort_unless($record->user_id === $user->id, 404);
+
+        return match ($request->header('X-Inertia-Partial-Component')) {
+            'social/HomePage' => app(HomeController::class)->intro(),
+            'social/CollectionsPage' => app(HomeController::class)->collections(),
+            'social/FeedPage' => $request->user()?->hasVerifiedEmail()
+                ? $this->feed($request)
+                : $this->profile($request, $user),
+            default => $this->profile($request, $user),
+        };
+    }
+
     public function feed(Request $request): InertiaResponse
     {
         $user = $request->user();
@@ -105,7 +119,7 @@ class SocialController extends Controller
         $data = $request->validate(['action' => ['required', 'in:request,accept,decline,cancel,unfriend']]);
         $updateFriendship->execute($viewer, $user, $data['action']);
 
-        return back()->with('status', 'Friendship updated.');
+        return back();
     }
 
     public function appreciate(Request $request, CollectionRecord $record, UpdateRecordAppreciationAction $updateAppreciation): RedirectResponse
@@ -164,7 +178,7 @@ class SocialController extends Controller
                     'cover' => $notification->record->payload['cover'],
                 ] : null,
                 'url' => $notification->record
-                    ? route('shelf.record', $notification->record, false).($notification->kind === 'comment' ? '#comments' : '')
+                    ? $notification->record->url(false).($notification->kind === 'comment' ? '#comments' : '')
                     : route('friends', absolute: false),
                 'unread' => $notification->read_at === null,
                 'canRespond' => $notification->kind === 'friend_request' && $pendingSenders->contains($notification->actor_id),

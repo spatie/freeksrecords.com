@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\DiscogsRecordMapper;
+use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,15 @@ class CollectionRecord extends Model
     protected $guarded = [];
 
     protected $hidden = ['private_note'];
+
+    public function url(bool $absolute = true): string
+    {
+        return route('profile.record', [
+            'user' => $this->user->handle,
+            'record' => $this->id,
+            'slug' => app(RecordCollection::class)->slug($this->payload),
+        ], $absolute);
+    }
 
     /** @return list<string> */
     public function formats(): array

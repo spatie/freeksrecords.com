@@ -19,7 +19,7 @@ it('sends exactly the previous seven days in original addition order and never r
     Mail::assertSent(FriendsWeeklyDigest::class, function (FriendsWeeklyDigest $mail) use ($viewer) {
         expect($mail->records->pluck('payload.displayTitle')->all())->toBe(['Window end minus one', 'Window start']);
         $html = $mail->render();
-        expect($html)->toContain('Window start', '/shelves/', '/settings', 'class="inner-body"', 'background-color:', 'See friends’ additions')
+        expect($html)->toContain('Window start', '/owner/records/', '/settings', 'class="inner-body"', 'background-color:', 'See friends’ additions')
             ->not->toContain('Initial import', 'Before window', 'Next week', 'Owner private note');
 
         return $mail->hasTo($viewer->email);
@@ -40,7 +40,7 @@ it('delivers styled and plain text digests without interpreting collector metada
     expect(html_entity_decode(strip_tags($message->getHtmlBody())))->toContain($owner->name, $record->payload['displayTitle']);
     expect($message->getHtmlBody())->toContain('class="inner-body"', '#f5f1e7', '#a64028')
         ->not->toContain('<script>', '<b>Collector</b>', 'href="https://untrusted.example"', 'Never include this private note');
-    expect($message->getTextBody())->toContain('This week on your friends’ shelves · Plaat Club', $owner->name, $record->payload['displayTitle'], '/shelves/'.$record->id, '/settings')
+    expect($message->getTextBody())->toContain('This week on your friends’ shelves · Plaat Club', $owner->name, $record->payload['displayTitle'], $record->url(), '/settings')
         ->not->toContain('<p', '<table', 'Never include this private note');
 });
 

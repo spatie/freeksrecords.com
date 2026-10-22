@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\RecordShareImage;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 it('renders crawler-visible homepage and public collection previews with canonical urls', function () {
@@ -9,7 +11,7 @@ it('renders crawler-visible homepage and public collection previews with canonic
     $this->get('/')
         ->assertOk()
         ->assertSee('property="og:title" content="Plaat Club"', false)
-        ->assertSee('property="og:image" content="'.url('/share/site.jpg').'"', false)
+        ->assertSee('property="og:image" content="'.url('/share/site.jpg?v=2').'"', false)
         ->assertSee('name="twitter:card" content="summary_large_image"', false);
 
     $this->get('/people/previewcollector?mode=artist')
@@ -49,7 +51,7 @@ it('uses generic metadata for private collections even for authorized viewers', 
         if ($viewer) {
             $response->assertOk();
             expect($response->inertiaProps('socialPreview.title'))->toBe('Plaat Club')
-                ->and($response->inertiaProps('socialPreview.image'))->toBe(url('/share/site.jpg'));
+                ->and($response->inertiaProps('socialPreview.image'))->toBe(url('/share/site.jpg?v=2'));
         } else {
             $response->assertRedirect('/login')->assertDontSee('Never publish this album');
         }
@@ -60,6 +62,32 @@ it('uses generic metadata for private collections even for authorized viewers', 
     $response = $this->actingAs($owner)->get('/shelves/'.$record->id)->assertOk();
     expect($response->inertiaProps('socialPreview.title'))->toBe('Plaat Club');
 })->with(['only_me', 'friends']);
+
+it('serves the dedicated homepage artwork without reusing the previous cached image', function () {
+    $oldKey = 'social-preview:v3:'.hash('sha256', json_encode(['home'], JSON_THROW_ON_ERROR));
+    Cache::put($oldKey, base64_encode('old homepage artwork'), now()->addDay());
+
+    $expected = app(RecordShareImage::class)->renderHome();
+
+    foreach (['/share/site.jpg?v=2', '/share/site.jpg'] as $url) {
+        $response = $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+
+        expect($response->getContent())->toBe($expected);
+    }
+});
+
+it('preserves personalized artwork for empty public collections', function () {
+    $owner = socialUser('emptypreview', 'everyone');
+    $image = app(RecordShareImage::class);
+    $expected = $image->renderClub('Emptypreview’s collection', '@emptypreview / Plaat Club');
+
+    $response = $this->get('/share/collections/emptypreview.jpg')->assertOk();
+
+    expect($response->getContent())->toBe($expected)->not->toBe($image->renderHome());
+
+    $owner->update(['visibility' => 'only_me']);
+    $this->actingAs($owner)->get('/share/collections/emptypreview.jpg')->assertNotFound();
+});
 
 it('serves real jpeg previews without permanently publishing collection membership', function () {
     $owner = socialUser('imagepreview', 'everyone');

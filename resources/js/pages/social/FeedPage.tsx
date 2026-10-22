@@ -120,7 +120,7 @@ export function FeedPage({ importRecords, records }: FeedProps) {
                                     <Link className="button" href="/friends">
                                         Find friends
                                     </Link>
-                                    <Link href="/collections">
+                                    <Link href="/friends">
                                         Browse collections
                                     </Link>
                                 </div>

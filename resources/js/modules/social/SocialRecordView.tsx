@@ -35,7 +35,7 @@ export function SocialRecordView({
                 record={{
                     ...payload,
                     trackTitles: payload.tracks.map((track) => track.title),
-                    shareUrl: `/shelves/${record.id}`,
+                    shareUrl: record.url,
                 }}
                 details={payload}
                 onReady={onReady}

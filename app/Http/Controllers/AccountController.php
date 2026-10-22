@@ -62,7 +62,7 @@ class AccountController extends Controller
     {
         $request->fulfill();
 
-        return redirect('/feed')->with('status', 'Email verified. Welcome to Plaat Club.');
+        return redirect()->intended('/feed')->with('status', 'Email verified. Welcome to Plaat Club.');
     }
 
     public function resend(Request $request): RedirectResponse

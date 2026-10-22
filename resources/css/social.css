@@ -273,8 +273,14 @@
         background: var(--acid);
         color: var(--ink);
         font-size: 14px;
-        padding: 2px 6px;
-        border-radius: 20px;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        line-height: 1;
+        border-radius: 50%;
+    }
+    .notification-count:not([hidden]) {
+        display: grid;
     }
     .account-popover,
     .notifications-popover {
@@ -356,6 +362,9 @@
     }
     .notifications-content > .text-button {
         margin: 16px 20px;
+    }
+    .notifications-popover :is(a, .text-button) {
+        text-decoration: none;
     }
     .notification-item {
         border-top: 1px solid #20201633;
@@ -927,6 +936,157 @@
     .person-row .text-button {
         font-size: 15px;
         min-height: 44px;
+    }
+    .friends-section {
+        margin-bottom: 48px;
+    }
+    .friends-section > h2 {
+        font-size: clamp(36px, 5vw, 60px);
+    }
+    .unfriend-dialog {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: var(--red);
+        color: var(--ink);
+    }
+    :scope:has(.unfriend-dialog[open]) {
+        overflow: clip;
+    }
+    .unfriend-dialog::backdrop {
+        background: var(--red);
+    }
+    .unfriend-poster {
+        position: relative;
+        isolation: isolate;
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+        align-items: center;
+        gap: 5vw;
+        min-height: 100%;
+        padding: 72px 6vw 48px;
+        overflow: clip;
+        background: linear-gradient(155deg, var(--red) 0 58%, var(--lilac) 58%);
+    }
+    .unfriend-close {
+        position: absolute;
+        top: 20px;
+        right: 24px;
+        width: 48px;
+        height: 48px;
+        border: 1px solid;
+        border-radius: 50%;
+        background: var(--cream);
+        font-size: 30px;
+        line-height: 1;
+    }
+    .unfriend-intro h2 {
+        position: relative;
+        z-index: 1;
+        margin: 0;
+        font-size: clamp(88px, 12vw, 190px);
+        line-height: 0.82;
+        text-transform: uppercase;
+        color: var(--cream);
+        text-shadow: 4px 5px 0 var(--ink);
+    }
+    .unfriend-vinyl {
+        position: relative;
+        width: min(25vw, 300px);
+        aspect-ratio: 1;
+        margin: -64px 0 0 42%;
+        transform: rotate(-18deg);
+    }
+    .unfriend-vinyl span {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background:
+            radial-gradient(
+                circle,
+                var(--ink) 0 2%,
+                var(--lilac) 2% 19%,
+                transparent 19%
+            ),
+            repeating-radial-gradient(
+                circle,
+                var(--ink) 0 4px,
+                #444439 5px,
+                var(--ink) 6px 9px
+            );
+        clip-path: polygon(
+            0 0,
+            54% 0,
+            43% 33%,
+            56% 50%,
+            42% 67%,
+            52% 100%,
+            0 100%
+        );
+        transform: translate(-8px, -4px);
+    }
+    .unfriend-vinyl span + span {
+        clip-path: polygon(
+            54% 0,
+            100% 0,
+            100% 100%,
+            52% 100%,
+            42% 67%,
+            56% 50%,
+            43% 33%
+        );
+        transform: translate(10px, 8px) rotate(8deg);
+    }
+    .unfriend-sheet {
+        min-width: 0;
+        padding: clamp(24px, 3vw, 44px);
+        background: var(--cream);
+        box-shadow: 8px 10px 0 var(--ink);
+        overflow-wrap: anywhere;
+    }
+    .unfriend-sheet h3 {
+        margin: 0 0 24px;
+        font-size: clamp(36px, 4vw, 56px);
+        line-height: 1;
+    }
+    .unfriend-sheet .button {
+        width: 100%;
+        white-space: normal;
+        text-align: center;
+    }
+    .unfriend-stay {
+        background: var(--lilac);
+        color: var(--ink);
+    }
+    .unfriend-confirm {
+        background: transparent;
+        color: var(--ink);
+    }
+    @media (max-width: 700px) {
+        .unfriend-poster {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+            padding: 80px 24px 36px;
+        }
+        .unfriend-intro h2 {
+            font-size: clamp(76px, 20vw, 130px);
+        }
+        .unfriend-vinyl {
+            width: 150px;
+            margin: -105px 0 0 auto;
+            z-index: -1;
+        }
+        .unfriend-sheet {
+            box-shadow: 5px 7px 0 var(--ink);
+        }
     }
     .badge {
         border: 1px solid;

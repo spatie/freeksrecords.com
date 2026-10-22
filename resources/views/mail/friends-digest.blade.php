@@ -6,7 +6,7 @@ A few new records from your listening circle, newest first.
 @foreach($records as $record)
 <x-mail::panel>
 <p class="record-owner">{{ $record->user->name }} added</p>
-<h2><a href="{{ route('shelf.record', $record) }}">{{ $record->payload['displayTitle'] }}</a></h2>
+<h2><a href="{{ $record->url() }}">{{ $record->payload['displayTitle'] }}</a></h2>
 <p class="record-meta">{{ $record->payload['artist'] }}@if($record->formats()) · {{ implode(' / ', $record->formats()) }}@endif · {{ $record->added_at->timezone('Europe/Brussels')->format('j M') }}</p>
 </x-mail::panel>
 @endforeach

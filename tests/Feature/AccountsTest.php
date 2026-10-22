@@ -82,11 +82,11 @@ it('renders account emails with a shared inline layout and a working action link
         ->not->toContain('<link rel="stylesheet"');
 })->with([['verify', '/verify-email/'], ['reset', '/reset-password/preview-token']]);
 
-it('registers a private account, verifies the inbox, and authenticates securely', function () {
+it('registers a friends-only account, verifies the inbox, and authenticates securely', function () {
     Notification::fake();
     $this->post('/register', ['name' => 'New Collector', 'handle' => 'New_Collector', 'email' => 'NEW@example.test', 'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password', 'visibility' => 'everyone', 'email_verified_at' => now(), 'legacy_owner' => true, 'google_id' => 'forged-google-identity'])->assertRedirect('/verify-email');
     $user = User::query()->where('email', 'new@example.test')->firstOrFail();
-    expect($user->handle)->toBe('new_collector')->and($user->visibility)->toBe('only_me')->and($user->legacy_owner)->toBeFalse()->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()->and($user->google_id)->toBeNull();
+    expect($user->handle)->toBe('new_collector')->and($user->visibility)->toBe('friends')->and($user->legacy_owner)->toBeFalse()->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()->and($user->google_id)->toBeNull();
     expect(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
     Notification::assertSentTo($user, VerifyEmail::class);
     $this->get('/feed')->assertRedirect('/verify-email');
@@ -114,7 +114,7 @@ it('registers with only an email and password and lets the username change in se
 
     $user = User::query()->where('email', 'new.collector@example.test')->firstOrFail();
     expect($user->name)->toBe('New Collector')->and($user->handle)->toBe('new_collector')
-        ->and($user->visibility)->toBe('only_me')->and($user->legacy_owner)->toBeFalse()
+        ->and($user->visibility)->toBe('friends')->and($user->legacy_owner)->toBeFalse()
         ->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()
         ->and(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
     $this->assertAuthenticatedAs($user);

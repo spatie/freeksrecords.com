@@ -21,7 +21,7 @@ class EnsureCollectionAccess
             return redirect()->guest(route('login'));
         }
 
-        $record = $request->routeIs('shelf.record') ? $request->route('record') : null;
+        $record = $request->route('record');
         $id = $request->query('record');
         if (! $record instanceof CollectionRecord && is_string($id) && ctype_digit($id)) {
             $record = CollectionRecord::query()->findOrFail($id);

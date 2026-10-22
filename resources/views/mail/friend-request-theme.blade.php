@@ -23,14 +23,14 @@
 }
 .request-poster {
     background-color: #d9ed92;
-    padding: 28px 32px 32px;
+    padding: 24px 32px 28px;
 }
 .request-eyebrow {
     color: #292a22;
     font-size: 11px;
     font-weight: bold;
     letter-spacing: 2px;
-    margin: 0 0 20px;
+    margin: 0 0 12px;
 }
 .request-good,
 .request-company {
@@ -45,7 +45,7 @@
 .request-vinyl {
     display: block;
     height: auto;
-    width: 148px;
+    width: 104px;
 }
 .request-copy {
     background-color: #fff9e8;
@@ -68,7 +68,7 @@
     display: inline-block;
     font-size: 16px;
     font-weight: bold;
-    text-decoration: underline;
+    text-decoration: none;
 }
 .request-decline {
     color: #a23328;

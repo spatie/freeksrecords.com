@@ -1,4 +1,5 @@
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { Heart } from 'lucide-react';
 
 import { FieldError } from '@/modules/social/FieldError';
 import { Pagination } from '@/modules/social/Pagination';
@@ -111,7 +112,14 @@ export function RecordSocial({
                 </p>
                 {user ? (
                     <button
-                        className={`button ${appreciated ? 'secondary' : ''}`}
+                        className="button appreciation-toggle"
+                        type="button"
+                        aria-pressed={appreciated}
+                        aria-label={
+                            appreciated
+                                ? 'Appreciated — activate to undo appreciation'
+                                : 'Appreciate this record'
+                        }
                         disabled={action.processing}
                         onClick={() =>
                             appreciated
@@ -125,9 +133,8 @@ export function RecordSocial({
                                   )
                         }
                     >
-                        {appreciated
-                            ? 'Appreciated · Undo'
-                            : 'Appreciate this record'}
+                        <Heart size={16} aria-hidden="true" />
+                        {appreciated ? 'Appreciated' : 'Appreciate'}
                     </button>
                 ) : (
                     <Link href="/login">Sign in to appreciate or comment</Link>

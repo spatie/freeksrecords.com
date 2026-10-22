@@ -37,6 +37,24 @@ beforeEach(function () {
     ))->setHttpClient($client));
 });
 
+it('turns an email invitation into a pending request after Google registration', function () {
+    $sender = socialUser('invitation_sender');
+    $this->actingAs($sender)->post('/friends/invite', ['email' => 'collector@example.test'])->assertRedirect();
+    $this->post('/logout');
+
+    $this->get(route('google.redirect'));
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'test-code']))->assertRedirect();
+
+    $recipient = User::query()->where('email', 'collector@example.test')->firstOrFail();
+    $this->assertDatabaseHas('friendships', [
+        'user_low' => min($sender->id, $recipient->id),
+        'user_high' => max($sender->id, $recipient->id),
+        'requested_by' => $sender->id,
+        'accepted_at' => null,
+    ]);
+    $this->assertDatabaseMissing('invitations', ['fulfilled_at' => null]);
+});
+
 it('offers Google only when configured and starts a stateful PKCE flow with basic scopes', function () {
     $this->get('/login')->assertOk()->assertInertia(fn (Assert $page) => $page->where('googleEnabled', true));
     $this->get('/register')->assertOk()->assertInertia(fn (Assert $page) => $page->where('googleEnabled', true));
@@ -55,7 +73,7 @@ it('offers Google only when configured and starts a stateful PKCE flow with basi
     $this->get(route('google.redirect'))->assertNotFound();
 });
 
-it('creates a private verified Google account and sends it straight to importing records without storing tokens', function () {
+it('creates a friends-only verified Google account and sends it straight to importing records without storing tokens', function () {
     $this->googleProfile['email'] = ' COLLECTOR@example.test ';
     $this->get(route('google.redirect'));
     $sessionId = session()->getId();
@@ -66,7 +84,7 @@ it('creates a private verified Google account and sends it straight to importing
     $this->assertAuthenticatedAs($user);
     expect($user->email)->toBe('collector@example.test')->and($user->handle)->toBe('collector')
         ->and($user->name)->toBe('A New Collector')->and($user->hasVerifiedEmail())->toBeTrue()
-        ->and($user->visibility)->toBe('only_me')->and($user->digest_enabled)->toBeTrue()
+        ->and($user->visibility)->toBe('friends')->and($user->digest_enabled)->toBeTrue()
         ->and($user->legacy_owner)->toBeFalse()->and($user->collection_imported_at)->toBeNull()
         ->and($user->google_avatar_url)->toBe($this->googleProfile['picture'])
         ->and(session()->getId())->not->toBe($sessionId)
@@ -93,7 +111,7 @@ it('lets a deleted legacy owner start fresh through Google without restoring the
     $this->assertAuthenticatedAs($user);
     expect($user->id)->not->toBe($previous->id)
         ->and($user->legacy_owner)->toBeFalse()
-        ->and($user->visibility)->toBe('only_me')
+        ->and($user->visibility)->toBe('friends')
         ->and($user->collection_imported_at)->toBeNull()
         ->and($user->discogs_token)->toBeNull();
     $this->assertDatabaseCount('collection_records', 0);

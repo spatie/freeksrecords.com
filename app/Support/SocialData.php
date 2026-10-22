@@ -42,6 +42,7 @@ class SocialData
             'collectionUrl' => $collectionUrl,
             'record' => [
                 'id' => $record->id,
+                'url' => $record->url(false),
                 'owner' => self::person($record->user),
                 'payload' => $payload,
                 'formats' => $record->formats(),
@@ -90,7 +91,7 @@ class SocialData
         return [
             'cover' => $record->payload['cover'],
             'title' => $record->payload['artist'].' — '.$record->payload['displayTitle'],
-            'url' => route('shelf.record', $record, false),
+            'url' => $record->url(false),
         ];
     }
 
@@ -103,7 +104,7 @@ class SocialData
         return array_values(CollectionRecord::visibleTo(null)
             ->whereNotNull('payload->cover')->where('payload->cover', '!=', '')
             ->whereNotIn('payload->cover', $excludeCovers)
-            ->inRandomOrder()->limit($limit)->get(['id', 'payload'])
+            ->inRandomOrder()->limit($limit)->with('user')->get(['id', 'user_id', 'payload'])
             ->unique('payload.cover')->map(self::artwork(...))->all());
     }
 

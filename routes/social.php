@@ -7,6 +7,7 @@ use App\Http\Controllers\DiscogsConnectionController;
 use App\Http\Controllers\FriendRequestResponseController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InvitationsController;
 use App\Http\Controllers\RecordCoverController;
 use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
@@ -31,6 +32,7 @@ Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->grou
 
     Route::get('/community', [HomeController::class, 'intro'])->name('community');
     Route::get('/collections', [HomeController::class, 'collections'])->name('collections');
+    Route::get('/invitations/{token}', [InvitationsController::class, 'show'])->name('invitations.show');
     Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');
     Route::get('/shelves/{record}/cover', RecordCoverController::class)->whereNumber('record')->name('shelf.cover');
@@ -65,6 +67,8 @@ Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->grou
 
         Route::middleware('verified')->group(function () {
             Route::get('/feed', [SocialController::class, 'feed'])->name('feed');
+            Route::get('/friends/invite', [InvitationsController::class, 'create'])->name('invitations.create');
+            Route::post('/friends/invite', [InvitationsController::class, 'store'])->middleware('throttle:6,1')->name('invitations.store');
             Route::get('/friends', [SocialController::class, 'friends'])->name('friends');
             Route::post('/friends/{user}', [SocialController::class, 'friend'])->middleware('throttle:30,1')->name('friend.action');
             Route::get('/settings', fn () => Inertia::render('social/SettingsPage'))->name('settings');
@@ -88,5 +92,7 @@ Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->grou
         });
     });
 
+    Route::get('/{user:handle}/records/{record}/{slug?}', [SocialController::class, 'profileRecord'])
+        ->where('user', '[a-z0-9_]{3,30}')->whereNumber('record')->scopeBindings()->name('profile.record');
     Route::get('/{user:handle}', [SocialController::class, 'profile'])->where('user', '[a-z0-9_]{3,30}')->name('profile');
 });

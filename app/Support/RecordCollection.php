@@ -93,7 +93,7 @@ class RecordCollection
         ], $copies);
 
         return array_map(
-            fn (array $record, CollectionRecord $copy): array => $this->summary($record, route('shelf.record', $copy, false)),
+            fn (array $record, CollectionRecord $copy): array => $this->summary($record, $copy->url(false)),
             $this->dates->enrich($records), $copies,
         );
     }

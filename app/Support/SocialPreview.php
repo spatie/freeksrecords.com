@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class SocialPreview
 {
+    public const HOME_IMAGE_VERSION = 2;
+
     /** @return array<string, string> */
     public function metadata(Request $request): array
     {
@@ -15,19 +17,23 @@ class SocialPreview
             'title' => 'Plaat Club',
             'description' => 'Good taste is contagious. Share your record collection, discover your friends’ finds, and keep the conversation spinning.',
             'url' => route('home'),
-            'image' => route('socialPreview.home'),
+            'image' => route('socialPreview.home', ['v' => self::HOME_IMAGE_VERSION]),
             'imageAlt' => 'Plaat Club. Good taste is contagious.',
             'type' => 'website',
         ];
 
         $record = $request->route('record');
+        $id = $request->query('record');
+        if (! $record instanceof CollectionRecord && is_string($id) && ctype_digit($id)) {
+            $record = CollectionRecord::query()->find($id);
+        }
         if ($record instanceof CollectionRecord && $record->user->canViewCollection(null)) {
             $title = "{$record->payload['displayTitle']} by {$record->payload['artist']}";
 
             return array_replace($preview, [
                 'title' => $title,
                 'description' => "{$title}, from {$record->user->name}’s collection on Plaat Club.",
-                'url' => route('shelf.record', $record),
+                'url' => $record->url(),
                 'image' => route('socialPreview.record', $record),
                 'imageAlt' => $title,
                 'type' => 'music.album',

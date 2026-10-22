@@ -12,7 +12,7 @@ it('welcomes visitors with linked public artwork and private response headers', 
 
     $response->assertOk()->assertInertia(fn (Assert $page) => $page->component('social/HomePage')
         ->where('artwork.0.cover', $record->payload['cover'])
-        ->where('artwork.0.url', '/shelves/'.$record->id)
+        ->where('artwork.0.url', $record->url(false))
         ->missing('collectors'));
 
     expect(route('home'))->toBe(url('/'))
@@ -48,12 +48,12 @@ it('uses only live public records for linked artwork and never falls back to the
     foreach ($artwork as $item) {
         $record = $records->firstWhere('payload.cover', $item['cover']);
         expect($record)->not->toBeNull()
-            ->and($item['url'])->toBe('/shelves/'.$record->id)
+            ->and($item['url'])->toBe($record->url(false))
             ->and($item['title'])->toBe($record->payload['artist'].' — '.$record->payload['displayTitle']);
     }
     $link = $artwork->first()['url'];
     $this->get($link)->assertOk();
-    $selected = $records->firstWhere('id', (int) basename($link));
+    $selected = $records->first(fn ($record) => $record->url(false) === $link);
     $this->get($path.'?record='.$selected->id)->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('recordOverlay.record.id', $selected->id)
         ->where('recordOverlay.record.payload.displayTitle', $selected->payload['displayTitle'])
@@ -76,7 +76,7 @@ it('previews nonempty public collections with their latest additions first', fun
         foreach ([3, 7, 1, 9, 5, 7, 2, 4] as $index => $day) {
             $records[] = socialRecord($owner, date: "2026-10-{$day} 12:00:00", instance: $index + 1);
         }
-        $expected[$handle] = array_map(fn ($index) => '/shelves/'.$records[$index]->id, [3, 5, 1, 4, 7, 0]);
+        $expected[$handle] = array_map(fn ($index) => $records[$index]->url(false), [3, 5, 1, 4, 7, 0]);
     }
 
     $collectors = $this->get('/collections')->assertOk()->inertiaProps('collectors.data');

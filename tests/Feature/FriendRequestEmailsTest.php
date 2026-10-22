@@ -12,7 +12,7 @@ it('emails one verified recipient per new friend request with signed accept and 
     $sender = socialUser('sender');
     $recipient = socialUser('recipient');
     $sender->update(['name' => '<script>Not markup</script>']);
-    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'request'])->assertRedirect();
+    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'request'])->assertRedirect()->assertSessionMissing('status');
     $this->post('/friends/'.$recipient->id, ['action' => 'request'])->assertRedirect();
     Notification::assertSentToTimes($recipient, FriendRequest::class, 1);
     Notification::assertNotSentTo($sender, FriendRequest::class);
@@ -22,6 +22,10 @@ it('emails one verified recipient per new friend request with signed accept and 
         $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
         expect($html)->toContain('Accept friend request', 'Decline friend request', 'class="inner-body"', '&lt;script&gt;Not markup&lt;/script&gt;')
             ->not->toContain('<script>Not markup</script>');
+        $document = new DOMDocument;
+        @$document->loadHTML($html);
+        $acceptButton = (new DOMXPath($document))->query('//a[@class="request-accept"]')->item(0);
+        expect($acceptButton?->attributes?->getNamedItem('style')?->nodeValue)->toContain('text-decoration: none');
         expect($text)->toContain('Only me stay private', 'expire in seven days')
             ->not->toContain('<table', '<style');
         foreach ($message->viewData['links'] as $action => $url) {

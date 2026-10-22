@@ -38,7 +38,7 @@ export function RecordSleeve({
                     type={onSelect ? 'button' : undefined}
                     href={onSelect ? undefined : record.shareUrl}
                     onClick={(event) => onSelect?.(event.currentTarget)}
-                    aria-label={`${record.shareUrl.startsWith('/shelves/') ? 'View' : 'Take out'} ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
+                    aria-label={`${onSelect ? 'View' : 'Take out'} ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
                 >
                     <span className="catalog-record-art">
                         <img

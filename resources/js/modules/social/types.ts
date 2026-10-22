@@ -102,6 +102,7 @@ export type RecordProps = {
     collectionUrl: string;
     record: {
         id: number;
+        url: string;
         owner: Person;
         payload: CollectionRecord;
         formats: string[];

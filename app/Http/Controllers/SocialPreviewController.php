@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CollectionRecord;
 use App\Models\User;
 use App\Support\RecordShareImage;
+use App\Support\SocialPreview;
 use Closure;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
@@ -14,7 +15,7 @@ class SocialPreviewController extends Controller
 {
     public function home(RecordShareImage $image): Response
     {
-        return $this->image(['home'], fn () => $image->renderClub('GOOD TASTE.', 'is contagious.'));
+        return $this->image(['home', SocialPreview::HOME_IMAGE_VERSION], fn () => $image->renderHome());
     }
 
     public function collection(User $user, RecordShareImage $image): Response

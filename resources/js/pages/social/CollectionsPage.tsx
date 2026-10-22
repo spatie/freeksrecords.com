@@ -25,8 +25,9 @@ export function CollectionsPage({ collectors }: CollectionsProps) {
                     <section className="empty panel">
                         <h2>No public collections yet</h2>
                         <p>
-                            Collections are private by default. They’ll appear
-                            here when their owners choose Everyone.
+                            Collections are shared with friends by default.
+                            They’ll appear here when their owners choose
+                            Everyone.
                         </p>
                         <Link href={user ? '/settings' : '/register'}>
                             {user

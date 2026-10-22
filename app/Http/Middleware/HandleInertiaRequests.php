@@ -45,6 +45,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => ['status' => fn () => $request->session()->get('status')],
             'demoUsers' => fn () => $this->demoUsers($request),
             'recordOverlay' => function () use ($request): ?array {
+                if ($request->routeIs('profile.record') && ($record = $request->route('record')) instanceof CollectionRecord) {
+                    return SocialData::record($request, $record);
+                }
                 $id = $request->query('record');
                 if ($id === null) {
                     return null;

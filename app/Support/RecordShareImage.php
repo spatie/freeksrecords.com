@@ -10,6 +10,30 @@ use RuntimeException;
 
 class RecordShareImage
 {
+    public function renderHome(): string
+    {
+        $image = imagecreatetruecolor(1200, 630);
+        $red = $this->color($image, 245, 68, 42);
+        $ink = $this->color($image, 30, 30, 21);
+        $acid = $this->color($image, 219, 238, 141);
+        $display = public_path('fonts/barlow-condensed-bold.ttf');
+
+        imagefill($image, 0, 0, $red);
+        imagefilledrectangle($image, 0, 426, 1199, 629, $acid);
+
+        imagettftext($image, 170, 0, 70, 218, $ink, $display, 'GOOD TASTE.');
+        imagettftext($image, 100, 0, 70, 357, $ink, public_path('fonts/instrument-serif-italic.ttf'), 'is contagious.');
+        imagettftext($image, 165, 0, 62, 594, $ink, $display, 'Plaat Club.');
+
+        imagefilledellipse($image, 1058, 529, 154, 154, $ink);
+        imageellipse($image, 1058, 529, 128, 128, $acid);
+        imageellipse($image, 1058, 529, 108, 108, $acid);
+        imagefilledellipse($image, 1058, 529, 50, 50, $red);
+        imagefilledellipse($image, 1058, 529, 8, 8, $ink);
+
+        return $this->toJpeg($image);
+    }
+
     /** @param list<array<string, mixed>> $records */
     public function renderClub(string $title, string $subtitle, array $records = []): string
     {

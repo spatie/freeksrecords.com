@@ -10,8 +10,8 @@
 <p class="request-eyebrow">YOUR LISTENING CIRCLE · SIDE A</p>
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td valign="middle"><p class="request-good">GOOD</p></td>
-<td class="request-vinyl-cell" align="right" valign="middle" width="148"><img class="request-vinyl" src="{{ asset('images/mail-vinyl.png') }}" width="148" height="148" alt="" /></td>
+<td valign="bottom"><p class="request-good">GOOD</p></td>
+<td class="request-vinyl-cell" align="right" valign="middle" width="104"><img class="request-vinyl" src="{{ asset('images/mail-vinyl.png') }}" width="104" height="104" alt="" /></td>
 </tr>
 </table>
 <h1 class="request-company">COMPANY.</h1>
