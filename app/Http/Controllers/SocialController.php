@@ -63,7 +63,7 @@ class SocialController extends Controller
     public function feed(Request $request): InertiaResponse
     {
         $user = $request->user();
-        $records = CollectionRecord::friendActivity($user, includeLatestRecords: true)->with('user')->paginate(24);
+        $records = CollectionRecord::friendActivity($user, includeLatestRecords: true)->with('user')->paginate(30);
         $copies = array_values($records->items());
         $feedRecords = array_map(
             fn (array $summary, CollectionRecord $record): array => [

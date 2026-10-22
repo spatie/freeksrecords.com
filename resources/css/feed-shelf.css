@@ -124,7 +124,73 @@
         text-decoration: underline;
         text-underline-offset: 4px;
     }
+    .feed-main > .pagination {
+        max-width: 1200px;
+        margin: 36px auto 12px;
+        gap: 28px;
+        padding-inline: 8px;
+    }
+    .feed-main > .pagination a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 14px 24px;
+        border: 2px solid var(--ink);
+        background: var(--cream);
+        box-shadow: 6px 6px 0 var(--ink);
+        font:
+            700 clamp(26px, 4vw, 40px)/1 'Club Display',
+            sans-serif;
+        text-transform: uppercase;
+        text-decoration: none;
+        transform: rotate(2deg);
+        transition:
+            transform 180ms,
+            box-shadow 180ms,
+            background 180ms;
+    }
+    .feed-main > .pagination a[rel='prev']::before {
+        content: '←' / '';
+    }
+    .feed-main > .pagination a[rel='next'] {
+        min-width: 220px;
+        margin-left: auto;
+        background: var(--acid);
+        transform: rotate(-3deg);
+    }
+    .feed-main > .pagination a[rel='next']::after {
+        content: '→' / '';
+        font:
+            400 1.5em/1 'Club Sans',
+            sans-serif;
+    }
+    .feed-main > .pagination a:hover,
+    .feed-main > .pagination a:focus-visible {
+        background: var(--lilac);
+        box-shadow: 9px 9px 0 var(--ink);
+        transform: translate(-3px, -3px) rotate(0);
+    }
+    .feed-main > .pagination a:active {
+        box-shadow: 0 0 0 var(--ink);
+        transform: translate(6px, 6px) rotate(0);
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .feed-main > .pagination a {
+            transition: none;
+        }
+    }
     @media (max-width: 600px) {
+        .feed-main > .pagination {
+            gap: 20px;
+        }
+        .feed-main > .pagination a {
+            gap: 14px;
+            padding: 12px 16px;
+        }
+        .feed-main > .pagination a[rel='next'] {
+            min-width: 140px;
+        }
         .feed-shelf-heading {
             flex-wrap: wrap;
             gap: 8px 16px;

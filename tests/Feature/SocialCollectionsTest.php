@@ -14,7 +14,7 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
     $second = socialUser('secondfriend', 'everyone');
     socialFriends($viewer, $first);
     socialFriends($viewer, $second);
-    foreach (range(1, 24) as $instance) {
+    foreach (range(1, 30) as $instance) {
         socialRecord($first, 'Earlier record '.$instance, date: '2026-10-01 12:00:00', instance: $instance);
     }
     $older = socialRecord($first, 'Older shared copy', date: '2026-10-15 12:00:00', instance: 500);
@@ -39,7 +39,7 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
         ->assertDontSee('owner-token-secret')->assertDontSee($second->email)
         ->assertDontSee('</script><script>alert', false);
     $summaries = $response->inertiaProps('records.data');
-    expect($summaries)->toHaveCount(24)
+    expect($summaries)->toHaveCount(30)
         ->and(array_column(array_slice($summaries, 0, 2), 'instanceId'))->toBe([500, 500])
         ->and(array_column(array_slice($summaries, 0, 2), 'shareUrl'))->toBe([$newer->url(false), $older->url(false)])
         ->and($summaries[0]['owner'])->toBe(['name' => $second->name, 'profileUrl' => '/secondfriend', 'avatarUrl' => 'https://example.test/avatar.jpg'])

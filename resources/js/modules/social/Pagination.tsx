@@ -11,10 +11,11 @@ export function Pagination({
 }) {
     if (!prev_page_url && !next_page_url) return null;
     return (
-        <nav className="actions spaced" aria-label="Pagination">
+        <nav className="pagination actions spaced" aria-label="Pagination">
             {prev_page_url && (
                 <Link
                     href={prev_page_url}
+                    rel="prev"
                     preserveScroll
                     preserveState={Boolean(only)}
                     only={only}
@@ -25,6 +26,7 @@ export function Pagination({
             {next_page_url && (
                 <Link
                     href={next_page_url}
+                    rel="next"
                     preserveScroll
                     preserveState={Boolean(only)}
                     only={only}
