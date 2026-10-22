@@ -31,7 +31,7 @@
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 20px;
-        padding: 20px 0 24px;
+        padding: 20px 24px 24px;
         border-top: 1px solid;
     }
     .collection-tabs {
@@ -753,7 +753,7 @@
         .collection-controls {
             display: grid;
             gap: 4px;
-            padding: 6px 0 10px;
+            padding: 6px 12px 10px;
         }
         .collection-tabs {
             justify-content: space-between;
