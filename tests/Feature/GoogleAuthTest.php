@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\NewUserRegistered;
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Promise\FulfilledPromise;
@@ -92,7 +93,9 @@ it('creates a friends-only verified Google account and sends it straight to impo
         ->and($user->toArray())->not->toHaveKey('google_avatar_url')
         ->and(json_encode($user->getAttributes()))->not->toContain('test-access-token-not-to-store');
     $this->assertDatabaseCount('users', 2);
-    Notification::assertNothingSent();
+    Notification::assertSentOnDemand(NewUserRegistered::class, fn ($notification, $channels, $notifiable) => $notification->user->is($user) && $notifiable->routes['mail'] === 'freek@spatie.be');
+    Notification::assertSentOnDemandTimes(NewUserRegistered::class, 1);
+    Notification::assertCount(1);
     $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0)
         ->where('auth.user.importedAt', null)->where('auth.user.discogsConnected', false)->where('auth.user.googleConnected', true)
         ->where('auth.user.avatarUrl', $this->googleProfile['picture']));
@@ -132,6 +135,7 @@ it('signs in by Google subject without changing profile email or confusing anoth
         ->and($linked->fresh()->google_avatar_url)->toBe($this->googleProfile['picture'])
         ->and($other->fresh()->google_id)->toBeNull();
     $this->assertDatabaseCount('users', 3);
+    Notification::assertNothingSent();
 });
 
 it('verifies an existing Google account only when Google verifies its stored email', function (bool $sameEmail) {

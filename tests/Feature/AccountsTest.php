@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\NewUserRegistered;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Mail\Markdown;
@@ -99,6 +100,20 @@ it('renders a branded verification email with the same signed link and expiry in
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 
+it('renders the new collector email with escaped account details and an admin link in both formats', function () {
+    $user = socialUser('newcollector');
+    $user->update(['name' => '<b>Robin & Alex</b>']);
+    $message = (new NewUserRegistered($user))->toMail($user);
+    $html = (string) $message->render();
+    $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
+    $url = url("admin/users/{$user->id}");
+
+    expect($html)->toContain('NEW', 'COMPANY.', '#d9ed92', '#d3c0ea', '&lt;b&gt;Robin &amp; Alex&lt;/b&gt;', '@newcollector', $user->email, 'href="'.$url.'"')
+        ->not->toContain('<b>Robin & Alex</b>', '<link rel="stylesheet"')
+        ->and($text)->toContain($user->name, '@newcollector', $user->email, 'View user in admin: '.$url)
+        ->not->toContain('<table', '<style');
+});
+
 it('registers a friends-only account, verifies the inbox, and authenticates securely', function () {
     Notification::fake();
     $this->post('/register', ['name' => 'New Collector', 'handle' => 'New_Collector', 'email' => 'NEW@example.test', 'password' => 'a-long-demo-password', 'password_confirmation' => 'a-long-demo-password', 'visibility' => 'everyone', 'email_verified_at' => now(), 'legacy_owner' => true, 'google_id' => 'forged-google-identity'])->assertRedirect('/verify-email');
@@ -106,6 +121,7 @@ it('registers a friends-only account, verifies the inbox, and authenticates secu
     expect($user->handle)->toBe('new_collector')->and($user->visibility)->toBe('friends')->and($user->legacy_owner)->toBeFalse()->and($user->email_verified_at)->toBeNull()->and($user->digest_enabled)->toBeTrue()->and($user->google_id)->toBeNull();
     expect(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
     Notification::assertSentTo($user, VerifyEmail::class);
+    Notification::assertSentOnDemand(NewUserRegistered::class, fn ($notification, $channels, $notifiable) => $notification->user->is($user) && $notifiable->routes['mail'] === 'freek@spatie.be');
     $this->get('/feed')->assertRedirect('/verify-email');
     $this->get('/verify-email')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('social/AuthPage')->where('mode', 'verify')->where('auth.user.email', $user->email)
@@ -119,6 +135,7 @@ it('registers a friends-only account, verifies the inbox, and authenticates secu
     $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])->assertSessionHasErrors('email');
     $this->post('/login', ['email' => $user->email, 'password' => 'a-long-demo-password'])->assertRedirect('/settings');
     $this->assertAuthenticatedAs($user);
+    Notification::assertSentOnDemandTimes(NewUserRegistered::class, 1);
 });
 
 it('registers with only an email and password and lets the username change in settings', function () {

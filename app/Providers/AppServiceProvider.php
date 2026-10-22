@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Listeners\FulfillInvitationsListener;
+use App\Listeners\SendNewUserMailListener;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         Date::use(CarbonImmutable::class);
 
         Event::listen(Registered::class, [FulfillInvitationsListener::class, 'fulfill']);
+        Event::listen(Registered::class, [SendNewUserMailListener::class, 'send']);
         Event::listen(Verified::class, [FulfillInvitationsListener::class, 'fulfill']);
 
         VerifyEmail::toMailUsing(fn (User $user, string $url): MailMessage => (new MailMessage)
