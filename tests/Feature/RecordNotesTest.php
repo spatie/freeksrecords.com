@@ -18,7 +18,7 @@ it('lets an owner edit and clear notes on only the selected copy without activit
     $this->actingAs($owner)->patch("/shelves/{$record->id}/notes", [
         'shared_note' => "First line\nSecond line", 'private_note' => 'Paid €20',
         'is_activity' => true, 'user_id' => $friend->id, 'payload' => [],
-    ])->assertRedirect("/shelves/{$record->id}");
+    ])->assertRedirect($record->url());
     expect($record->fresh()->only(array_keys($before)))->toEqual($before)
         ->and($record->fresh()->shared_note)->toBe("First line\nSecond line")
         ->and($record->fresh()->private_note)->toBe('Paid €20')

@@ -120,7 +120,7 @@ it('registers with only an email and password and lets the username change in se
     $this->assertAuthenticatedAs($user);
     Notification::assertSentTo($user, VerifyEmail::class);
     $this->get('/settings')->assertRedirect('/verify-email');
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/settings');
     $this->patch('/settings', [
         'handle' => ' Chosen_Handle ', 'visibility' => 'only_me',
         'comments_enabled' => true, 'digest_enabled' => true,
