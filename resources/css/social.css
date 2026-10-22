@@ -675,7 +675,7 @@
     .digest-preview-mail iframe {
         display: block;
         width: 100%;
-        height: 1080px;
+        height: 1320px;
         border: 0;
     }
     @media (max-width: 900px) {
@@ -685,9 +685,6 @@
         }
         .digest-preview-mail {
             box-shadow: 5px 6px 0 var(--lilac);
-        }
-        .digest-preview-mail iframe {
-            height: 1200px;
         }
     }
     .empty {

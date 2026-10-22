@@ -10,6 +10,8 @@ class SocialPreview
 {
     public const HOME_IMAGE_VERSION = 2;
 
+    public const RECORD_IMAGE_VERSION = 2;
+
     /** @return array<string, string> */
     public function metadata(Request $request): array
     {
@@ -34,7 +36,7 @@ class SocialPreview
                 'title' => $title,
                 'description' => "{$title}, from {$record->user->name}’s collection on Plaat Club.",
                 'url' => $record->url(),
-                'image' => route('socialPreview.record', $record),
+                'image' => route('socialPreview.record', ['record' => $record, 'v' => self::RECORD_IMAGE_VERSION]),
                 'imageAlt' => $title,
                 'type' => 'music.album',
             ]);

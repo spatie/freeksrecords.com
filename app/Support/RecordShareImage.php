@@ -127,7 +127,6 @@ class RecordShareImage
         $image = $this->paperCanvas();
         $paper = $this->color($image, 232, 221, 196);
         $ink = $this->color($image, 38, 39, 32);
-        $muted = $this->color($image, 105, 99, 81);
         $accent = $this->color($image, 157, 53, 34);
         $groove = $this->color($image, 53, 54, 45);
 
@@ -151,23 +150,24 @@ class RecordShareImage
         $display = public_path('fonts/barlow-condensed-bold.ttf');
         $body = public_path('fonts/plex-sans-regular.ttf');
 
-        imagettftext($image, 19, 0, 644, 116, $accent, $body, 'Plaat Club');
-        imageline($image, 644, 143, 1144, 143, $muted);
+        imagettftext($image, 42, 0, 642, 114, $ink, $display, 'Plaat Club.');
+        imagefilledrectangle($image, 644, 137, 1144, 141, $accent);
 
-        $artistLines = $this->wrap($record['artist'], $body, 26, 500, 2);
-        [$titleSize, $titleLines] = $this->fitTitle($record['displayTitle'], $display, 280 - count($artistLines) * 38);
+        $artistLines = $this->wrap($record['artist'], $body, 38, 500, 2);
+        [$titleSize, $titleLines] = $this->fitTitle($record['displayTitle'], $display, 316 - count($artistLines) * 52);
         $titleLeading = (int) round($titleSize * 1.12);
         $year = $record['originalYear'] ? (string) $record['originalYear'] : '';
-        $blockHeight = count($artistLines) * 38 + count($titleLines) * $titleLeading + ($year === '' ? 0 : 52);
-        $baseline = 202 + (int) ((340 - $blockHeight) / 2);
+        $yearGap = 72;
+        $blockHeight = count($artistLines) * 52 + count($titleLines) * $titleLeading + ($year === '' ? 0 : $yearGap);
+        $baseline = 220 + (int) ((380 - $blockHeight) / 2);
 
         foreach ($artistLines as $line) {
-            imagettftext($image, 26, 0, 644, $baseline, $ink, $body, $line);
+            imagettftext($image, 38, 0, 644, $baseline, $ink, $body, $line);
 
-            $baseline += 38;
+            $baseline += 52;
         }
 
-        $baseline += $titleSize - 26;
+        $baseline += $titleSize - 38;
 
         foreach ($titleLines as $line) {
             imagettftext($image, $titleSize, 0, 642, $baseline, $ink, $display, $line);
@@ -175,7 +175,7 @@ class RecordShareImage
             $baseline += $titleLeading;
         }
 
-        imagettftext($image, 24, 0, 644, $baseline - $titleLeading + 52, $accent, $body, $year);
+        imagettftext($image, 34, 0, 644, $baseline - $titleLeading + $yearGap, $accent, $body, $year);
 
         return $this->toJpeg($image);
     }
@@ -203,10 +203,10 @@ class RecordShareImage
     /** @return array{0: int, 1: array<int, string>} */
     protected function fitTitle(string $title, string $font, int $height): array
     {
-        $size = 62;
+        $size = 82;
         $lines = $this->wrap($title, $font, $size, 500);
 
-        while ($size > 32 && count($lines) * round($size * 1.12) > $height) {
+        while ($size > 40 && count($lines) * round($size * 1.12) > $height) {
             $size -= 2;
             $lines = $this->wrap($title, $font, $size, 500);
         }

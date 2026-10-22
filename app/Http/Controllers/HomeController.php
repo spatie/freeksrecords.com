@@ -58,16 +58,16 @@ class HomeController
             ['Alex', 'After the Last Tram', 'Paper Satellites', 'Cassette'],
         ] as $index => [$name, $title, $artist, $format]) {
             $record = new CollectionRecord([
-                'id' => 0,
+                'id' => $index + 1,
                 'added_at' => now()->subDays($index + 1),
-                'payload' => ['displayTitle' => $title, 'artist' => $artist, 'mediaFormats' => [$format]],
+                'payload' => ['displayTitle' => $title, 'artist' => $artist, 'mediaFormats' => [$format], 'cover' => '/images/demo-sleeve-'.($index + 1).'.jpg'],
             ]);
             $record->setRelation('user', new User(['name' => $name, 'handle' => 'email_example']));
             $records->push($record);
         }
 
         return Inertia::render('social/WeeklyEmailPage', [
-            'emailHtml' => (new FriendsWeeklyDigest($records))->render(),
+            'emailHtml' => (new FriendsWeeklyDigest($records))->with('webPreview', true)->render(),
         ]);
     }
 

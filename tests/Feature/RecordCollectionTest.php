@@ -143,7 +143,7 @@ it('keeps record artwork prominent and text inside the social preview safe area'
     for ($y = 160; $y < 630; $y++) {
         for ($x = 610; $x < 1200; $x++) {
             $pixel = imagecolorsforindex($image, imagecolorat($image, $x, $y));
-            $isInk = max($pixel['red'], $pixel['green'], $pixel['blue']) < 100;
+            $isInk = max($pixel['red'], $pixel['green'], $pixel['blue']) < 100 && abs($pixel['red'] - $pixel['green']) < 20;
             $isAccent = $pixel['red'] > 115 && $pixel['red'] > $pixel['green'] * 1.6 && $pixel['green'] < 110;
 
             if ($isInk) {
@@ -183,7 +183,7 @@ it('keeps record artwork prominent and text inside the social preview safe area'
 it('replaces the old record layout without reusing its immutable image', function () {
     $record = app(RecordCollection::class)->findSummary(2189134863);
     $fields = Arr::only($record, ['cover', 'artist', 'displayTitle', 'originalYear']);
-    $oldHash = substr(hash('sha256', json_encode([1, $fields], JSON_THROW_ON_ERROR)), 0, 16);
+    $oldHash = substr(hash('sha256', json_encode([2, [...$fields, 'layoutVersion' => 2]], JSON_THROW_ON_ERROR)), 0, 16);
     $oldPath = "share/records/2189134863-{$oldHash}.jpg";
     Storage::disk('public')->put($oldPath, 'old layout');
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Support\RecordShareImage;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
@@ -29,7 +30,7 @@ it('previews a public record without publishing notes or credentials', function 
     $response = $this->get('/shelves/'.$record->id)->assertOk()
         ->assertSee('property="og:title" content="Preview album by George Harrison"', false)
         ->assertSee('property="og:type" content="music.album"', false)
-        ->assertSee('property="og:image" content="'.url('/share/shelves/'.$record->id.'.jpg').'"', false);
+        ->assertSee('property="og:image" content="'.url('/share/shelves/'.$record->id.'.jpg?v=2').'"', false);
 
     expect(json_encode($response->inertiaProps('socialPreview')))
         ->not->toContain('Shared note secret', 'Private note secret', $owner->email);
@@ -87,6 +88,20 @@ it('preserves personalized artwork for empty public collections', function () {
 
     $owner->update(['visibility' => 'only_me']);
     $this->actingAs($owner)->get('/share/collections/emptypreview.jpg')->assertNotFound();
+});
+
+it('serves the revised record artwork instead of stale cached artwork', function () {
+    $record = socialRecord(socialUser('freshpreview', 'everyone'), 'Hope Downs');
+    $fields = Arr::only($record->payload, ['cover', 'artist', 'displayTitle', 'originalYear']);
+    $oldKey = 'social-preview:v3:'.hash('sha256', json_encode($fields, JSON_THROW_ON_ERROR));
+    Cache::put($oldKey, base64_encode('old record artwork'), now()->addDay());
+
+    foreach (['/share/shelves/'.$record->id.'.jpg?v=2', '/share/shelves/'.$record->id.'.jpg'] as $url) {
+        $response = $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+        expect($response->getContent())->not->toBe('old record artwork');
+        $dimensions = getimagesizefromstring($response->getContent());
+        expect([$dimensions[0], $dimensions[1]])->toBe([1200, 630]);
+    }
 });
 
 it('serves real jpeg previews without permanently publishing collection membership', function () {

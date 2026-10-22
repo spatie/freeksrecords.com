@@ -10,7 +10,7 @@ class RecordCoverImages
 {
     public static function isBundledCover(string $source): bool
     {
-        return (bool) preg_match('#^/images/records/[0-9]+\.jpg$#', $source);
+        return (bool) preg_match('#^/images/(records/[0-9]+|demo-sleeve-[1-3])\.jpg$#', $source);
     }
 
     public static function isDiscogsCover(string $source): bool

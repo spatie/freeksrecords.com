@@ -36,7 +36,7 @@ class SocialPreviewController extends Controller
 
         $fields = Arr::only($record->payload, ['cover', 'artist', 'displayTitle', 'originalYear']);
 
-        return $this->image($fields, fn () => $image->render($fields));
+        return $this->image(['record', SocialPreview::RECORD_IMAGE_VERSION, $fields], fn () => $image->render($fields));
     }
 
     /**
