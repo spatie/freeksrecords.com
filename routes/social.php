@@ -32,6 +32,7 @@ Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->grou
 
     Route::get('/community', [HomeController::class, 'intro'])->name('community');
     Route::get('/collections', [HomeController::class, 'collections'])->name('collections');
+    Route::get('/about/weekly-email', [HomeController::class, 'weeklyEmail'])->name('weeklyEmail');
     Route::get('/invitations/{token}', [InvitationsController::class, 'show'])->name('invitations.show');
     Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');

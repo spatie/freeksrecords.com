@@ -106,6 +106,7 @@ class AccountController extends Controller
         $user = $request->user();
         $request->merge(['handle' => strtolower($request->string('handle')->trim())]);
         $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:80'],
             'handle' => ['required', 'min:3', 'max:30', 'regex:/^[a-z0-9_]+$/', Rule::notIn(User::RESERVED_HANDLES), Rule::unique('users')->ignore($user->id)],
             'visibility' => ['required', Rule::in($user->allowedCollectionVisibilities())],
             'comments_enabled' => ['required', 'boolean'], 'digest_enabled' => ['required', 'boolean'],

@@ -3,6 +3,20 @@
 use App\Mail\FriendsWeeklyDigest;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
+
+it('shows a public email example using the real template and only unsaved fictional records', function () {
+    Mail::fake();
+    $owner = socialUser('preview_private', 'only_me');
+    socialRecord($owner, 'Never show this private record');
+    $this->get('/about/weekly-email')->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->component('social/WeeklyEmailPage')
+        ->where('emailHtml', fn (string $html) => str_contains($html, 'Fresh on their shelves.')
+            && str_contains($html, 'Midnight Windows') && str_contains($html, 'Sunday Static')
+            && ! str_contains($html, 'Never show this private record') && ! str_contains($html, 'preview_private')));
+    $this->assertDatabaseCount('collection_records', 1);
+    Mail::assertNothingSent();
+});
 
 it('sends exactly the previous seven days in original addition order and never repeats a completed week', function () {
     Mail::fake();

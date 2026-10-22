@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\FriendsWeeklyDigest;
+use App\Models\CollectionRecord;
 use App\Models\User;
 use App\Support\SocialData;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -43,6 +46,28 @@ class HomeController
 
         return Inertia::render('social/CollectionsPage', [
             'collectors' => SocialData::pagination($collectors, $collectors->getCollection()->map(SocialData::collector(...))->all()),
+        ]);
+    }
+
+    public function weeklyEmail(): Response
+    {
+        $records = new Collection;
+        foreach ([
+            ['Alex', 'Midnight Windows', 'Northbound', 'Vinyl'],
+            ['Robin', 'Sunday Static', 'Soft Circuit', 'CD'],
+            ['Alex', 'After the Last Tram', 'Paper Satellites', 'Cassette'],
+        ] as $index => [$name, $title, $artist, $format]) {
+            $record = new CollectionRecord([
+                'id' => 0,
+                'added_at' => now()->subDays($index + 1),
+                'payload' => ['displayTitle' => $title, 'artist' => $artist, 'mediaFormats' => [$format]],
+            ]);
+            $record->setRelation('user', new User(['name' => $name, 'handle' => 'email_example']));
+            $records->push($record);
+        }
+
+        return Inertia::render('social/WeeklyEmailPage', [
+            'emailHtml' => (new FriendsWeeklyDigest($records))->render(),
         ]);
     }
 

@@ -11,6 +11,7 @@ export function SettingsPage() {
     const { auth, csrfToken, googleEnabled } = usePage<SocialProps>().props;
     const user = auth.user!;
     const form = useForm({
+        name: user.name,
         handle: user.handle,
         comments_enabled: user.commentsEnabled,
         digest_enabled: user.digestEnabled,
@@ -36,6 +37,28 @@ export function SettingsPage() {
                             form.patch('/settings');
                         }}
                     >
+                        <label htmlFor="name">
+                            Display name
+                            <input
+                                id="name"
+                                name="name"
+                                autoComplete="name"
+                                required
+                                maxLength={80}
+                                value={form.data.name}
+                                onChange={(event) =>
+                                    form.setData('name', event.target.value)
+                                }
+                                aria-invalid={Boolean(form.errors.name)}
+                                aria-describedby={
+                                    form.errors.name ? 'name-error' : undefined
+                                }
+                            />
+                        </label>
+                        <FieldError
+                            id="name-error"
+                            message={form.errors.name}
+                        />
                         <label htmlFor="handle">
                             Username
                             <input
@@ -69,14 +92,19 @@ export function SettingsPage() {
                                 form.setData('comments_enabled', checked)
                             }
                         />
-                        <SocialSwitch
-                            checked={form.data.digest_enabled}
-                            label="Once a week, email me what my friends have added"
-                            name="digest_enabled"
-                            onChange={(checked) =>
-                                form.setData('digest_enabled', checked)
-                            }
-                        />
+                        <div className="settings-digest">
+                            <SocialSwitch
+                                checked={form.data.digest_enabled}
+                                label="Once a week, email me what my friends have added"
+                                name="digest_enabled"
+                                onChange={(checked) =>
+                                    form.setData('digest_enabled', checked)
+                                }
+                            />
+                            <Link href="/about/weekly-email">
+                                Preview the weekly email ↗
+                            </Link>
+                        </div>
                         <button className="button" disabled={form.processing}>
                             Save preferences
                         </button>
@@ -84,9 +112,6 @@ export function SettingsPage() {
                     <div className="settings-sharing">
                         <h3>Who can see your collection?</h3>
                         <CollectionSharing user={user} />
-                        <p>
-                            Changes to collection visibility save immediately.
-                        </p>
                     </div>
                 </section>
                 <div className="settings-connections">

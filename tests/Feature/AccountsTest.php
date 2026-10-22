@@ -122,11 +122,16 @@ it('registers with only an email and password and lets the username change in se
     $this->get('/settings')->assertRedirect('/verify-email');
     $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/settings');
     $this->patch('/settings', [
-        'handle' => ' Chosen_Handle ', 'visibility' => 'only_me',
+        'name' => 'The record collector', 'handle' => ' Chosen_Handle ', 'visibility' => 'only_me',
         'comments_enabled' => true, 'digest_enabled' => true,
     ])->assertSessionHasNoErrors();
-    expect($user->fresh()->handle)->toBe('chosen_handle')->and($user->fresh()->name)->toBe('New Collector');
-    $this->get('/people/chosen_handle')->assertOk()->assertSee('New Collector');
+    expect($user->fresh()->handle)->toBe('chosen_handle')->and($user->fresh()->name)->toBe('The record collector');
+    $this->get('/people/chosen_handle')->assertOk()->assertSee('The record collector');
+    $this->patch('/settings', [
+        'name' => str_repeat('x', 81), 'handle' => 'chosen_handle', 'visibility' => 'only_me',
+        'comments_enabled' => true, 'digest_enabled' => true,
+    ])->assertSessionHasErrors('name');
+    expect($user->fresh()->name)->toBe('The record collector');
     $this->patch('/settings', [
         'handle' => '', 'visibility' => 'only_me',
         'comments_enabled' => true, 'digest_enabled' => true,
@@ -230,8 +235,8 @@ it('updates only allowed profile fields and keeps the legacy collection public',
     $user = socialUser('settings');
     $this->actingAs($user)->patch('/settings', ['name' => 'New name', 'handle' => 'Changed', 'visibility' => 'friends', 'comments_enabled' => false, 'digest_enabled' => false, 'email' => 'stolen@example.test', 'legacy_owner' => true, 'google_id' => 'forged-google-identity'])->assertSessionHasNoErrors();
     expect($user->fresh()->handle)->toBe('changed')->and($user->fresh()->comments_enabled)->toBeFalse()->and($user->fresh()->digest_enabled)->toBeFalse()->and($user->fresh()->email)->toBe('settings@example.test')->and($user->fresh()->google_id)->toBeNull();
-    expect($user->fresh()->name)->toBe('Settings');
-    $this->get('/people/changed')->assertOk()->assertSee('Settings');
+    expect($user->fresh()->name)->toBe('New name');
+    $this->get('/people/changed')->assertOk()->assertSee('New name');
     $this->post('/logout');
     $freek = User::freek();
     $freek->update(['email_verified_at' => now()]);

@@ -35,6 +35,7 @@ export function CollectionSharing({ user }: { user: Viewer }) {
     const [feedback, setFeedback] = useState('');
     const [saved, setSaved] = useState(false);
     const details = useRef<HTMLDetailsElement>(null);
+    const savedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
     const choice = choices.find((choice) => choice.value === user.visibility)!;
     const Icon = choice.icon;
     useEffect(() => {
@@ -55,10 +56,12 @@ export function CollectionSharing({ user }: { user: Viewer }) {
         return () => {
             document.removeEventListener('click', close);
             document.removeEventListener('keydown', close);
+            clearTimeout(savedTimer.current);
         };
     }, []);
     function save(visibility: Visibility) {
         if (pending) return;
+        clearTimeout(savedTimer.current);
         setPending(true);
         setSaved(false);
         setFeedback('Updating sharing…');
@@ -84,6 +87,10 @@ export function CollectionSharing({ user }: { user: Viewer }) {
                         `Sharing saved. Collection visibility: ${choices.find((choice) => choice.value === saved)?.label}.`,
                     );
                     setSaved(true);
+                    savedTimer.current = setTimeout(() => {
+                        setSaved(false);
+                        setFeedback('');
+                    }, 3000);
                     if (details.current) {
                         details.current.open = false;
                         details.current.querySelector('summary')?.focus();
@@ -181,6 +188,11 @@ export function CollectionSharing({ user }: { user: Viewer }) {
                     )}
                 </div>
             </details>
+            {saved && (
+                <span className="sharing-confirmation" aria-hidden="true">
+                    <Check size={14} /> Saved
+                </span>
+            )}
             {feedback && (
                 <p className="sharing-status" role="status">
                     {feedback}

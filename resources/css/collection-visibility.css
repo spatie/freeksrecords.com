@@ -1,8 +1,17 @@
 .collection-sharing {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     text-align: left;
     flex: none;
+}
+.sharing-confirmation {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    white-space: nowrap;
 }
 .collection-sharing summary {
     display: inline-flex;

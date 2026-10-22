@@ -183,11 +183,6 @@ export function NotificationsPopover() {
                                                     {notification.record.artist}
                                                 </span>
                                             )}
-                                            {notification.unread && (
-                                                <span className="notification-unread">
-                                                    Unread
-                                                </span>
-                                            )}
                                         </span>
                                     </Link>
                                     {notification.canRespond && (
