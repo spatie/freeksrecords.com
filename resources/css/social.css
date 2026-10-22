@@ -1190,7 +1190,6 @@
     .landing-records .hero-artwork {
         display: flex;
         width: max-content;
-        animation: record-belt 60s linear infinite;
     }
     .artwork-run {
         display: flex;
@@ -1231,43 +1230,24 @@
         object-fit: cover;
         box-shadow: 4px 10px 17px #20201644;
     }
-    .landing-records:hover .hero-artwork,
-    .landing-records:focus-within .hero-artwork,
-    :scope:has(.record-focus) .hero-artwork {
-        animation-play-state: paused;
-    }
-    @keyframes record-belt {
-        to {
-            transform: translateX(-50%);
-        }
-    }
-    .landing-enter {
+    .landing-welcome {
         position: absolute;
         z-index: 4;
         right: 8%;
         top: 47%;
         display: grid;
         place-content: center;
-        width: 132px;
-        height: 132px;
+        width: 170px;
+        height: 170px;
+        margin: 0;
         border-radius: 50%;
         background: var(--cream);
         box-shadow: 5px 7px 0 var(--ink);
         text-align: center;
         transform: rotate(10deg);
         font:
-            700 32px/0.9 'Club Display',
+            700 29px/0.95 'Club Display',
             sans-serif;
-        transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .landing-enter:hover {
-        transform: rotate(-8deg) scale(1.05);
-    }
-    .landing-enter svg {
-        display: inline-block;
-        width: 0.85em;
-        height: 0.85em;
-        vertical-align: -0.05em;
     }
     .landing-empty {
         position: absolute;
@@ -1468,11 +1448,11 @@
         .floating-sleeve {
             width: 155px;
         }
-        .landing-enter {
-            width: 95px;
-            height: 95px;
-            font-size: 25px;
-            top: 49%;
+        .landing-welcome {
+            width: 132px;
+            height: 132px;
+            font-size: 23px;
+            top: 46%;
             right: 7%;
         }
     }

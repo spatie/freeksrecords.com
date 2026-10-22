@@ -1,12 +1,9 @@
-import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowUpRight } from 'lucide-react';
+import { Head } from '@inertiajs/react';
 
 import { HeroArtwork } from '@/modules/social/HeroArtwork';
-import type { HomeProps, SocialProps } from '@/modules/social/types';
+import type { HomeProps } from '@/modules/social/types';
 
 export function HomePage({ artwork }: HomeProps) {
-    const user = usePage<SocialProps>().props.auth.user;
-
     return (
         <>
             <Head title="Good taste is contagious." />
@@ -25,17 +22,15 @@ export function HomePage({ artwork }: HomeProps) {
                         Every great collection starts somewhere.
                     </p>
                 )}
-                <Link
-                    className="landing-enter"
-                    href={user ? user.profileUrl : '/register'}
-                >
+                <p className="landing-welcome">
                     <span>
-                        Step
+                        Vinyl, CDs
                         <br />
-                        inside{' '}
-                        <ArrowUpRight aria-hidden="true" strokeWidth={3} />
+                        and cassettes
+                        <br />
+                        welcome.
                     </span>
-                </Link>
+                </p>
             </section>
         </>
     );
