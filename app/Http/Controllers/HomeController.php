@@ -15,7 +15,11 @@ class HomeController
     public function __invoke(Request $request): Response|RedirectResponse
     {
         if ($user = $request->user()) {
-            return redirect()->route($user->hasVerifiedEmail() ? 'feed' : 'verification.notice');
+            if (! $user->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice');
+            }
+
+            return redirect()->route('profile', $user->handle);
         }
 
         return $this->intro();

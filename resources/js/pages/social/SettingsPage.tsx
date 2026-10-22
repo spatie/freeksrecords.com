@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 
 import { CollectionSharing } from '@/modules/social/CollectionSharing';
 import { DiscogsConnectButton } from '@/modules/social/DiscogsConnectButton';
@@ -212,6 +212,26 @@ export function SettingsPage() {
                     )}
                 </div>
             </div>
+            <section
+                className="panel settings-delete"
+                aria-labelledby="delete-account-heading"
+            >
+                <div>
+                    <h2 id="delete-account-heading">
+                        Time to put the record away?
+                    </h2>
+                    <p>
+                        Permanently delete your Plaat Club account and its data.
+                        Your Discogs collection stays untouched.
+                    </p>
+                </div>
+                <Link
+                    className="button secondary"
+                    href="/settings/delete-account"
+                >
+                    Delete my account
+                </Link>
+            </section>
         </>
     );
 }

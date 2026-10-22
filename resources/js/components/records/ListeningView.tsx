@@ -74,12 +74,15 @@ export function ListeningView({
     const label = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const [shareStatus, setShareStatus] = useState('');
-    const [artworkTheme, setArtworkTheme] = useState<Record<string, string>>(
-        {},
-    );
+    const [artworkTheme, setArtworkTheme] = useState<Record<
+        string,
+        string
+    > | null>(clubLayout ? null : {});
+    const ready = artworkTheme !== null;
     const { refs, phase, putAway } = useRecordTransition({
         instanceId: record.instanceId,
         clubLayout,
+        ready,
         returnOrigin,
         origin,
         instant,
@@ -91,8 +94,8 @@ export function ListeningView({
     const motionClasses = `is-ready ${phaseClasses[phase]}`;
 
     useLayoutEffect(() => {
-        dialog.current?.focus({ preventScroll: true });
-    }, []);
+        if (ready) dialog.current?.focus({ preventScroll: true });
+    }, [ready]);
 
     useEffect(() => {
         if (phase === 'settled' && window.location.hash === '#comments')
@@ -166,7 +169,13 @@ export function ListeningView({
     }
 
     return (
-        <div className={`record-focus ${motionClasses}`} style={artworkTheme}>
+        <div
+            className={`record-focus ${motionClasses}`}
+            style={{
+                ...artworkTheme,
+                visibility: ready ? undefined : 'hidden',
+            }}
+        >
             <button
                 ref={refs.backdrop}
                 className="record-focus-backdrop"
@@ -234,6 +243,7 @@ export function ListeningView({
                                 >
                                     <img
                                         alt={`${record.displayTitle} sleeve`}
+                                        onError={() => setArtworkTheme({})}
                                         onLoad={(event) => {
                                             if (clubLayout)
                                                 setArtworkTheme(

@@ -193,8 +193,9 @@
         display: inline-flex;
         align-items: center;
     }
-    .site-header nav a:hover {
-        text-decoration: underline;
+    .site-header nav a,
+    .account-popover > a {
+        text-decoration: none;
     }
     .main-navigation {
         position: relative;
@@ -207,7 +208,6 @@
     }
     .main-navigation > a[aria-current] {
         font-weight: 600;
-        text-decoration-thickness: 2px;
     }
     .guest-navigation {
         grid-column: 2 / -1;
@@ -800,6 +800,23 @@
         display: grid;
         gap: 32px;
     }
+    .settings-delete {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        margin-top: 40px;
+        background: var(--cream);
+        border: 1px solid var(--ink);
+    }
+    .settings-delete h2 {
+        font-size: 38px;
+    }
+    .settings-delete p {
+        max-width: 60ch;
+        margin: 12px 0 0;
+    }
     .connection-section {
         padding: 32px;
         background: var(--acid);
@@ -1339,6 +1356,9 @@
         .main-navigation > a {
             padding-inline: 6px;
             font-size: 15px;
+            white-space: normal;
+            text-align: center;
+            min-width: 0;
         }
         .page {
             padding: 30px 5vw 60px;

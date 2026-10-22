@@ -25,6 +25,7 @@ export function SocialRecordView({
         <RecordRoom>
             <Head title={payload.displayTitle} />
             <ListeningView
+                key={record.id}
                 clubLayout
                 instant={origin === null}
                 origin={origin}

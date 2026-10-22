@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\CollectionVisibilityController;
 use App\Http\Controllers\DiscogsConnectionController;
 use App\Http\Controllers\FriendRequestResponseController;
@@ -61,6 +62,8 @@ Route::middleware(PrivateResponse::class)->group(function () {
             Route::post('/friends/{user}', [SocialController::class, 'friend'])->middleware('throttle:30,1')->name('friend.action');
             Route::get('/settings', fn () => Inertia::render('social/SettingsPage'))->name('settings');
             Route::patch('/settings', [AccountController::class, 'settings']);
+            Route::get('/settings/delete-account', [AccountDeletionController::class, 'show'])->name('accountDeletion.show');
+            Route::delete('/settings/account', [AccountDeletionController::class, 'destroy'])->middleware('throttle:6,1')->name('accountDeletion.destroy');
             Route::post('/settings/google', [GoogleAuthController::class, 'link'])->middleware('throttle:6,1')->name('google.link');
             Route::patch('/collection/visibility', [CollectionVisibilityController::class, 'update'])->name('collection.visibility.update');
             Route::patch('/shelves/{record}/notes', [RecordNotesController::class, 'update'])->whereNumber('record')->name('shelf.notes.update');

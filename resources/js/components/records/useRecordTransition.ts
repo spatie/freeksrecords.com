@@ -18,6 +18,7 @@ type RecordTransitionOptions = {
     origin: SleeveOrigin | null;
     returnOrigin?: () => SleeveOrigin | null;
     clubLayout?: boolean;
+    ready?: boolean;
     /** Skip the cover's entrance flight for a record rendered in place. */
     instant: boolean;
     onSettled: () => void;
@@ -32,6 +33,7 @@ export function useRecordTransition({
     origin,
     returnOrigin,
     clubLayout = false,
+    ready = true,
     instant,
     onSettled,
     onReturned,
@@ -51,6 +53,7 @@ export function useRecordTransition({
     });
 
     useLayoutEffect(() => {
+        if (!ready) return;
         if (!stage.current || !sleeve.current || !vinyl.current) return;
         const reducedMotion = prefersReducedMotion();
         const duration = instant || reducedMotion ? 0 : clubLayout ? 650 : 420;
@@ -114,7 +117,7 @@ export function useRecordTransition({
             animations.current.forEach((animation) => animation.cancel());
             animations.current = [];
         };
-    }, [origin, instant, clubLayout]);
+    }, [origin, instant, clubLayout, ready]);
 
     async function putAway() {
         if (returning.current) return;

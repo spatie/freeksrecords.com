@@ -57,15 +57,19 @@ export function CollectionIndex({
             '[aria-current="true"]',
         );
         if (!index || !selected) return;
-        if (index.scrollHeight > index.clientHeight)
-            index.scrollTo({
-                top:
-                    index.scrollTop +
-                    selected.getBoundingClientRect().top -
-                    index.getBoundingClientRect().top -
-                    index.clientHeight / 3,
-                behavior: motionScrollBehavior(),
-            });
+        if (index.scrollHeight <= index.clientHeight) return;
+        const offset =
+            selected.getBoundingClientRect().top -
+            index.getBoundingClientRect().top;
+        if (
+            offset >= index.clientHeight * 0.2 &&
+            offset + selected.offsetHeight <= index.clientHeight * 0.8
+        )
+            return;
+        index.scrollTo({
+            top: index.scrollTop + offset - index.clientHeight / 2,
+            behavior: motionScrollBehavior(),
+        });
     }, [activeGroup]);
 
     useEffect(() => {

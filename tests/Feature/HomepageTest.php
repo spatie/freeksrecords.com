@@ -125,7 +125,7 @@ it('removes collections and their artwork from discovery immediately when privac
         ->assertInertia(fn (Assert $page) => $page->has('collectors.data', 0));
 })->with(['only_me', 'friends']);
 
-it('sends signed-in visitors to verification or the chronological friends feed without caching', function (bool $verified, string $destination) {
+it('sends signed-in visitors to verification or their own collection without caching', function (bool $verified, string $destination) {
     $user = socialUser('homevisitor');
     if (! $verified) {
         $user->forceFill(['email_verified_at' => null])->save();
@@ -135,7 +135,7 @@ it('sends signed-in visitors to verification or the chronological friends feed w
 
     expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store')
         ->and($response->headers->get('Cache-Control'))->not->toContain('public', 's-maxage');
-})->with([[true, '/feed'], [false, '/verify-email']]);
+})->with([[true, '/homevisitor'], [false, '/verify-email']]);
 
 it('keeps friend requests off the feed and available on the friends page', function () {
     $viewer = socialUser('homeviewer');

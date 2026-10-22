@@ -132,6 +132,17 @@ it('registers with only an email and password and lets the username change in se
     ])->assertSessionHasErrors('handle');
 });
 
+it('opens the signed-in collection by default after login while preserving verification', function (bool $verified, string $destination) {
+    $user = socialUser('defaultcollection');
+    if (! $verified) {
+        $user->update(['email_verified_at' => null]);
+    }
+
+    $this->post('/login', ['email' => $user->email, 'password' => 'a-long-demo-password'])->assertRedirect('/');
+    $this->get('/')->assertRedirect($destination);
+    $this->assertAuthenticatedAs($user);
+})->with([[true, '/defaultcollection'], [false, '/verify-email']]);
+
 it('generates valid unique usernames from unusual, reserved and long email local parts', function (string $localPart) {
     Notification::fake();
     $handles = [];
