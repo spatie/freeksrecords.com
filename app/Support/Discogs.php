@@ -20,11 +20,37 @@ class Discogs
      */
     public function get(string $path, array $query = []): array
     {
-        if ($this->user !== null && $query === [] && preg_match('#^(releases|masters)/[0-9]+$#', $path)) {
+        if ($query === [] && preg_match('#^(releases|masters|artists)/[0-9]+$#', $path)) {
             return Cache::remember('discogs-public-v1:'.$path, now()->addWeek(), fn () => $this->fetch($path, $query));
         }
 
         return $this->fetch($path, $query);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $artists
+     * @return list<array{id: int, name: string, profile: string, discogsUrl: string}>
+     */
+    public function artistBios(array $artists): array
+    {
+        $bios = [];
+
+        foreach ($artists as $artist) {
+            $id = (int) ($artist['id'] ?? 0);
+            if ($id === 0 || isset($bios[$id])) {
+                continue;
+            }
+
+            $details = $this->get("artists/{$id}");
+            $bios[$id] = [
+                'id' => $id,
+                'name' => app(DiscogsRecordMapper::class)->artistName($details['name'] ?? $artist['name']),
+                'profile' => $details['profile'] ?? '',
+                'discogsUrl' => "https://www.discogs.com/artist/{$id}",
+            ];
+        }
+
+        return array_values($bios);
     }
 
     /**

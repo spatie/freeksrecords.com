@@ -285,14 +285,30 @@ it('shares only public release details between collectors while fetching each pr
     Http::fake([
         'api.discogs.com/users/cachefirst/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [discogsCollectionEntry(101, 201)]]),
         'api.discogs.com/users/cachesecond/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [discogsCollectionEntry(202, 201)]]),
-        'api.discogs.com/releases/*' => Http::sequence()->push(['tracklist' => [['title' => 'Shared public song', 'position' => 'A1']]]),
+        'api.discogs.com/releases/*' => Http::sequence()->push([
+            'artists' => [['id' => 634, 'name' => 'Brian Eno']],
+            'notes' => 'Printed inner sleeve.',
+            'extraartists' => [['id' => 634, 'name' => 'Brian Eno', 'role' => 'Producer', 'tracks' => '']],
+            'tracklist' => [['title' => 'Shared public song', 'position' => 'A1', 'extraartists' => [
+                ['id' => 5049, 'name' => 'Robert Wyatt', 'role' => 'Piano'],
+            ]]],
+        ]),
         'api.discogs.com/masters/*' => Http::sequence()->push(['year' => 1971]),
+        'api.discogs.com/artists/634' => Http::sequence()->push(['name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.']),
     ]);
     foreach ([$first, $second] as $user) {
         (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
         expect($user->fresh()->sync_status)->toBe('Up to date')
             ->and($user->records()->sole()->payload['originalYear'])->toBe(1971)
-            ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Shared public song');
+            ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Shared public song')
+            ->and($user->records()->sole()->payload['releaseNotes'])->toBe('Printed inner sleeve.')
+            ->and($user->records()->sole()->payload['artistBios'])->toBe([
+                ['id' => 634, 'name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.', 'discogsUrl' => 'https://www.discogs.com/artist/634'],
+            ])
+            ->and($user->records()->sole()->payload['credits']['release'][0]['role'])->toBe('Producer')
+            ->and($user->records()->sole()->payload['credits']['tracks'])->toBe([
+                ['position' => 'A1', 'title' => 'Shared public song', 'artists' => [['id' => 5049, 'name' => 'Robert Wyatt', 'role' => 'Piano']]],
+            ]);
     }
     expect($first->records()->pluck('instance_id')->all())->toBe([101])
         ->and($second->records()->pluck('instance_id')->all())->toBe([202]);

@@ -1380,6 +1380,16 @@
         padding: 0;
         min-height: 0;
     }
+    .landing-attribution {
+        padding: 18px 4.5vw;
+        background: var(--acid);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .landing-attribution a {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
     .landing-hero {
         position: relative;
         isolation: isolate;

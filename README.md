@@ -260,6 +260,17 @@ secrets. Run `php artisan queue:restart` after deployments. The social preview d
 configure or deploy these production services, and a fake-HTTP OAuth test is not a live
 Discogs authorization test.
 
+When deploying the Discogs information import, run `php artisan records:import-discogs-info`
+after migrations to backfill existing collections. This imports artist biographies (with
+Discogs markup preserved), release notes, and both release-level and track-level credits
+into each record's JSON payload. New collection imports include these fields automatically.
+The backfill fetches each distinct release once, shares public artist responses through
+the Discogs cache, and leaves personal notes, dates, activity and listening links alone.
+It checkpoints each release: if interrupted or rate-limited, rerun the command to resume.
+An empty biography or release note is stored as empty rather than repeatedly fetched.
+The information is stored for future display; this change only displays attribution.
+The shared release/artist storage redesign is separate from this import.
+
 ## License
 
 The code is open source under the MIT license. Album artwork belongs to its respective owners.

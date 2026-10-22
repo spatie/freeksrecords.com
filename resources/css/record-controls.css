@@ -582,6 +582,21 @@
     line-height: 1.5;
 }
 
+.record-attribution {
+    margin: 18px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.record-attribution a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.record-attribution a:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+}
+
 .listening-tracklist li {
     border-bottom-color: #ae957145;
     transition: background-color 140ms;

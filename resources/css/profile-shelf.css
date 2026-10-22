@@ -589,6 +589,20 @@
         margin: 14px 0;
         font-size: 16px;
     }
+    .record-attribution {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .record-attribution a {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+    .record-attribution a:focus-visible {
+        outline: 2px solid currentColor;
+        outline-offset: 4px;
+    }
     .album-listen-links {
         display: flex;
         flex-wrap: wrap;

@@ -138,7 +138,7 @@ class SyncDiscogsCollectionCommand extends Command
         File::ensureDirectoryExists(storage_path('app/discogs'));
         File::put(storage_path("app/discogs/releases-{$basic['id']}.json"), json_encode($release, JSON_THROW_ON_ERROR));
 
-        return $mapper->record($entry, $release, $master);
+        return $mapper->record($entry, $release, $master, $discogs->artistBios($release['artists'] ?? $basic['artists']));
     }
 
     /** @param array<string, mixed> $record */

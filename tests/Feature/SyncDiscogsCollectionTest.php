@@ -220,6 +220,56 @@ it('can rerun the snapshot import without duplicating collection copies', functi
     $this->assertDatabaseCount('collection_records', 850);
 });
 
+it('backfills release information for every copy and resumes without replacing personal data or listening links', function () {
+    $first = socialRecord(socialUser('infofirst'), activity: false);
+    $second = socialRecord(socialUser('infosecond'), instance: 456);
+    $second->update(['shared_note' => 'A gift', 'private_note' => 'Cost €20']);
+    $remaining = socialRecord($first->user, instance: 789);
+    $remaining->update(['discogs_release_id' => 999999992]);
+    $originalPayload = $second->payload;
+    $releaseId = $first->discogs_release_id;
+    $releaseCredit = ['id' => 634, 'name' => 'Brian Eno', 'role' => 'Producer', 'tracks' => ''];
+    $trackCredit = ['id' => 5049, 'name' => 'Robert Wyatt', 'role' => 'Piano'];
+    Http::fake([
+        "api.discogs.com/releases/{$releaseId}" => Http::response([
+            'artists' => [['id' => 634, 'name' => 'Brian Eno'], ['id' => 5049, 'name' => 'Robert Wyatt']],
+            'notes' => "Original pressing.\nPrinted inner sleeve.",
+            'extraartists' => [$releaseCredit],
+            'tracklist' => [['title' => 'Suite', 'position' => 'A1', 'sub_tracks' => [
+                ['title' => 'Movement', 'position' => 'A1.1', 'extraartists' => [$trackCredit]],
+            ]]],
+        ]),
+        'api.discogs.com/artists/634' => Http::response(['name' => 'Brian Eno', 'profile' => 'Works with [a=Robert Wyatt].']),
+        'api.discogs.com/artists/5049' => Http::response(['name' => 'Robert Wyatt']),
+        'api.discogs.com/releases/999999992' => Http::sequence()->push([], 503)->push([]),
+    ]);
+
+    $this->artisan('records:import-discogs-info')->assertFailed();
+    expect($first->fresh()->payload['releaseNotes'])->toBe("Original pressing.\nPrinted inner sleeve.")
+        ->and($first->fresh()->payload['artistBios'])->toBe([
+            ['id' => 634, 'name' => 'Brian Eno', 'profile' => 'Works with [a=Robert Wyatt].', 'discogsUrl' => 'https://www.discogs.com/artist/634'],
+            ['id' => 5049, 'name' => 'Robert Wyatt', 'profile' => '', 'discogsUrl' => 'https://www.discogs.com/artist/5049'],
+        ])
+        ->and($first->fresh()->payload['credits'])->toBe([
+            'release' => [$releaseCredit],
+            'tracks' => [['position' => 'A1.1', 'title' => 'Movement', 'artists' => [$trackCredit]]],
+        ])
+        ->and($second->fresh()->payload)->toBe([...$originalPayload, ...array_intersect_key($first->fresh()->payload, array_flip(['artistBios', 'releaseNotes', 'credits']))])
+        ->and($second->fresh()->shared_note)->toBe('A gift')
+        ->and($second->fresh()->private_note)->toBe('Cost €20')
+        ->and($second->fresh()->added_at->equalTo($second->added_at))->toBeTrue()
+        ->and($first->fresh()->is_activity)->toBeFalse()
+        ->and($second->fresh()->is_activity)->toBeTrue()
+        ->and($remaining->fresh()->payload)->not->toHaveKey('releaseNotes');
+
+    $this->artisan('records:import-discogs-info')->assertSuccessful();
+    expect($remaining->fresh()->payload['releaseNotes'])->toBe('')
+        ->and($remaining->fresh()->payload['artistBios'])->toBe([])
+        ->and($remaining->fresh()->payload['credits'])->toBe(['release' => [], 'tracks' => []]);
+    $this->artisan('records:import-discogs-info')->expectsOutput('Imported information for 0 releases.')->assertSuccessful();
+    $this->assertDatabaseCount('collection_records', 3);
+});
+
 function configureEdgeCachePurging(): void
 {
     config([

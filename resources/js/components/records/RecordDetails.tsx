@@ -151,6 +151,15 @@ export function RecordDetails({
                     </p>
                 )}
             </div>
+            <p className="record-attribution">
+                <a
+                    href={`https://www.discogs.com/release/${record.id}`}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                >
+                    Data provided by Discogs ↗
+                </a>
+            </p>
         </>
     );
 }

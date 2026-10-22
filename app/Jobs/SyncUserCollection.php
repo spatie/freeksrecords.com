@@ -137,7 +137,8 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                         return;
                     }
                     $master = empty($entry['basic_information']['master_id']) ? [] : $discogs->get('masters/'.$entry['basic_information']['master_id']);
-                    $payload = $mapper->record($entry, $release, $master);
+                    $artistBios = $discogs->artistBios($release['artists'] ?? $entry['basic_information']['artists']);
+                    $payload = $mapper->record($entry, $release, $master, $artistBios);
                     // Artwork is public release data, but private collection membership is never published as a share image.
                     $payload['cover'] = $payload['coverSource'];
                     $user->records()->create([

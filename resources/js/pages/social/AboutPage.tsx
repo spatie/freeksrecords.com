@@ -87,6 +87,11 @@ export function AboutPage() {
                     Questions or a good record to recommend?{' '}
                     <a href="mailto:freek@spatie.be">Get in touch.</a>
                 </p>
+                <p>
+                    This application uses Discogs’ API but is not affiliated
+                    with, sponsored or endorsed by Discogs. ‘Discogs’ is a
+                    trademark of Zink Media, LLC.
+                </p>
                 <nav className="about-legal" aria-label="Legal information">
                     <Link href="/privacy">Privacy</Link>
                 </nav>

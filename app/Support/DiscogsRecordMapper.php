@@ -14,9 +14,10 @@ class DiscogsRecordMapper
      * @param  array<string, mixed>  $entry
      * @param  array<string, mixed>  $release
      * @param  array<string, mixed>  $master
+     * @param  list<array<string, mixed>>  $artistBios
      * @return array<string, mixed>
      */
-    public function record(array $entry, array $release, array $master): array
+    public function record(array $entry, array $release, array $master, array $artistBios = []): array
     {
         $basic = $entry['basic_information'];
         $artists = array_map(fn (array $artist): string => $this->artistName($artist['name']), $basic['artists']);
@@ -43,7 +44,48 @@ class DiscogsRecordMapper
             ...$this->listeningLinks($artist, $basic['title']),
             'trackSource' => 'release',
             'tracks' => $this->tracks($release['tracklist'] ?? [], $artist),
+            ...$this->releaseInfo($release, $artistBios),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $release
+     * @param  list<array<string, mixed>>  $artistBios
+     * @return array<string, mixed>
+     */
+    public function releaseInfo(array $release, array $artistBios): array
+    {
+        return [
+            'artistBios' => $artistBios,
+            'releaseNotes' => $release['notes'] ?? '',
+            'credits' => [
+                'release' => $release['extraartists'] ?? [],
+                'tracks' => $this->trackCredits($release['tracklist'] ?? []),
+            ],
+        ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $tracks
+     * @return list<array<string, mixed>>
+     */
+    protected function trackCredits(array $tracks): array
+    {
+        $credits = [];
+
+        foreach ($tracks as $track) {
+            if (! empty($track['extraartists'])) {
+                $credits[] = [
+                    'position' => $track['position'] ?? '',
+                    'title' => $track['title'],
+                    'artists' => $track['extraartists'],
+                ];
+            }
+
+            array_push($credits, ...$this->trackCredits($track['sub_tracks'] ?? []));
+        }
+
+        return $credits;
     }
 
     /**

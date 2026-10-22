@@ -200,6 +200,9 @@ class RecordCollection
 
         return Arr::except($record, [
             'tracks',
+            'artistBios',
+            'releaseNotes',
+            'credits',
             'catalogNumber',
             'coverSource',
             'discogsUrl',

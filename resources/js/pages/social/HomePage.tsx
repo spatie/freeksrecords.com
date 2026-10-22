@@ -32,6 +32,10 @@ export function HomePage({ artwork }: HomeProps) {
                     </span>
                 </p>
             </section>
+            <footer className="landing-attribution">
+                Record data provided by{' '}
+                <a href="https://www.discogs.com">Discogs</a>.
+            </footer>
         </>
     );
 }
