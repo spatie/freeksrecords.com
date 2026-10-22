@@ -1,13 +1,16 @@
 <?php
 
 use App\Jobs\SyncUserCollection;
+use App\Notifications\CollectionImported;
 use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
 use Illuminate\Http\Client\Request;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Sleep;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
@@ -224,6 +227,7 @@ it('finishes a large initial collection over multiple real queue reservations wi
                 ->and($user->records()->count())->toBe(1 + 25 * $run)
                 ->and($user->records()->where('instance_id', 9999)->exists())->toBeTrue()
                 ->and($user->fresh()->toArray())->not->toHaveKey('discogs_sync_state');
+            $this->assertDatabaseCount('jobs', 1);
         }
         $this->travel(2)->seconds();
     }
@@ -234,8 +238,81 @@ it('finishes a large initial collection over multiple real queue reservations wi
         ->and($user->fresh()->sync_status)->toBe('Up to date')
         ->and($user->records()->where('instance_id', 126)->firstOrFail()->payload['originalYear'])->toBe(1974)
         ->and($user->records()->where('instance_id', 126)->firstOrFail()->payload['tracks'][0]['title'])->toBe('Complete track');
+    $this->assertDatabaseCount('jobs', 1);
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
     $this->assertDatabaseCount('jobs', 0);
     $this->assertDatabaseCount('failed_jobs', 0);
+});
+
+it('emails only completed initial imports above 50 records, including resumed imports', function (int $total) {
+    Notification::fake();
+    $user = socialUser('celebrate');
+    $user->update(['discogs_username' => 'celebrate', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    $entries = collect(range(1, $total))->map(function (int $instance) use ($user) {
+        socialRecord($user, instance: $instance, activity: false);
+
+        return discogsCollectionEntry($instance, 2000 + $instance);
+    });
+    socialRecord($user, 'Removed before counting', instance: 9999, activity: false);
+    Http::fake([
+        'api.discogs.com/users/*' => fn (Request $request) => Http::response([
+            'pagination' => ['pages' => (int) ceil($total / 10), 'items' => $total],
+            'releases' => $entries->slice(($request['page'] - 1) * 10, 10)->values()->all(),
+        ]),
+    ]);
+    $sync = fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $sync();
+
+    if ($total > 50) {
+        expect($user->fresh()->collection_imported_at)->toBeNull();
+        Notification::assertNothingSent();
+        $sync();
+    }
+
+    expect($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->records()->count())->toBe($total);
+    $sync();
+    if ($total <= 50) {
+        Notification::assertNothingSent();
+
+        return;
+    }
+
+    $sync();
+    expect($user->fresh()->sync_status)->toBe('Up to date');
+    Notification::assertSentToTimes($user, CollectionImported::class, 1);
+    Notification::assertSentTo($user, CollectionImported::class, fn (CollectionImported $mail) => $mail->recordCount === $total);
+})->with([50, 51]);
+
+it('does not email an incomplete large import', function () {
+    Notification::fake();
+    $user = socialUser('incomplete');
+    $user->update(['discogs_username' => 'incomplete', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 51], 'releases' => []]),
+    ]);
+
+    expect(fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))
+        ->toThrow(RuntimeException::class);
+    expect($user->fresh()->collection_imported_at)->toBeNull();
+    Notification::assertNothingSent();
+});
+
+it('renders a personal import celebration with the collection link in HTML and plain text', function () {
+    $user = socialUser('celebration');
+    $user->update(['name' => '<em>Alex & Robin</em>']);
+    $notification = new CollectionImported(1234);
+    $message = $notification->toMail($user);
+    $html = (string) $message->render();
+    $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
+
+    expect($html)->toContain('1,234 records', '&lt;em&gt;Alex &amp; Robin&lt;/em&gt;', 'href="'.route('profile', $user->handle).'"')
+        ->not->toContain('<em>Alex & Robin</em>');
+    expect($text)->toContain('1,234 records', 'View your collection: '.route('profile', $user->handle))
+        ->not->toContain('<table', '<style');
+    expect($notification->shouldSend($user, 'mail'))->toBeTrue();
+    $user->update(['email_verified_at' => null]);
+    expect($notification->shouldSend($user, 'mail'))->toBeFalse();
 });
 
 it('resumes the unfinished page after exhausted connection retries and reuses already fetched public details', function () {

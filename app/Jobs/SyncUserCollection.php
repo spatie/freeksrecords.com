@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\User;
+use App\Notifications\CollectionImported;
 use App\Support\Discogs;
 use App\Support\DiscogsRateLimitException;
 use App\Support\DiscogsRecordMapper;
@@ -186,6 +187,12 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 if ($initial) {
                     activity('discogs')->causedBy($user)->performedOn($user)->withProperties(['records_count' => count($seen)])
                         ->event('initial_import_completed')->log('Initial collection import completed');
+
+                    $recordCount = $user->records()->count();
+
+                    if ($recordCount > 50) {
+                        $user->notify(new CollectionImported($recordCount));
+                    }
                 }
             });
         } catch (DiscogsRateLimitException $exception) {
