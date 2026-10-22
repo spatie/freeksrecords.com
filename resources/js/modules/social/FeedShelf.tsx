@@ -20,13 +20,23 @@ export function FeedShelf({ records }: { records: CollectionRecordSummary[] }) {
                 <section className="feed-shelf" key={group.records[0].shareUrl}>
                     <header className="feed-shelf-heading">
                         {group.owner && (
-                            <Link href={group.owner.profileUrl}>
-                                <Avatar
-                                    className="feed-avatar"
-                                    person={group.owner}
-                                />
-                                <h2>{group.owner.name}</h2>
-                            </Link>
+                            <>
+                                <Link href={group.owner.profileUrl}>
+                                    <Avatar
+                                        className="feed-avatar"
+                                        person={group.owner}
+                                    />
+                                    <h2>{group.owner.name}</h2>
+                                </Link>
+                                <Link
+                                    className="feed-collection-link"
+                                    href={group.owner.profileUrl}
+                                    aria-label={`View ${group.owner.name}’s full collection`}
+                                >
+                                    View full collection{' '}
+                                    <span aria-hidden="true">→</span>
+                                </Link>
+                            </>
                         )}
                     </header>
                     <ul className="feed-shelf-records">

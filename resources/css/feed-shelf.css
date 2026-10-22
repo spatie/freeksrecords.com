@@ -20,7 +20,7 @@
     .feed-shelf-heading {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        flex-wrap: wrap;
         gap: 16px;
         padding-bottom: 16px;
         margin-bottom: 24px;
@@ -31,7 +31,14 @@
         align-items: center;
         gap: 12px;
         min-width: 0;
+        max-width: 100%;
         text-decoration: none;
+    }
+    .feed-shelf-heading > .feed-collection-link {
+        gap: 4px;
+        min-height: 44px;
+        font-size: 14px;
+        text-decoration: underline;
     }
     .feed-shelf-heading h2 {
         margin: 0;
