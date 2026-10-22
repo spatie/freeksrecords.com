@@ -36,9 +36,6 @@ export function HomePage({ artwork }: HomeProps) {
                         <ArrowUpRight aria-hidden="true" strokeWidth={3} />
                     </span>
                 </Link>
-                <Link className="landing-about" href="/about">
-                    About <ArrowUpRight aria-hidden="true" />
-                </Link>
             </section>
         </>
     );

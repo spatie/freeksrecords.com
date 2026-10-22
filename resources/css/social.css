@@ -1263,22 +1263,11 @@
     .landing-enter:hover {
         transform: rotate(-8deg) scale(1.05);
     }
-    .landing-enter svg,
-    .landing-about svg {
+    .landing-enter svg {
         display: inline-block;
         width: 0.85em;
         height: 0.85em;
         vertical-align: -0.05em;
-    }
-    .landing-about {
-        position: absolute;
-        left: 4.5vw;
-        bottom: 18px;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        min-height: 44px;
-        font-size: 18px;
     }
     .landing-empty {
         position: absolute;
@@ -1341,10 +1330,15 @@
             height: 20px;
         }
         .guest-navigation {
+            grid-row: 2;
+            grid-column: 1 / -1;
+            justify-self: stretch;
+            justify-content: space-between;
+            flex-wrap: wrap;
             gap: 15px !important;
         }
-        .guest-explore {
-            display: none !important;
+        .guest-navigation > a {
+            white-space: nowrap;
         }
         .guest-navigation .button {
             padding-inline: 12px;

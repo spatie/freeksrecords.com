@@ -134,6 +134,14 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 >
                                     Public collections
                                 </Link>
+                                <Link
+                                    href="/about"
+                                    aria-current={
+                                        path === '/about' ? 'page' : undefined
+                                    }
+                                >
+                                    About
+                                </Link>
                             </nav>
                         )}
                         <div className="header-account">
@@ -173,6 +181,14 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                             }
                         >
                             Public collections
+                        </Link>
+                        <Link
+                            href="/about"
+                            aria-current={
+                                path === '/about' ? 'page' : undefined
+                            }
+                        >
+                            About
                         </Link>
                         <Link
                             href="/login"
