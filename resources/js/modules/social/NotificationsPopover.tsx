@@ -14,11 +14,23 @@ export function NotificationsPopover() {
     const popover = useRef<HTMLElement>(null);
     const request = useRef(0);
 
-    async function load(url = '/notifications') {
+    async function load(url = '/notifications', markAsRead = false) {
         const current = ++request.current;
         setBusy(true);
         setError('');
         try {
+            if (markAsRead) {
+                const response = await fetch('/notifications/read', {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                });
+                if (!response.ok || response.redirected)
+                    throw new Error('Unavailable');
+            }
             const response = await fetch(url, {
                 headers: {
                     Accept: 'application/json',
@@ -40,12 +52,13 @@ export function NotificationsPopover() {
         }
     }
 
-    async function markRead() {
+    async function clearAll() {
+        request.current++;
         setBusy(true);
         setError('');
         try {
-            const response = await fetch('/notifications/read', {
-                method: 'POST',
+            const response = await fetch('/notifications', {
+                method: 'DELETE',
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -56,7 +69,7 @@ export function NotificationsPopover() {
                 throw new Error('Unavailable');
             await load();
         } catch {
-            setError('Couldn’t mark notifications as read. Please try again.');
+            setError('Couldn’t clear notifications. Please try again.');
             setBusy(false);
         }
     }
@@ -96,7 +109,8 @@ export function NotificationsPopover() {
                 popover="auto"
                 aria-labelledby="notifications-title"
                 onToggle={(event) => {
-                    if (event.newState === 'open') void load();
+                    if (event.newState === 'open')
+                        void load('/notifications', true);
                 }}
             >
                 <header className="notifications-heading">
@@ -128,13 +142,13 @@ export function NotificationsPopover() {
                     )}
                     {result && (
                         <>
-                            {count > 0 && (
+                            {result.notifications.data.length > 0 && (
                                 <button
                                     className="text-button"
                                     disabled={busy}
-                                    onClick={() => void markRead()}
+                                    onClick={() => void clearAll()}
                                 >
-                                    Mark all as read
+                                    Clear all
                                 </button>
                             )}
                             {!result.notifications.data.length && (

@@ -85,6 +85,7 @@ Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->grou
             Route::delete('/shelves/{record}/comments/{comment}', [SocialController::class, 'deleteComment']);
             Route::get('/notifications', [SocialController::class, 'notifications'])->name('notifications');
             Route::post('/notifications/read', [SocialController::class, 'readNotifications']);
+            Route::delete('/notifications', [SocialController::class, 'clearNotifications']);
             Route::post('/discogs/connect', [DiscogsConnectionController::class, 'connect'])->middleware('throttle:6,1');
             Route::get('/discogs/callback', [DiscogsConnectionController::class, 'callback'])->name('discogs.callback');
             Route::get('/discogs/status', [DiscogsConnectionController::class, 'status'])->name('discogs.status');

@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\SocialNotification;
 use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('model:prune', ['--model' => [SocialNotification::class]])
+    ->hourly()->withoutOverlapping()->onOneServer();
 
 Schedule::command('records:sync-discogs')
     ->dailyAt('04:00')

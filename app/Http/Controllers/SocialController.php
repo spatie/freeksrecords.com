@@ -201,4 +201,15 @@ class SocialController extends Controller
 
         return back()->with('status', 'Notifications marked as read.');
     }
+
+    public function clearNotifications(Request $request): RedirectResponse|Response
+    {
+        SocialNotification::query()->where('user_id', $request->user()->id)->delete();
+
+        if ($request->ajax() && ! $request->header('X-Inertia')) {
+            return response()->noContent();
+        }
+
+        return back()->with('status', 'Notifications cleared.');
+    }
 }

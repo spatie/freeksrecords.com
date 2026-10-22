@@ -542,6 +542,54 @@ it('keeps older notifications accessible in the popover', function () {
     $actor->update(['google_avatar_url' => null]);
     $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
         ->assertJsonPath('notifications.data.0.actor.avatarUrl', null);
+    $this->post('/notifications/read', [], ['X-Requested-With' => 'XMLHttpRequest'])->assertNoContent();
+    $this->get('/notifications?page=2', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertJsonPath('notifications.data.0.unread', false)->assertJsonPath('unreadCount', 0);
+    $this->get('/settings')->assertInertia(fn (Assert $page) => $page->where('notificationCount', 0));
+    $this->assertDatabaseCount('social_notifications', 16);
+});
+
+it('clears all of the recipient’s notifications without changing friendships or other recipients', function () {
+    $viewer = socialUser('viewer');
+    $actor = socialUser('actor');
+    $friendship = socialFriends($viewer, $actor);
+    $hidden = socialRecord($actor);
+    SocialNotification::send($viewer, $actor, 'comment', $hidden);
+    foreach (range(1, 16) as $index) {
+        SocialNotification::send($viewer, $actor, 'friend_accepted');
+    }
+    SocialNotification::query()->where('user_id', $viewer->id)->first()->update(['read_at' => now()]);
+    SocialNotification::send($actor, $viewer, 'friend_request');
+
+    $this->delete('/notifications')->assertRedirect('/login');
+    $this->actingAs($viewer)->delete('/notifications', [], ['X-Requested-With' => 'XMLHttpRequest'])->assertNoContent();
+    $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertJsonCount(0, 'notifications.data')->assertJsonPath('unreadCount', 0);
+    $this->assertDatabaseCount('social_notifications', 1);
+    $this->assertDatabaseHas('social_notifications', ['user_id' => $actor->id, 'read_at' => null]);
+    $this->assertModelExists($friendship);
+    $this->assertModelExists($hidden);
+});
+
+it('expires read and unread notifications at seven days and prunes only expired rows', function () {
+    $this->freezeTime();
+    $viewer = socialUser('viewer');
+    $actor = socialUser('actor');
+    foreach ([now()->subDays(8), now()->subDays(7), now()->subDays(7)->addSecond()] as $createdAt) {
+        foreach ([null, now()] as $readAt) {
+            SocialNotification::query()->create([
+                'user_id' => $viewer->id, 'actor_id' => $actor->id, 'kind' => 'friend_accepted',
+                'created_at' => $createdAt, 'read_at' => $readAt,
+            ]);
+        }
+    }
+
+    $this->actingAs($viewer)->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
+        ->assertJsonCount(2, 'notifications.data')->assertJsonPath('unreadCount', 1);
+    $this->get('/settings')->assertInertia(fn (Assert $page) => $page->where('notificationCount', 1));
+    $this->artisan('model:prune', ['--model' => [SocialNotification::class]])->assertSuccessful();
+    $this->assertDatabaseCount('social_notifications', 2);
+    expect(SocialNotification::query()->toBase()->pluck('created_at')->unique()->all())->toBe([now()->subDays(7)->addSecond()->toDateTimeString()]);
 });
 
 it('isolates legacy collection copies, snapshot fallback, and all legacy URLs from other owners', function () {

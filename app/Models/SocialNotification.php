@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,9 +19,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SocialNotification extends Model
 {
+    use MassPrunable;
+
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
+
+    /** @return Builder<SocialNotification> */
+    public function prunable(): Builder
+    {
+        return self::query()->where('created_at', '<=', now()->subDays(7));
+    }
 
     /** @return BelongsTo<User, $this> */
     public function actor(): BelongsTo
@@ -37,7 +46,7 @@ class SocialNotification extends Model
     /** @return Builder<SocialNotification> */
     public static function visibleTo(User $user): Builder
     {
-        return self::query()->where('user_id', $user->id)->where(function (Builder $query) use ($user): void {
+        return self::query()->where('user_id', $user->id)->where('created_at', '>', now()->subDays(7))->where(function (Builder $query) use ($user): void {
             $query->whereNull('collection_record_id')
                 ->orWhereIn('collection_record_id', CollectionRecord::visibleTo($user)->select('id'));
         });
