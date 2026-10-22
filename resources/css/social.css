@@ -503,6 +503,7 @@
         background: var(--ink);
         color: var(--cream);
         font-size: 16px;
+        text-decoration: none;
         transition:
             background 180ms,
             color 180ms,
