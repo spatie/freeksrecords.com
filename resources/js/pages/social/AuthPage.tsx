@@ -19,7 +19,7 @@ const welcomes = {
     login: 'Welcome back.',
 };
 const introductions = {
-    register: 'Bring your Discogs collection. Choose who you share it with.',
+    register: 'Import your Discogs collection. Choose who you share it with.',
     forgot: 'Enter your email address to receive a password reset link.',
     reset: '',
     verify: '',

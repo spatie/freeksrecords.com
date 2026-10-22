@@ -45,7 +45,7 @@ class AccountController extends Controller
         }
         $request->session()->regenerate();
 
-        return redirect()->intended('/feed');
+        return redirect()->intended(route('home'));
     }
 
     public function logout(Request $request): RedirectResponse

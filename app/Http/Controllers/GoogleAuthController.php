@@ -109,7 +109,7 @@ class GoogleAuthController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->intended('/feed');
+            return redirect()->intended(route('home'));
         } catch (InvalidStateException|GuzzleException) {
             return redirect($destination)->withErrors(['google' => 'Google sign-in could not be completed. Please try again.']);
         } catch (UniqueConstraintViolationException) {

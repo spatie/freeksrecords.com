@@ -79,7 +79,12 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
 
             return;
         }
-        $user = User::query()->findOrFail($this->userId);
+        $user = User::query()->find($this->userId);
+        if (! $user) {
+            $lock->release();
+
+            return;
+        }
         $changed = false;
         try {
             if (! $user->discogs_token) {

@@ -60,7 +60,7 @@ it('creates a private verified Google account and sends it straight to importing
     $this->get(route('google.redirect'));
     $sessionId = session()->getId();
     $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))
-        ->assertRedirect('/feed')->assertSessionMissing('google_pending')->assertSessionMissing('state')->assertSessionMissing('code_verifier');
+        ->assertRedirect('/')->assertSessionMissing('google_pending')->assertSessionMissing('state')->assertSessionMissing('code_verifier');
 
     $user = User::query()->where('google_id', 'google-sub-123')->firstOrFail();
     $this->assertAuthenticatedAs($user);
@@ -87,7 +87,7 @@ it('lets a deleted legacy owner start fresh through Google without restoring the
     $previous->delete();
 
     $this->get(route('google.redirect'));
-    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/feed');
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/');
 
     $user = User::query()->where('email', $previous->email)->firstOrFail();
     $this->assertAuthenticatedAs($user);
@@ -107,7 +107,8 @@ it('signs in by Google subject without changing profile email or confusing anoth
     $other = socialUser('other');
     $this->googleProfile['email'] = $other->email;
     $this->get(route('google.redirect'));
-    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/feed');
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/');
+    $this->get('/')->assertRedirect('/linked');
     $this->assertAuthenticatedAs($linked);
     expect($linked->fresh()->email)->toBe('linked@example.test')->and($linked->fresh()->name)->toBe('Linked')
         ->and($linked->fresh()->google_avatar_url)->toBe($this->googleProfile['picture'])
@@ -120,7 +121,7 @@ it('falls back to initials when Google removes a photo or supplies an unsafe ima
     $linked->update(['google_id' => 'google-sub-123', 'google_avatar_url' => 'https://lh3.googleusercontent.com/old-photo']);
     $this->googleProfile['picture'] = $picture;
     $this->get(route('google.redirect'));
-    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/feed');
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/');
     $this->assertAuthenticatedAs($linked);
     expect($linked->fresh()->google_avatar_url)->toBeNull();
     $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.avatarUrl', null));
@@ -175,7 +176,7 @@ it('fails closed for wrong, missing, expired and cancelled OAuth flows and consu
 it('rejects callback replay without creating or switching accounts', function () {
     $this->get(route('google.redirect'));
     $query = ['state' => session('state'), 'code' => 'valid-code'];
-    $this->get(route('google.callback', $query))->assertRedirect('/feed');
+    $this->get(route('google.callback', $query))->assertRedirect('/');
     $user = User::query()->where('google_id', 'google-sub-123')->firstOrFail();
     $this->get(route('google.callback', $query))->assertRedirect('/settings')->assertSessionHasErrors('google');
     $this->assertAuthenticatedAs($user);
@@ -210,7 +211,7 @@ it('links only the password-confirmed account, preserves its collection and pref
     $this->actingAs($owner->fresh())->get('/settings')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.googleConnected', true));
     $this->post('/logout');
     $this->get(route('google.redirect'));
-    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'another-valid-code']))->assertRedirect('/feed');
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'another-valid-code']))->assertRedirect('/');
     $this->assertAuthenticatedAs($owner);
     $this->assertDatabaseCount('users', 3);
     Notification::assertNothingSent();

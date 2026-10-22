@@ -134,18 +134,23 @@
         max-height: 55svh;
         overflow-y: auto;
         scrollbar-width: thin;
+        scrollbar-gutter: stable;
+        padding-right: 6px;
     }
     .index-group {
         display: flex;
         justify-content: space-between;
         gap: 12px;
-        padding: 10px 0;
+        padding: 10px 12px;
         border-top: 1px solid #20201633;
         font-size: 15px;
+        text-decoration: none;
+        transition: background-color 180ms;
     }
     .index-group > span:last-child {
         font-size: 14px;
         padding-top: 3px;
+        flex-shrink: 0;
     }
     .index-group[aria-current],
     .index-group:hover {

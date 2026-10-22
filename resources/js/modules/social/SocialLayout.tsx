@@ -61,6 +61,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             'social/FeedPage': 'feed-page',
             'social/FriendsPage': 'friends-page',
             'social/SettingsPage': 'settings-page',
+            'social/DeleteAccountPage': 'delete-account-page',
             'social/AboutPage': 'about-page',
             'social/PrivacyPage': 'legal-page',
             'social/TermsPage': 'legal-page',
@@ -119,7 +120,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                             : undefined
                                     }
                                 >
-                                    Friends
+                                    Friends’ finds
                                 </Link>
                                 <Link
                                     href="/collections"
@@ -129,7 +130,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                             : undefined
                                     }
                                 >
-                                    Public
+                                    Public collections
                                 </Link>
                             </nav>
                         )}
@@ -169,7 +170,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 path === '/collections' ? 'page' : undefined
                             }
                         >
-                            Public
+                            Public collections
                         </Link>
                         <Link
                             href="/login"
