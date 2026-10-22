@@ -25,7 +25,7 @@ class RecordShareImage
         imagettftext($image, 32, 0, 54, 82, $ink, $display, 'Plaat Club.');
 
         $size = $records === [] ? 100 : 70;
-        $lines = $this->wrap($title, $display, $size, 1090, 2);
+        $lines = $this->wrap($title, $display, $size, $records === [] ? 720 : 1090, 2);
         foreach ($lines as $index => $line) {
             imagettftext($image, $size, 0, 54, 205 + $index * ($size + 8), $ink, $display, $line);
         }

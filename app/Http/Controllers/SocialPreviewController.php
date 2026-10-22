@@ -44,7 +44,7 @@ class SocialPreviewController extends Controller
      */
     protected function image(array $fields, Closure $render): Response
     {
-        $key = 'social-preview:v2:'.hash('sha256', json_encode($fields, JSON_THROW_ON_ERROR));
+        $key = 'social-preview:v3:'.hash('sha256', json_encode($fields, JSON_THROW_ON_ERROR));
         $bytes = Cache::remember($key, now()->addDay(), fn () => base64_encode($render()));
 
         return response(base64_decode($bytes))->header('Content-Type', 'image/jpeg');
