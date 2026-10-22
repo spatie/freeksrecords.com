@@ -140,8 +140,16 @@ Runs also yield after 25 new copies, five listing pages, or a 60-second work bud
 an unfinished page is replayed safely. Checkpoints expire after a day, and changed listing
 totals restart the scan without pruning. Copies keep their complete tracks and original-year
 metadata. Public release/master responses are cached for a week across collectors; private
-collection listings and OAuth responses are never cached. Connection errors, HTTP 429 and
-5xx responses receive up to three request attempts with backoff before queue-level retries.
+collection listings and OAuth responses are never cached. All Discogs API requests, including
+OAuth and legacy imports, share an atomic cache lock and request budget. Authenticated requests
+are spaced at least 1.1 seconds apart (2.5 seconds without authentication), in addition to response
+time. Discogs' limit/used/remaining headers can lower the rate or pause requests for 60 seconds
+when the budget is exhausted. HTTP 429 pauses all callers for at least 60 seconds; longer
+`Retry-After` values (seconds or HTTP dates, also on 503) are respected. Long waits release import
+jobs until the cooldown expires, retaining checkpoints without consuming exception retries.
+Use a shared cache store such as database or Redis across all web and queue instances; local
+file or array stores cannot coordinate separate servers. Connection errors and 5xx responses
+receive up to three request attempts with backoff before queue-level retries.
 Normal yields and deploy interruptions do not consume the three-exception retry budget; imports have a
 24-hour retry deadline. Automatic retries are shown as retrying, not paused; only
 exhausted retries require manual action. Diagnostics retain HTTP status or exception

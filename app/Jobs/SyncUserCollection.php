@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\User;
 use App\Support\Discogs;
+use App\Support\DiscogsRateLimitException;
 use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
 use App\Support\RecordCollection;
@@ -170,6 +171,8 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 $changed = $changed || $removed > 0;
                 $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date', 'discogs_sync_state' => null]);
             });
+        } catch (DiscogsRateLimitException $exception) {
+            $this->release($exception->retryAfter);
         } catch (Throwable $exception) {
             $user->update(['sync_status' => 'Retrying automatically. Existing records were kept.']);
             // Never serialize HTTP exceptions containing OAuth headers into failed_jobs/logs.

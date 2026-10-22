@@ -10,6 +10,7 @@ use Illuminate\Support\Sleep;
 it('imports mixed bundles and unknown media without losing descriptions', function () {
     Http::preventStrayRequests();
     Sleep::fake();
+    Sleep::syncWithCarbon();
     config(['services.discogs.consumer_key' => 'test', 'services.discogs.consumer_secret' => 'secret']);
     $user = socialUser('formats', 'everyone');
     $user->update(['discogs_username' => 'formats', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
@@ -55,6 +56,7 @@ it('backfills legacy descriptions without changing dates or activity and recogni
 it('refreshes known copies from the listing without fetching releases or changing notes dates and activity', function (bool $activity) {
     Http::preventStrayRequests();
     Sleep::fake();
+    Sleep::syncWithCarbon();
     config(['services.discogs.consumer_key' => 'test', 'services.discogs.consumer_secret' => 'secret']);
     $user = socialUser('knownformats');
     $user->update(['discogs_username' => 'knownformats', 'discogs_token' => 'access', 'discogs_secret' => 'secret', 'collection_imported_at' => now()]);

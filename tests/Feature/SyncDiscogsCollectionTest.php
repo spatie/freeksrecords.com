@@ -11,6 +11,7 @@ use Illuminate\Support\Sleep;
 beforeEach(function () {
     Http::preventStrayRequests();
     Sleep::fake();
+    Sleep::syncWithCarbon();
 
     $this->disk = Storage::fake('public');
     $this->collection = app(RecordCollection::class);

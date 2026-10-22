@@ -41,29 +41,21 @@ class Discogs
                     break;
                 } catch (ConnectionException|RequestException $exception) {
                     $status = $exception instanceof RequestException ? $exception->response->status() : null;
-                    if ($attempt >= 2 || ($status !== null && $status !== 429 && $status < 500)) {
+                    if ($attempt >= 2 || ($status !== null && $status < 500)) {
                         throw $exception;
                     }
-                    Sleep::for($status === 429 ? 60 : 2 ** ($attempt + 1))->seconds();
+                    Sleep::for(2 ** ($attempt + 1))->seconds();
                 }
             }
-            Sleep::for(1)->seconds();
 
             return $response->json();
         }
         $url = "https://api.discogs.com/{$path}";
 
-        $response = $this->request()->get($url, $query);
-
-        if ($response->status() === 429) {
-            Sleep::for(60)->seconds();
-
-            $response = $this->request()->get($url, $query);
-        }
-
-        $response->throw();
-
-        Sleep::for(3)->seconds();
+        $response = app(DiscogsRateLimiter::class)->request(
+            fn () => $this->request()->get($url, $query),
+            authenticated: (bool) config('services.discogs.token'),
+        );
 
         return $response->json();
     }

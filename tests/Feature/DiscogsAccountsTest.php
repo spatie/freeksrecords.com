@@ -14,6 +14,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 beforeEach(function () {
     Http::preventStrayRequests();
     Sleep::fake();
+    Sleep::syncWithCarbon();
     config(['services.discogs.consumer_key' => 'test-consumer', 'services.discogs.consumer_secret' => 'test-secret']);
 });
 
@@ -273,7 +274,7 @@ it('recovers transient Discogs request errors without restarting the collection'
     (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect($user->fresh()->sync_status)->toBe('Up to date')
         ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Recovered');
-})->with(['connection', '503', '429']);
+})->with(['connection', '503']);
 
 it('shares only public release details between collectors while fetching each private collection separately', function () {
     $first = socialUser('cachefirst');

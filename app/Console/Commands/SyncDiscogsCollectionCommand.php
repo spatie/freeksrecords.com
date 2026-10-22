@@ -6,6 +6,7 @@ use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
 use App\Models\User;
 use App\Support\Discogs;
+use App\Support\DiscogsRateLimitException;
 use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
 use App\Support\RecordCollection;
@@ -99,7 +100,7 @@ class SyncDiscogsCollectionCommand extends Command
 
                 $page++;
             } while ($page <= ($response['pagination']['pages'] ?? 1));
-        } catch (ConnectionException|RequestException $exception) {
+        } catch (ConnectionException|RequestException|DiscogsRateLimitException $exception) {
             $this->error("Discogs sync interrupted. Imported records are saved; rerun to resume. {$exception->getMessage()}");
 
             $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $refreshed);

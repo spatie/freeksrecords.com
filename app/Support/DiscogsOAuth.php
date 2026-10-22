@@ -33,9 +33,9 @@ class DiscogsOAuth
         $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $base, $key, true));
         $header = implode(', ', array_map(fn ($key, $value) => rawurlencode($key).'="'.rawurlencode((string) $value).'"', array_keys($oauth), $oauth));
 
-        return Http::withUserAgent(config('services.discogs.user_agent'))
+        return app(DiscogsRateLimiter::class)->request(fn () => Http::withUserAgent(config('services.discogs.user_agent'))
             ->withHeaders(['Authorization' => 'OAuth '.$header])
             ->asForm()->connectTimeout(5)->timeout(25)->withoutRedirecting()
-            ->send($method, $url, ['query' => $query])->throw();
+            ->send($method, $url, ['query' => $query]));
     }
 }
