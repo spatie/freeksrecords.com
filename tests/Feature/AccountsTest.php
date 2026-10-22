@@ -3,6 +3,7 @@
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -78,9 +79,25 @@ it('renders account emails with a shared inline layout and a working action link
     $message = $notification === 'verify' ? new VerifyEmail : new ResetPassword('preview-token');
     $html = (string) $message->toMail($user)->render();
 
-    expect($html)->toContain(config('app.name'), 'class="inner-body"', '#f5f1e7', '#a64028', 'class="button button-primary"', $actionPath)
+    expect($html)->toContain(config('app.name'), 'class="inner-body"', '#f5f1e7', $actionPath)
         ->not->toContain('<link rel="stylesheet"');
 })->with([['verify', '/verify-email/'], ['reset', '/reset-password/preview-token']]);
+
+it('renders a branded verification email with the same signed link and expiry in HTML and plain text', function () {
+    config(['auth.verification.expire' => 37]);
+    $user = socialUser('verificationmail');
+    $user->update(['email_verified_at' => null]);
+    $message = (new VerifyEmail)->toMail($user);
+    $html = (string) $message->render();
+    $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
+    $url = $message->viewData['url'];
+
+    expect($html)->toContain('ALMOST', 'One more spin.', 'Verify my email', '#d9ed92', '#d3c0ea', $user->email, '37 minutes')
+        ->and(html_entity_decode($html))->toContain('href="'.$url.'"')
+        ->and($text)->toContain('Verify my email: '.$url, '37 minutes')->not->toContain('<table', '<style');
+    $this->actingAs($user)->get($url)->assertRedirect('/feed');
+    expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
+});
 
 it('registers a friends-only account, verifies the inbox, and authenticates securely', function () {
     Notification::fake();
@@ -196,7 +213,34 @@ it('reserves Freek’s identity and rejects duplicate or invalid handles and wea
     $this->post('/register', $data)->assertSessionHasErrors(['handle', 'password']);
     $this->post('/register', [...$data, 'handle' => 'valid_handle', 'email' => 'FREEK@spatie.be'])->assertSessionHasErrors('email');
     $this->post('/register', [...$data, 'handle' => '<invalid>'])->assertSessionHasErrors('handle');
-    expect(User::freek()->email_verified_at)->toBeNull();
+    expect(User::freek()->hasVerifiedEmail())->toBeTrue();
+});
+
+it('requires inbox verification throughout the app while keeping verification and sign-out available', function () {
+    Notification::fake();
+    $user = socialUser('unverified');
+    $user->update(['email_verified_at' => null]);
+    $public = socialUser('public_collector', 'everyone');
+    $record = socialRecord($public);
+
+    $this->actingAs($user);
+    foreach (['/', '/feed', '/friends', '/settings', '/notifications', '/collections', '/community', '/unverified', '/people/unverified', "/shelves/{$record->id}", '/public_collector'] as $path) {
+        $this->get($path)->assertRedirect('/verify-email');
+    }
+    $this->get('/verify-email')->assertOk();
+    $this->from('/verify-email')->post('/email/verification-notification')->assertRedirect('/verify-email')->assertSessionMissing('status');
+    Notification::assertSentTo($user, VerifyEmail::class);
+
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => 'wrong']))->assertForbidden();
+    expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->subMinute(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertForbidden();
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/public_collector');
+    $this->get('/public_collector')->assertOk();
+
+    $user->update(['email_verified_at' => null]);
+    $this->post('/logout')->assertRedirect('/');
+    $this->get('/collections')->assertOk();
+    $this->get('/public_collector')->assertOk();
 });
 
 it('resets passwords through a single-use expiring email token', function () {

@@ -82,6 +82,10 @@ record room is at `/collection`; existing record URLs and old root browse fragme
 continue to work. Visit `/community` to learn more or join. Accounts use email/password, inbox verification,
 and password reset. Each profile has a unique handle at `/people/{handle}`.
 
+Signed-in accounts must verify their email before using the app, including opening
+collection pages directly. Google sign-in automatically verifies the matching email
+provided by Google. Anonymous visitors can still browse public collections.
+
 - New collections default to **Only me**. **Friends** means accepted mutual friends;
   **Everyone** includes anonymous visitors. Hidden profiles expose only a name/handle,
   never record counts or Discogs connection details.
@@ -92,6 +96,9 @@ and password reset. Each profile has a unique handle at `/people/{handle}`.
   links work without signing in, but require a confirmation POST: opening or scanning
   an email never changes a friendship. Responses and cancellations invalidate both
   choices, and an old link cannot act on a later request between the same people.
+  Acceptance queues a confirmation email to the original requester after the transaction
+  commits. Delivery is skipped if their email is unverified or that friendship has since
+  been removed. Declining a request sends no email.
 - Feed entries use the original Discogs addition date, newest first. First imports
   and migrated records never generate activity. Visibility and friendship are queried
   again on every visit, notification listing, and digest send.
@@ -169,7 +176,10 @@ no emails and creates no activity or notifications. It reserves **freek@spatie.b
 an unknowable random password. Do not create a seeded production password.
 
 Once real mail is configured, run `php artisan social:provision-freek` to send a standard
-single-use password setup link only to that inbox. Then sign in and verify the email.
+single-use password setup link only to that inbox. Then sign in.
+The `verify_existing_email_addresses` migration marks all existing accounts as verified
+without sending email or overwriting previous verification dates. Future password-based
+registrations still need inbox verification.
 On snapshot-only installations, run `records:import-snapshot` before connecting Freek’s
 Discogs account. The original shelf at `/collection`, `/record/...`, API and share-image routes remain public,
 anonymous and edge-cacheable, and are always scoped to Freek. His collection remains

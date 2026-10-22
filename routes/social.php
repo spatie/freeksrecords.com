@@ -14,12 +14,13 @@ use App\Http\Controllers\SocialController;
 use App\Http\Controllers\SocialPreviewController;
 use App\Http\Middleware\EnsureCollectionAccess;
 use App\Http\Middleware\PrivateResponse;
+use App\Http\Middleware\RequireVerifiedAccount;
 use App\Support\SocialData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->group(function () {
+Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, EnsureCollectionAccess::class])->group(function () {
     foreach (['about', 'privacy', 'terms'] as $document) {
         Route::get("/{$document}", function () use ($document) {
             if ($document === 'terms') {

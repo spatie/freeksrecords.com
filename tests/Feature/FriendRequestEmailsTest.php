@@ -3,6 +3,7 @@
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Notifications\FriendRequest;
+use App\Notifications\FriendRequestAccepted;
 use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -59,9 +60,12 @@ it('confirms email responses without signing in, never mutates on GET and consum
     if ($action === 'accept') {
         expect($pending->fresh()->accepted_at)->not->toBeNull();
         $this->assertDatabaseCount('social_notifications', 2);
+        Notification::assertSentToTimes($sender, FriendRequestAccepted::class, 1);
+        Notification::assertNotSentTo($recipient, FriendRequestAccepted::class);
     } else {
         expect($pending->fresh())->toBeNull();
         $this->assertDatabaseCount('social_notifications', 1);
+        Notification::assertNothingSentTo($sender);
     }
     foreach ($links as $url) {
         $this->post($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('sender', null));
@@ -70,6 +74,62 @@ it('confirms email responses without signing in, never mutates on GET and consum
     expect(Friendship::query()->whereNotNull('accepted_at')->count())->toBe($action === 'accept' ? 1 : 0);
     $this->get('/shelves/'.$sender->records()->first()->id)->assertRedirect('/login');
 })->with(['accept', 'decline']);
+
+it('emails the requester once with a collection link only when the accepted friends collection is visible', function (bool $requesterCreatedFirst, string $visibility) {
+    Notification::fake();
+    $first = socialUser('firstcollector');
+    $second = socialUser('secondcollector');
+    $requester = $requesterCreatedFirst ? $first : $second;
+    $friend = $requesterCreatedFirst ? $second : $first;
+    $friend->update(['name' => '<em>Robin & friends</em>', 'visibility' => $visibility]);
+
+    $this->actingAs($requester)->post('/friends/'.$friend->id, ['action' => 'request'])->assertRedirect();
+    Notification::assertNotSentTo($requester, FriendRequestAccepted::class);
+    $this->post('/logout');
+    $this->actingAs($friend)->post('/friends/'.$requester->id, ['action' => 'accept'])->assertRedirect();
+    $this->post('/friends/'.$requester->id, ['action' => 'accept'])->assertForbidden();
+    Notification::assertSentToTimes($requester, FriendRequestAccepted::class, 1);
+    Notification::assertNotSentTo($friend, FriendRequestAccepted::class);
+    Notification::assertSentTo($requester, FriendRequestAccepted::class, function (FriendRequestAccepted $notification) use ($requester, $friend, $visibility) {
+        $message = $notification->toMail($requester);
+        $html = (string) $message->render();
+        $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
+        $url = route('profile', $friend->handle);
+
+        expect($html)->toContain('&lt;em&gt;Robin &amp; friends&lt;/em&gt;', 'accepted your friend request')
+            ->not->toContain('<em>Robin & friends</em>');
+        expect($text)->not->toContain('<table', '<style');
+        if ($visibility === 'only_me') {
+            expect($html)->not->toContain('See their collection', $url);
+            expect($text)->not->toContain('See their collection', $url);
+        } else {
+            expect($html)->toContain('href="'.$url.'"');
+            expect($text)->toContain('See their collection: '.$url);
+        }
+
+        return true;
+    });
+})->with([[true, 'only_me'], [false, 'friends'], [true, 'everyone']]);
+
+it('suppresses queued acceptance emails for unverified requesters or friendships that no longer exist', function () {
+    $requester = socialUser('requester');
+    $friend = socialUser('friend');
+    $stranger = socialUser('stranger');
+    $friendship = socialFriends($requester, $friend);
+    $notification = new FriendRequestAccepted($friendship->id);
+
+    expect($notification->shouldSend($requester, 'mail'))->toBeTrue()
+        ->and($notification->shouldSend($friend, 'mail'))->toBeFalse()
+        ->and($notification->shouldSend($stranger, 'mail'))->toBeFalse();
+    $requester->update(['email_verified_at' => null]);
+    expect($notification->shouldSend($requester, 'mail'))->toBeFalse();
+    $requester->update(['email_verified_at' => now()]);
+    $friendship->update(['accepted_at' => null]);
+    expect($notification->shouldSend($requester, 'mail'))->toBeFalse();
+    $friendship->delete();
+    socialFriends($requester, $friend);
+    expect($notification->shouldSend($requester, 'mail'))->toBeFalse();
+});
 
 it('rejects tampered and expired links and never applies an old email to a replacement request', function () {
     Notification::fake();

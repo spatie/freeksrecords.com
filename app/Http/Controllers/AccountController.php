@@ -71,7 +71,7 @@ class AccountController extends Controller
             $request->user()->sendEmailVerificationNotification();
         }
 
-        return back()->with('status', 'Verification email sent.');
+        return back();
     }
 
     public function forgot(Request $request): RedirectResponse

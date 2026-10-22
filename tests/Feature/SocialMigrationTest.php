@@ -5,7 +5,27 @@ use App\Models\User;
 use App\Support\RecordCollection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
+
+it('verifies existing emails silently without overwriting verification dates or verifying future signups', function () {
+    Notification::fake();
+    $existing = socialUser('existing_unverified');
+    $existing->update(['email_verified_at' => null]);
+    $verified = socialUser('already_verified');
+    $verified->update(['email_verified_at' => now()->subYear()]);
+    $originalDate = $verified->fresh()->email_verified_at;
+    $this->travelTo(now()->startOfSecond());
+
+    $migration = require database_path('migrations/2026_10_22_210000_verify_existing_email_addresses.php');
+    $migration->up();
+
+    expect($existing->fresh()->email_verified_at->equalTo(now()))->toBeTrue()
+        ->and($verified->fresh()->email_verified_at->equalTo($originalDate))->toBeTrue();
+    $new = User::query()->create(['email' => 'future@example.test', 'password' => 'a-long-demo-password']);
+    expect($new->fresh()->hasVerifiedEmail())->toBeFalse();
+    Notification::assertNothingSent();
+});
 
 it('migrates the existing collection losslessly and silently to Freek’s reserved account', function () {
     foreach (['social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'users', 'password_reset_tokens'] as $table) {

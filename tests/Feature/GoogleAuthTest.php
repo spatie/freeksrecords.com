@@ -134,6 +134,19 @@ it('signs in by Google subject without changing profile email or confusing anoth
     $this->assertDatabaseCount('users', 3);
 });
 
+it('verifies an existing Google account only when Google verifies its stored email', function (bool $sameEmail) {
+    $linked = socialUser('linked');
+    $linked->update(['google_id' => 'google-sub-123', 'email_verified_at' => null]);
+    $this->googleProfile['email'] = $sameEmail ? $linked->email : 'different@example.test';
+    $this->get(route('google.redirect'));
+    $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/');
+
+    $this->assertAuthenticatedAs($linked);
+    expect($linked->fresh()->hasVerifiedEmail())->toBe($sameEmail);
+    $this->get('/')->assertRedirect($sameEmail ? '/linked' : '/verify-email');
+    Notification::assertNothingSent();
+})->with([true, false]);
+
 it('falls back to initials when Google removes a photo or supplies an unsafe image URL', function (?string $picture) {
     $linked = socialUser('linked');
     $linked->update(['google_id' => 'google-sub-123', 'google_avatar_url' => 'https://lh3.googleusercontent.com/old-photo']);

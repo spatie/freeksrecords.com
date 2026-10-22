@@ -78,8 +78,8 @@ export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
                             <p>
                                 We sent a link to{' '}
                                 <strong>{auth.user?.email}</strong>. Open that
-                                email and follow the link to verify your
-                                address.
+                                email and follow the link to verify your address
+                                before using Plaat Club.
                             </p>
                             <p className="muted">
                                 Can’t find it? Check your spam folder, or send a

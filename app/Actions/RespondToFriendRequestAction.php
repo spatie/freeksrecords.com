@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
+use App\Notifications\FriendRequestAccepted;
 use Illuminate\Support\Facades\DB;
 
 class RespondToFriendRequestAction
@@ -26,7 +27,9 @@ class RespondToFriendRequestAction
             }
 
             $pending->update(['accepted_at' => now()]);
-            SocialNotification::send(User::query()->findOrFail($pending->requested_by), $recipient, 'friend_accepted');
+            $requester = User::query()->findOrFail($pending->requested_by);
+            SocialNotification::send($requester, $recipient, 'friend_accepted');
+            $requester->notify(new FriendRequestAccepted($pending->id));
         });
     }
 }

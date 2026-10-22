@@ -3,11 +3,14 @@
 namespace App\Providers;
 
 use App\Listeners\FulfillInvitationsListener;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -22,6 +25,15 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(Registered::class, [FulfillInvitationsListener::class, 'fulfill']);
         Event::listen(Verified::class, [FulfillInvitationsListener::class, 'fulfill']);
+
+        VerifyEmail::toMailUsing(fn (User $user, string $url): MailMessage => (new MailMessage)
+            ->subject('One more spin. Verify your Plaat Club email.')
+            ->theme('friend-request-theme')
+            ->markdown('mail.verify-email', [
+                'email' => $user->email,
+                'url' => $url,
+                'expires' => config('auth.verification.expire', 60),
+            ]));
 
         DB::prohibitDestructiveCommands(app()->isProduction());
 

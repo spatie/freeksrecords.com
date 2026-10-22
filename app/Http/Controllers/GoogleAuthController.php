@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -103,6 +104,11 @@ class GoogleAuthController extends Controller
                     'password' => Str::random(64), 'email_verified_at' => now(),
                 ]);
                 event(new Registered($user));
+            }
+
+            if ($user->email === $email && ! $user->hasVerifiedEmail()) {
+                $user->markEmailAsVerified();
+                event(new Verified($user));
             }
 
             $user->update(['google_avatar_url' => $avatar]);

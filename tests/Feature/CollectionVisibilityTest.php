@@ -47,7 +47,7 @@ it('requires authentication and verification before changing sharing', function 
     $owner->update(['email_verified_at' => null]);
     $this->actingAs($owner)->patch(route('collection.visibility.update'), ['visibility' => 'everyone'])->assertRedirect('/verify-email');
     expect($owner->fresh()->visibility)->toBe('only_me');
-    $this->get(route('profile', $owner->handle))->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.verified', false));
+    $this->get(route('profile', $owner->handle))->assertRedirect('/verify-email');
 });
 
 it('rejects invalid sharing values without changing the collection', function (array $payload) {
