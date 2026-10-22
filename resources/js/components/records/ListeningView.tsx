@@ -20,6 +20,7 @@ import type {
     CollectionRecordSummary,
 } from '@/components/records/types';
 import { useRecordTransition } from '@/components/records/useRecordTransition';
+import '../../../css/record-cases.css';
 
 type ListeningViewProps = {
     clubLayout?: boolean;
@@ -76,6 +77,7 @@ export function ListeningView({
     const label = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const [shareStatus, setShareStatus] = useState('');
+    const mediaFormat = record.mediaFormats?.[0] ?? 'Vinyl';
     const [artworkTheme, setArtworkTheme] = useState<Record<
         string,
         string
@@ -83,6 +85,7 @@ export function ListeningView({
     const ready = artworkTheme !== null;
     const { refs, phase, putAway } = useRecordTransition({
         instanceId: record.instanceId,
+        mediaFormat,
         clubLayout,
         ready,
         returnOrigin,
@@ -177,6 +180,7 @@ export function ListeningView({
     return (
         <div
             className={`record-focus ${motionClasses}`}
+            data-media-format={mediaFormat}
             style={{
                 ...artworkTheme,
                 visibility: ready ? undefined : 'hidden',
@@ -230,11 +234,26 @@ export function ListeningView({
                             <div className="record-stage-art" ref={refs.stage}>
                                 <div
                                     aria-hidden="true"
-                                    className="extracted-vinyl"
-                                    ref={refs.vinyl}
+                                    className={
+                                        mediaFormat === 'Cassette'
+                                            ? 'extracted-cassette'
+                                            : mediaFormat === 'CD'
+                                              ? 'extracted-cd'
+                                              : 'extracted-vinyl'
+                                    }
+                                    ref={refs.medium}
                                 >
-                                    <div className="vinyl-reflection" />
-                                    <div className="record-centre" ref={label}>
+                                    {mediaFormat !== 'Cassette' && (
+                                        <div className="vinyl-reflection" />
+                                    )}
+                                    <div
+                                        className={
+                                            mediaFormat === 'Cassette'
+                                                ? 'cassette-label'
+                                                : 'record-centre'
+                                        }
+                                        ref={label}
+                                    >
                                         <span>{record.artist}</span>
                                         <strong>{record.displayTitle}</strong>
                                         <span>
@@ -242,6 +261,18 @@ export function ListeningView({
                                         </span>
                                         <i />
                                     </div>
+                                    {mediaFormat === 'Cassette' && (
+                                        <>
+                                            <span className="cassette-side">
+                                                A
+                                            </span>
+                                            <div className="cassette-window">
+                                                <i className="cassette-reel" />
+                                                <i className="cassette-reel" />
+                                            </div>
+                                            <div className="cassette-head" />
+                                        </>
+                                    )}
                                 </div>
                                 <div
                                     className="extracted-sleeve"
@@ -257,7 +288,10 @@ export function ListeningView({
                                                         event.currentTarget,
                                                     ),
                                                 );
-                                            if (label.current)
+                                            if (
+                                                label.current &&
+                                                mediaFormat !== 'CD'
+                                            )
                                                 Object.assign(
                                                     label.current.style,
                                                     artworkLabelStyle(
@@ -270,6 +304,16 @@ export function ListeningView({
                                         src={record.cover}
                                         width={600}
                                     />
+                                    {mediaFormat === 'Cassette' && (
+                                        <span
+                                            className="cassette-inlay"
+                                            aria-hidden="true"
+                                        >
+                                            <strong>{record.artist}</strong>
+                                            <span>{record.displayTitle}</span>
+                                            <small>Cassette</small>
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>

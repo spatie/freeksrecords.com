@@ -81,3 +81,212 @@
     letter-spacing: 1px;
     text-transform: uppercase;
 }
+
+/* The detail keeps the shelf packaging's proportions throughout the flight. */
+.record-focus[data-media-format='CD'] .record-stage-art {
+    aspect-ratio: 1.14;
+}
+.record-focus[data-media-format='Cassette'] .record-stage-art {
+    width: 48%;
+    max-width: 270px;
+    aspect-ratio: 0.62;
+    margin-left: 10%;
+}
+.record-focus:is([data-media-format='CD'], [data-media-format='Cassette'])
+    .extracted-sleeve {
+    border: 1px solid #f9f7e7a8;
+    border-radius: 3px;
+    background: linear-gradient(115deg, #f5f1e770, #686d6f80 48%, #f9f5e270);
+    box-shadow:
+        inset 0 0 0 2px #292e355c,
+        inset 0 0 0 3px #fff9e65c,
+        3px 5px #3c3d39,
+        5px 12px 18px #100a0855;
+    transform: none;
+}
+.record-focus[data-media-format='CD'] .extracted-sleeve {
+    padding: 3px 3px 3px 9%;
+}
+.record-focus[data-media-format='CD'] .extracted-sleeve::before {
+    content: '';
+    position: absolute;
+    inset: 2px auto 2px 2px;
+    width: 9%;
+    background: repeating-linear-gradient(90deg, #161919 0 1px, #383b3a 2px);
+    border-right: 1px solid #fcf8e87a;
+}
+.record-focus[data-media-format='CD'] .extracted-sleeve img {
+    object-fit: contain;
+    background: #242822;
+    box-shadow: none;
+}
+.record-focus[data-media-format='Cassette'] .extracted-sleeve {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 5px 5px;
+}
+.record-focus[data-media-format='Cassette'] .extracted-sleeve img {
+    height: auto;
+    aspect-ratio: 1;
+    box-shadow: none;
+}
+.record-focus[data-media-format='Cassette'] .cassette-inlay {
+    padding: 12px 8px 8px;
+    font-size: clamp(9px, 1vw, 14px);
+}
+.record-focus[data-media-format='Cassette'] .cassette-inlay small {
+    font-size: 8px;
+}
+.extracted-cd {
+    position: absolute;
+    top: 3%;
+    left: 12%;
+    height: 94%;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background:
+        radial-gradient(
+            circle,
+            transparent 58%,
+            #ffffffa6 59%,
+            transparent 60%
+        ),
+        conic-gradient(
+            #cdd5d7,
+            #f7f4ed 12%,
+            #93b8ba 18%,
+            #e3b4ce 21%,
+            #e5deb4 24%,
+            #ecf4f7 30%,
+            #9ba7ae 47%,
+            #f7f5ed 62%,
+            #a4becb 68%,
+            #dbb8c9 71%,
+            #e8e0b6 74%,
+            #f4f6ee 80%,
+            #b0bdc1
+        );
+    box-shadow:
+        inset 0 0 0 1px #ffffffc9,
+        inset 0 0 0 4px #a9b4b580,
+        4px 12px 18px #20201655;
+}
+.record-focus .extracted-cd .record-centre {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 2px;
+    width: 80%;
+    height: 80%;
+    padding: 13% 8% 0;
+    border: 0;
+    background: transparent;
+    color: #252e31;
+    box-shadow: none;
+    animation: none;
+    transform: rotate(-140deg);
+}
+.record-focus .extracted-cd .record-centre strong {
+    font-size: clamp(10px, 1.4vw, 17px);
+}
+.record-focus .extracted-cd .record-centre i {
+    display: none;
+}
+.extracted-cd::after {
+    content: '';
+    position: absolute;
+    inset: 44%;
+    border-radius: 50%;
+    background: var(--record-primary, #fff0cf);
+    box-shadow: 0 0 0 3px #ffffff70;
+}
+.extracted-cassette {
+    position: absolute;
+    z-index: 3;
+    left: 4%;
+    top: 22%;
+    width: 92%;
+    aspect-ratio: 1.58;
+    border: 2px solid #363832;
+    border-radius: 7px;
+    background: linear-gradient(145deg, #383a34, #151712 65%, #2d3029);
+    box-shadow:
+        inset 0 0 0 2px #0008,
+        inset 0 0 0 4px #ffffff12,
+        4px 12px 18px #20201655;
+}
+.cassette-label {
+    position: absolute;
+    inset: 8% 7% 27%;
+    padding: 5% 8% 0 15%;
+    border: 1px solid #ffffff40;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #e8dfc8;
+    color: #302d27;
+    font-family: 'Club Sans', sans-serif;
+    line-height: 1.1;
+}
+.cassette-label > span,
+.cassette-label strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(6px, 0.75vw, 10px);
+}
+.cassette-label > span:last-of-type,
+.cassette-label i {
+    display: none;
+}
+.cassette-side {
+    position: absolute;
+    left: 10%;
+    top: 14%;
+    color: #f7f0dd;
+    font:
+        700 clamp(10px, 1.3vw, 18px)/1 'Club Sans',
+        sans-serif;
+    text-shadow: 0 1px 2px #000b;
+}
+.cassette-window {
+    position: absolute;
+    inset: 38% 15% 32%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10%;
+    border: 2px solid #0c100a;
+    border-radius: 999px;
+    background: linear-gradient(#2d2418, #63523a 48%, #251e14 52%);
+    box-shadow: 0 1px #ffffff3b;
+}
+.cassette-reel {
+    display: block;
+    height: 88%;
+    aspect-ratio: 1;
+    border: 3px dashed #c9c9b7;
+    border-radius: 50%;
+    background: #161a13;
+    box-shadow: 0 0 0 1px #eff0d2;
+}
+.cassette-head {
+    position: absolute;
+    inset: auto 20% 2%;
+    height: 20%;
+    border: 1px solid #ffffff20;
+    background: #1a1d16;
+    clip-path: polygon(12% 0, 88% 0, 100% 100%, 0 100%);
+}
+.cassette-head::after {
+    content: '';
+    position: absolute;
+    inset: 48% 12% 18%;
+    background: repeating-linear-gradient(
+        90deg,
+        #080b07 0 12%,
+        transparent 12% 22%
+    );
+}

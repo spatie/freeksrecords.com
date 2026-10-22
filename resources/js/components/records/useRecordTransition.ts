@@ -15,6 +15,7 @@ export type RecordTransitionPhase = 'moving' | 'settled' | 'returning';
 
 type RecordTransitionOptions = {
     instanceId: number;
+    mediaFormat?: string;
     origin: SleeveOrigin | null;
     returnOrigin?: () => SleeveOrigin | null;
     clubLayout?: boolean;
@@ -30,6 +31,7 @@ type RecordTransitionOptions = {
  */
 export function useRecordTransition({
     instanceId,
+    mediaFormat = 'Vinyl',
     origin,
     returnOrigin,
     clubLayout = false,
@@ -42,7 +44,7 @@ export function useRecordTransition({
     const surface = useRef<HTMLDivElement>(null);
     const backdrop = useRef<HTMLButtonElement>(null);
     const sleeve = useRef<HTMLDivElement>(null);
-    const vinyl = useRef<HTMLDivElement>(null);
+    const medium = useRef<HTMLDivElement>(null);
     const animations = useRef<Animation[]>([]);
     const returning = useRef(false);
     const [phase, setPhase] = useState<RecordTransitionPhase>('moving');
@@ -54,9 +56,25 @@ export function useRecordTransition({
 
     useLayoutEffect(() => {
         if (!ready) return;
-        if (!stage.current || !sleeve.current || !vinyl.current) return;
+        if (!stage.current || !sleeve.current || !medium.current) return;
         const reducedMotion = prefersReducedMotion();
         const duration = instant || reducedMotion ? 0 : clubLayout ? 650 : 420;
+        const caseTransform =
+            mediaFormat === 'Cassette'
+                ? 'translate(-18%, -6%) rotate(-10deg)'
+                : mediaFormat === 'CD'
+                  ? 'translate(-10%, 5%) rotate(-7deg)'
+                  : clubLayout
+                    ? 'translate(-8%, 5%) rotate(-9deg)'
+                    : sleeveRest;
+        const mediumTransform =
+            mediaFormat === 'Cassette'
+                ? 'translate(58%, 54%) rotate(8deg) scale(1.35)'
+                : mediaFormat === 'CD'
+                  ? 'translateX(54%) rotate(140deg)'
+                  : clubLayout
+                    ? 'translateX(43%) rotate(80deg)'
+                    : vinylRest;
         const target = stage.current.getBoundingClientRect();
         const animate = (
             element: HTMLElement | null,
@@ -84,25 +102,20 @@ export function useRecordTransition({
         ]);
         animate(sleeve.current, [
             { transform: 'none' },
-            {
-                transform: clubLayout
-                    ? 'translate(-8%, 5%) rotate(-9deg)'
-                    : sleeveRest,
-            },
+            { transform: caseTransform },
         ]);
-        const vinylDelay = clubLayout ? (duration > 0 ? 300 : 0) : 50;
+        const mediumDelay = duration === 0 ? 0 : clubLayout ? 300 : 50;
         animate(
-            vinyl.current,
+            medium.current,
             [
-                { transform: 'none' },
                 {
-                    transform: clubLayout
-                        ? 'translateX(43%) rotate(80deg)'
-                        : vinylRest,
+                    transform: 'none',
+                    opacity: mediaFormat === 'Cassette' ? 0 : 1,
                 },
+                { transform: mediumTransform, opacity: 1 },
             ],
-            vinylDelay,
-            clubLayout && !reducedMotion ? vinylDelay + 650 : duration,
+            mediumDelay,
+            duration > 0 && clubLayout ? mediumDelay + 650 : duration,
         );
         animate(surface.current, [{ opacity: 0 }, { opacity: 1 }]);
         animate(backdrop.current, [{ opacity: 0 }, { opacity: 1 }]);
@@ -117,17 +130,20 @@ export function useRecordTransition({
             animations.current.forEach((animation) => animation.cancel());
             animations.current = [];
         };
-    }, [origin, instant, clubLayout, ready]);
+    }, [origin, instant, clubLayout, ready, mediaFormat]);
 
     async function putAway() {
         if (returning.current) return;
         returning.current = true;
         setPhase('returning');
         const duration = prefersReducedMotion() ? 0 : clubLayout ? 500 : 190;
-        const elements = [stage.current, sleeve.current, vinyl.current];
+        const elements = [stage.current, sleeve.current, medium.current];
         const transforms = elements.map((element) =>
             element ? getComputedStyle(element).transform : 'none',
         );
+        const mediumOpacity = medium.current
+            ? getComputedStyle(medium.current).opacity
+            : '1';
         const destination = returnOrigin
             ? returnOrigin()
             : (origin ?? sleeveOrigin(instanceId));
@@ -144,13 +160,20 @@ export function useRecordTransition({
             animations.current.push(
                 element.animate(
                     [
-                        { transform: transforms[index] },
+                        {
+                            transform: transforms[index],
+                            opacity: index === 2 ? mediumOpacity : 1,
+                        },
                         {
                             transform:
                                 index === 0 && destination && stageBounds
                                     ? originTransform(destination, stageBounds)
                                     : 'none',
-                            opacity: index === 0 && !destination ? 0 : 1,
+                            opacity:
+                                (index === 0 && !destination) ||
+                                (index === 2 && mediaFormat === 'Cassette')
+                                    ? 0
+                                    : 1,
                         },
                     ],
                     {
@@ -177,7 +200,7 @@ export function useRecordTransition({
     }
 
     return {
-        refs: { stage, surface, backdrop, sleeve, vinyl },
+        refs: { stage, surface, backdrop, sleeve, medium },
         phase,
         putAway,
     };
