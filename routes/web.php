@@ -7,13 +7,14 @@ use App\Http\Controllers\RecordShareImageController;
 use App\Http\Controllers\ShowCollectionController;
 use App\Http\Controllers\ShowRecordController;
 use App\Http\Middleware\CacheAtEdge;
+use App\Http\Middleware\EnsureCollectionAccess;
 use App\Http\Middleware\PrivateResponse;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
-Route::get('/', HomeController::class)->middleware(PrivateResponse::class)->name('home');
+Route::get('/', HomeController::class)->middleware([PrivateResponse::class, EnsureCollectionAccess::class])->name('home');
 
 // Freek's immutable-public legacy routes stay anonymous and edge-cacheable.
 Route::withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])->group(function () {

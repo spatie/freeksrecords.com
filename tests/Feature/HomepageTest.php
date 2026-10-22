@@ -61,8 +61,9 @@ it('uses only live public records for linked artwork and never falls back to the
     foreach (['friends', 'only_me'] as $visibility) {
         $owner->update(['visibility' => $visibility]);
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->has('artwork', 0));
-        $this->get($link)->assertNotFound();
-        $this->get($path.'?record='.$selected->id)->assertNotFound();
+        $destination = $path === '/verify-email' ? '/openowner' : '/login';
+        $this->get($link)->assertRedirect($destination);
+        $this->get($path.'?record='.$selected->id)->assertRedirect($destination);
     }
 })->with(['/', '/login', '/register', '/forgot-password', '/reset-password/test-token', '/verify-email']);
 
@@ -179,7 +180,7 @@ it('offers a safe way back from missing pages without revealing private collecti
     config(['app.debug' => false]);
     $record = socialRecord(socialUser('private_error_owner'), 'Never disclose this album');
 
-    foreach (['/missing/page', "/shelves/{$record->id}"] as $path) {
+    foreach (['/missing/page', '/shelves/999999999'] as $path) {
         $this->get($path)->assertNotFound()
             ->assertSee('This one skipped.')
             ->assertSee('Back to the club')
@@ -187,6 +188,9 @@ it('offers a safe way back from missing pages without revealing private collecti
             ->assertDontSee('Never disclose this album')
             ->assertDontSee('private_error_owner');
     }
+
+    $this->get("/shelves/{$record->id}")->assertRedirect('/login')
+        ->assertDontSee('Never disclose this album')->assertDontSee('private_error_owner');
 
     $this->getJson('/missing/page')->assertNotFound()->assertJsonStructure(['message'])
         ->assertDontSee('<html', false);

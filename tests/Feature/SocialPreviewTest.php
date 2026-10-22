@@ -45,9 +45,14 @@ it('uses generic metadata for private collections even for authorized viewers', 
             $this->actingAs($viewer);
         }
 
-        $response = $this->get('/privatepreview')->assertOk();
-        expect($response->inertiaProps('socialPreview.title'))->toBe('Plaat Club')
-            ->and($response->inertiaProps('socialPreview.image'))->toBe(url('/share/site.jpg'));
+        $response = $this->get('/privatepreview');
+        if ($viewer) {
+            $response->assertOk();
+            expect($response->inertiaProps('socialPreview.title'))->toBe('Plaat Club')
+                ->and($response->inertiaProps('socialPreview.image'))->toBe(url('/share/site.jpg'));
+        } else {
+            $response->assertRedirect('/login')->assertDontSee('Never publish this album');
+        }
         $this->get('/share/collections/privatepreview.jpg')->assertNotFound();
         $this->get('/share/shelves/'.$record->id.'.jpg')->assertNotFound();
     }

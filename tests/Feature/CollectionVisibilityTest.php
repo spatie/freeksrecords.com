@@ -96,9 +96,16 @@ it('enforces the saved choice immediately on profiles and records for every audi
     if ($audience === 'guest') {
         $this->flushSession();
     }
-    $profile = $this->get(route('profile', $owner->handle))->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('person.name', $owner->name)->where('person.handle', $owner->handle)->where('visible', $visible));
+    $profile = $this->get(route('profile', $owner->handle));
     $release = $this->get("/shelves/{$record->id}");
+    if (! $visible && $audience === 'guest') {
+        $profile->assertRedirect('/login')->assertDontSee('Visibility contract album');
+        $release->assertRedirect('/login');
+
+        return;
+    }
+    $profile->assertOk()->assertInertia(fn (Assert $page) => $page
+        ->where('person.name', $owner->name)->where('person.handle', $owner->handle)->where('visible', $visible));
     if ($visible) {
         $profile->assertSee('Visibility contract album');
         $release->assertOk();
@@ -106,7 +113,7 @@ it('enforces the saved choice immediately on profiles and records for every audi
         return;
     }
     $profile->assertDontSee('Visibility contract album')->assertInertia(fn (Assert $page) => $page->where('records', null));
-    $release->assertNotFound();
+    $release->assertRedirect(route('profile', $owner->handle));
 })->with([
     ['only_me', 'owner', true], ['only_me', 'friend', false], ['only_me', 'stranger', false], ['only_me', 'guest', false],
     ['friends', 'owner', true], ['friends', 'friend', true], ['friends', 'pending', false], ['friends', 'stranger', false], ['friends', 'guest', false],

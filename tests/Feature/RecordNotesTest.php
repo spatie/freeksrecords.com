@@ -85,11 +85,12 @@ it('inherits current collection visibility and never renders private notes or ow
             ->where('record.sharedNote', $record->shared_note)->where('record.canEditNotes', false)
             ->missing('record.privateNote'))->assertDontSee('<script>alert', false);
     } else {
-        $response->assertNotFound()->assertDontSee('Next line');
+        $response->assertRedirect($viewer === 'guest' ? '/login' : '/notes_owner')->assertDontSee('Next line');
     }
     $response->assertDontSee('secret-owner-note')->assertDontSee('name="shared_note"', false)->assertDontSee('name="private_note"', false);
     $owner->update(['visibility' => 'only_me']);
-    $this->get("/shelves/{$record->id}")->assertNotFound()->assertDontSee('Next line')->assertDontSee('secret-owner-note');
+    $this->get("/shelves/{$record->id}")->assertRedirect($viewer === 'guest' ? '/login' : '/notes_owner')
+        ->assertDontSee('Next line')->assertDontSee('secret-owner-note');
 })->with([
     ['everyone', 'guest', true], ['everyone', 'stranger', true], ['everyone', 'friend', true],
     ['friends', 'guest', false], ['friends', 'stranger', false], ['friends', 'friend', true],

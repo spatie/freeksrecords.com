@@ -75,6 +75,8 @@ export type AuthProps = {
 export type ProfileProps = {
     person: Person;
     visible: boolean;
+    friendsOnly: boolean;
+    friendship: FriendsProps['connections'][number] | null;
     records: Pagination<
         CollectionRecordSummary & { section: string; key: string }
     > | null;

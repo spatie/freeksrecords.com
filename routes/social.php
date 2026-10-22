@@ -11,13 +11,14 @@ use App\Http\Controllers\RecordCoverController;
 use App\Http\Controllers\RecordNotesController;
 use App\Http\Controllers\SocialController;
 use App\Http\Controllers\SocialPreviewController;
+use App\Http\Middleware\EnsureCollectionAccess;
 use App\Http\Middleware\PrivateResponse;
 use App\Support\SocialData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::middleware(PrivateResponse::class)->group(function () {
+Route::middleware([PrivateResponse::class, EnsureCollectionAccess::class])->group(function () {
     foreach (['about', 'privacy', 'terms'] as $document) {
         Route::get("/{$document}", function () use ($document) {
             if ($document === 'terms') {

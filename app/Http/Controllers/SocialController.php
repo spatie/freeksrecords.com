@@ -30,6 +30,11 @@ class SocialController extends Controller
 
         return Inertia::render('social/ProfilePage', [
             'person' => SocialData::person($user), 'visible' => $visible,
+            'friendsOnly' => $user->visibility === 'friends',
+            'friendship' => ! $visible && $request->user() ? Friendship::query()->where([
+                'user_low' => min($request->user()->id, $user->id),
+                'user_high' => max($request->user()->id, $user->id),
+            ])->first(['user_low', 'user_high', 'requested_by', 'accepted_at']) : null,
             'records' => $visible ? Inertia::scroll(fn () => $collection->records()) : null,
             'groups' => fn () => $visible ? $collection->groups() : [],
             'browse' => $collection->state(),

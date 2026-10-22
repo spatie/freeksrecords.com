@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 
 import { CollectionHeading } from '@/modules/social/CollectionHeading';
+import { FriendActions } from '@/modules/social/FriendActions';
 import { ProfileShelf } from '@/modules/social/ProfileShelf';
 import type { ProfileProps, SocialProps } from '@/modules/social/types';
 
@@ -8,6 +9,8 @@ export function ProfilePage({
     person,
     records,
     visible,
+    friendsOnly,
+    friendship,
     groups,
     browse,
 }: ProfileProps) {
@@ -34,11 +37,61 @@ export function ProfilePage({
             </CollectionHeading>
             {!visible ? (
                 <section className="empty panel">
-                    <h2>A private collection</h2>
+                    <h2>
+                        {friendsOnly
+                            ? 'Good records are better with friends.'
+                            : 'A private collection'}
+                    </h2>
                     <p>
-                        This collection isn’t shared with you. Only the
-                        collector’s name and username are public.
+                        {friendsOnly
+                            ? 'This collector shares their records with friends. Once your request is accepted, you can explore their collection.'
+                            : 'This collector keeps their collection to themselves. Being friends won’t make it visible.'}
                     </p>
+                    {friendsOnly && user?.verified && (
+                        <>
+                            {friendship && (
+                                <p>
+                                    {friendship.requested_by === user.id
+                                        ? 'Request sent. Waiting for them to accept.'
+                                        : 'They’ve already sent you a friend request.'}
+                                </p>
+                            )}
+                            <FriendActions
+                                personId={person.id}
+                                actions={
+                                    !friendship
+                                        ? [
+                                              {
+                                                  value: 'request',
+                                                  label: 'Send friend request',
+                                              },
+                                          ]
+                                        : friendship.requested_by === user.id
+                                          ? [
+                                                {
+                                                    value: 'cancel',
+                                                    label: 'Cancel request',
+                                                },
+                                            ]
+                                          : [
+                                                {
+                                                    value: 'accept',
+                                                    label: 'Accept',
+                                                },
+                                                {
+                                                    value: 'decline',
+                                                    label: 'Decline',
+                                                },
+                                            ]
+                                }
+                            />
+                        </>
+                    )}
+                    {friendsOnly && user && !user.verified && (
+                        <Link className="button" href="/verify-email">
+                            Verify your email to send a friend request
+                        </Link>
+                    )}
                 </section>
             ) : records && (records.data.length > 0 || browse.query) ? (
                 <ProfileShelf

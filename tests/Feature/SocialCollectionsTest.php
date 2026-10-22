@@ -81,7 +81,7 @@ it('loads visible shelf pages with owner-specific social links and only safe sum
         ->and($summaries[0]['trackTitles'])->toContain($record->payload['tracks'][0]['title']);
     $this->get(collect($summaries)->firstWhere('instanceId', 1)['shareUrl'])->assertOk()->assertSee('Shelf album 1');
     $owner->update(['visibility' => 'only_me']);
-    $this->get(route('profile', $owner->handle))->assertOk()->assertDontSee('profile-shelf-data')->assertDontSee('Trimmed album')->assertDontSee('Shelf album');
+    $this->get(route('profile', $owner->handle))->assertRedirect('/login')->assertDontSee('Trimmed album')->assertDontSee('Shelf album');
 });
 
 it('pages a large collection and jumps across sections without filtering other artists out', function () {
@@ -109,7 +109,7 @@ it('pages a large collection and jumps across sections without filtering other a
         'X-Inertia' => 'true', 'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
         'X-Inertia-Partial-Component' => 'social/ProfilePage', 'X-Inertia-Partial-Data' => 'records,groups',
     ])
-        ->assertOk()->assertJsonPath('props.records', null)->assertJsonPath('props.groups', []);
+        ->assertRedirect('/login')->assertDontSee('Album');
 });
 
 it('groups latest additions by Brussels calendar day across pages, with newest records first', function () {
@@ -210,8 +210,8 @@ it('keeps the selected copy and social actions in its own cupboard without expos
     $this->get($next)->assertInertia(fn (Assert $page) => $page
         ->has('recordOverlay.comments.data', 2)->where('recordOverlay.comments.data.1.body', 'From the cupboard'));
     $owner->update(['visibility' => 'only_me']);
-    $this->get($url)->assertNotFound();
-    $this->get($next)->assertNotFound();
+    $this->get($url)->assertRedirect('/modalowner');
+    $this->get($next)->assertRedirect('/modalowner');
 });
 
 it('enforces the full collection visibility matrix on profiles and record pages', function (string $visibility, string $viewerKind, bool $allowed) {
@@ -225,14 +225,14 @@ it('enforces the full collection visibility matrix on profiles and record pages'
             'owner' => $owner, 'friend' => $friend, default => $stranger
         });
     }
-    $profile = $this->get(route('profile', $owner->handle))->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('person.name', 'Owner')->where('person.handle', 'owner')->where('visible', $allowed));
+    $profile = $this->get(route('profile', $owner->handle));
     $response = $this->get('/shelves/'.$record->id);
     $cover = $this->get('/shelves/'.$record->id.'/cover');
     $cupboard = $this->get('/owner?record='.$record->id);
     $elsewhere = $this->get('/collections?record='.$record->id);
     if ($allowed) {
-        $profile->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
+        $profile->assertOk()->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page
+            ->where('person.name', 'Owner')->where('person.handle', 'owner')->where('visible', true)->has('records.data', 1));
         $response->assertOk()->assertSee('Private Test Album');
         $cover->assertOk()->assertHeader('Content-Type', 'image/jpeg');
         expect($profile->inertiaProps('records.data.0.cover'))->toBe('/shelves/'.$record->id.'/cover')
@@ -244,12 +244,19 @@ it('enforces the full collection visibility matrix on profiles and record pages'
         $elsewhere->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('social/CollectionsPage')->where('recordOverlay.record.id', $record->id));
     } else {
-        $profile->assertDontSee('Private Test Album')->assertDontSee($owner->email)
-            ->assertInertia(fn (Assert $page) => $page->where('records', null));
-        $response->assertNotFound();
+        $profile->assertDontSee('Private Test Album')->assertDontSee($owner->email);
         $cover->assertNotFound();
-        $cupboard->assertNotFound();
-        $elsewhere->assertNotFound();
+        if ($viewerKind === 'guest') {
+            foreach ([$profile, $response, $cupboard, $elsewhere] as $denied) {
+                $denied->assertRedirect('/login');
+            }
+        } else {
+            $profile->assertOk()->assertInertia(fn (Assert $page) => $page
+                ->where('visible', false)->where('records', null)->where('friendsOnly', $visibility === 'friends'));
+            foreach ([$response, $cupboard, $elsewhere] as $denied) {
+                $denied->assertRedirect('/owner')->assertDontSee('Private Test Album');
+            }
+        }
     }
     expect($profile->headers->get('Cache-Control'))->toContain('no-store', 'private');
 })->with([
@@ -267,7 +274,7 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
     $this->post('/friends/'.$b->id, ['action' => 'request'])->assertRedirect();
     $this->post('/friends/'.$b->id, ['action' => 'request'])->assertRedirect();
     $this->assertDatabaseCount('friendships', 1);
-    $this->get('/shelves/'.$record->id)->assertNotFound();
+    $this->get('/shelves/'.$record->id)->assertRedirect('/bob');
     $this->post('/friends/'.$b->id, ['action' => 'accept'])->assertForbidden();
     $this->post('/logout');
     $this->actingAs($c)->post('/friends/'.$a->id, ['action' => 'accept'])->assertForbidden();
@@ -280,7 +287,7 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
     $this->actingAs($a)->get('/shelves/'.$record->id)->assertOk();
     $this->get('/friends?q=bob')->assertSee('Bob')->assertDontSee('Carol');
     $this->post('/friends/'.$b->id, ['action' => 'unfriend'])->assertRedirect();
-    $this->get('/shelves/'.$record->id)->assertNotFound();
+    $this->get('/shelves/'.$record->id)->assertRedirect('/bob');
     foreach (['cancel', 'decline'] as $action) {
         $this->post('/logout');
         $this->actingAs($a)->post('/friends/'.$b->id, ['action' => 'request']);
@@ -505,7 +512,7 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
 
     $owner->update(['visibility' => 'only_me']);
     $this->get('/contract_owner', $headers)->assertJsonPath('props.visible', false)->assertJsonPath('props.records', null);
-    $this->get('/shelves/'.$record->id, $headers)->assertNotFound();
+    $this->get('/shelves/'.$record->id, $headers)->assertRedirect('/contract_owner');
     $this->actingAs($owner)->get('/shelves/'.$record->id, $headers)
         ->assertJsonPath('props.record.privateNote', 'contract-private-note')->assertJsonPath('props.record.canEditNotes', true)
         ->assertJsonPath('props.comments.data.0.canDelete', true);
@@ -533,4 +540,78 @@ it('redirects Inertia forms back with validation errors and refreshed props inst
     $this->from('/feed')->post('/notifications/read', [], $headers)->assertRedirect('/feed');
     $this->get('/feed', $headers)->assertJsonPath('props.notificationCount', 0)
         ->assertJsonPath('props.flash.status', 'Notifications marked as read.');
+});
+
+it('takes guests through login and returns to the originally requested private page', function (string $page) {
+    $owner = socialUser('locked_owner', 'friends');
+    $viewer = socialUser('locked_viewer');
+    socialFriends($owner, $viewer);
+    $record = socialRecord($owner, 'Members-only album');
+    $url = match ($page) {
+        'profile' => '/locked_owner',
+        'alias' => '/people/locked_owner',
+        'record' => '/shelves/'.$record->id,
+        'overlay' => '/locked_owner?record='.$record->id,
+        'elsewhere' => '/collections?record='.$record->id,
+        'home' => '/?record='.$record->id,
+    };
+
+    $this->get($url)->assertRedirect('/login')->assertSessionHas('url.intended', url('/').$url)
+        ->assertDontSee('Members-only album');
+    $this->get('/login')->assertOk()->assertDontSee('Members-only album');
+    $this->post('/login', ['email' => $viewer->email, 'password' => 'a-long-demo-password'])->assertRedirect(url('/').$url);
+    if ($page === 'home') {
+        $this->get($url)->assertRedirect('/shelves/'.$record->id);
+        $url = '/shelves/'.$record->id;
+    }
+    $this->get($url)->assertOk()->assertSee('Members-only album');
+})->with(['profile', 'alias', 'record', 'overlay', 'elsewhere', 'home']);
+
+it('offers the current friendship state on a locked collection and unlocks only after acceptance', function () {
+    $owner = socialUser('request_owner', 'friends');
+    $viewer = socialUser('request_viewer');
+    $record = socialRecord($owner, 'Do not leak this record');
+    $record->update(['shared_note' => 'Hidden shared note', 'private_note' => 'Hidden private note']);
+
+    $this->actingAs($viewer)->get('/request_owner')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('visible', false)->where('friendsOnly', true)
+            ->where('friendship', null)->where('records', null)->where('groups', [])->where('recordOverlay', null))
+        ->assertDontSee('Do not leak this record')->assertDontSee('Hidden shared note')->assertDontSee('Hidden private note');
+    $this->from('/request_owner')->post('/friends/'.$owner->id, ['action' => 'request'])->assertRedirect('/request_owner');
+    $this->get('/request_owner')->assertInertia(fn (Assert $page) => $page
+        ->where('visible', false)->where('friendship.requested_by', $viewer->id)->where('friendship.accepted_at', null));
+    $this->get('/shelves/'.$record->id)->assertRedirect('/request_owner');
+
+    $this->post('/logout');
+    $this->actingAs($owner)->get('/request_viewer')->assertInertia(fn (Assert $page) => $page
+        ->where('friendsOnly', false)->where('visible', false));
+    $viewer->update(['visibility' => 'friends']);
+    $this->get('/request_viewer')->assertInertia(fn (Assert $page) => $page
+        ->where('friendship.requested_by', $viewer->id)->where('friendsOnly', true)->where('visible', false));
+    $this->from('/request_viewer')->post('/friends/'.$viewer->id, ['action' => 'accept'])->assertRedirect('/request_viewer');
+    $this->get('/request_viewer')->assertInertia(fn (Assert $page) => $page->where('visible', true));
+    $this->post('/logout');
+    $this->actingAs($viewer)->get('/shelves/'.$record->id)->assertOk()->assertSee('Do not leak this record');
+
+    $owner->update(['visibility' => 'only_me']);
+    $this->get('/shelves/'.$record->id)->assertRedirect('/request_owner');
+    $this->get('/request_owner')->assertInertia(fn (Assert $page) => $page
+        ->where('visible', false)->where('friendsOnly', false)->where('records', null));
+});
+
+it('limits friend actions per signed-in user and allows requests again after the window', function () {
+    $viewer = socialUser('limited_viewer');
+    $otherViewer = socialUser('other_limited_viewer');
+    $owner = socialUser('limited_owner', 'friends');
+    $this->actingAs($viewer);
+    foreach (range(1, 30) as $attempt) {
+        $this->from('/friends')->post('/friends/'.$owner->id, ['action' => 'request'])->assertRedirect('/friends');
+    }
+    $this->post('/friends/'.$owner->id, ['action' => 'request'])->assertStatus(429)->assertHeader('Retry-After');
+    $this->assertDatabaseCount('friendships', 1);
+    $this->post('/logout');
+    $this->actingAs($otherViewer)->from('/friends')->post('/friends/'.$owner->id, ['action' => 'request'])->assertRedirect('/friends');
+    $this->post('/logout');
+    $this->travel(61)->seconds();
+    $this->actingAs($viewer)->from('/friends')->post('/friends/'.$owner->id, ['action' => 'request'])->assertRedirect('/friends');
 });

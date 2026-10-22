@@ -19,6 +19,11 @@ class HomeController
                 return redirect()->route('verification.notice');
             }
 
+            $record = $request->query('record');
+            if (is_string($record) && ctype_digit($record)) {
+                return redirect()->route('shelf.record', $record);
+            }
+
             return redirect()->route('profile', $user->handle);
         }
 

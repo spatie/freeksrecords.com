@@ -64,7 +64,7 @@ it('confirms email responses without signing in, never mutates on GET and consum
         $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('sender', null));
     }
     expect(Friendship::query()->whereNotNull('accepted_at')->count())->toBe($action === 'accept' ? 1 : 0);
-    $this->get('/shelves/'.$sender->records()->first()->id)->assertNotFound();
+    $this->get('/shelves/'.$sender->records()->first()->id)->assertRedirect('/login');
 })->with(['accept', 'decline']);
 
 it('rejects tampered and expired links and never applies an old email to a replacement request', function () {

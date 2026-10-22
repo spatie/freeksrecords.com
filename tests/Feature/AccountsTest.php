@@ -19,9 +19,10 @@ it('shows local demo login controls only on the login page', function () {
         ->has('demoUsers', 1)->where('demoUsers.0.email', $alex->email)
         ->where('demoUsers.0.url', route('loginLinkLogin', absolute: false)));
 
-    foreach (['/', '/register', '/forgot-password', '/reset-password/preview-token', '/people/alex'] as $path) {
+    foreach (['/', '/register', '/forgot-password', '/reset-password/preview-token'] as $path) {
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->where('demoUsers', []));
     }
+    $this->get('/people/alex')->assertRedirect('/login');
 
     $this->actingAs($alex);
     foreach (['/people/alex', '/feed', '/settings'] as $path) {
@@ -286,3 +287,13 @@ it('seeds repeatable real catalog local data without touching Freek and refuses 
     app()->detectEnvironment(fn () => 'production');
     $this->artisan('social:seed-demo')->assertFailed();
 });
+
+it('rate limits account submissions and permits them again after the window', function (string $path) {
+    foreach (range(1, 6) as $attempt) {
+        $this->postJson($path, [])->assertUnprocessable();
+    }
+    $this->postJson($path, [])->assertStatus(429)->assertHeader('Retry-After');
+    $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.42'])->postJson($path, [])->assertUnprocessable();
+    $this->travel(61)->seconds();
+    $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])->postJson($path, [])->assertUnprocessable();
+})->with(['/login', '/register', '/forgot-password', '/reset-password']);
