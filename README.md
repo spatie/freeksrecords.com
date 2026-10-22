@@ -271,6 +271,15 @@ An empty biography or release note is stored as empty rather than repeatedly fet
 The information is stored for future display; this change only displays attribution.
 The shared release/artist storage redesign is separate from this import.
 
+### Outgoing email
+
+Production uses Postmark with `MAIL_MAILER=postmark`, `POSTMARK_API_KEY` set to the
+Postmark Server API Token, `MAIL_FROM_ADDRESS=hello@plaat.club`, and
+`MAIL_FROM_NAME="Plaat Club"`. Set these as custom variables in Laravel Cloud, then
+deploy the commit containing the Postmark transport dependencies. Custom variables
+override the attached Resend integration's injected mail settings. Keep Resend attached
+until delivery through Postmark has been checked. Local previews continue using Mailpit.
+
 ## License
 
 The code is open source under the MIT license. Album artwork belongs to its respective owners.
