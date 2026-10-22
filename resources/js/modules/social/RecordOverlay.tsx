@@ -64,7 +64,6 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
             source.current?.querySelector<HTMLElement>('.catalog-record-art') ??
             sourceArtwork.current;
         const visibility = artwork?.style.visibility ?? '';
-        if (artwork) artwork.style.visibility = 'hidden';
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = previous;
@@ -115,6 +114,13 @@ export function RecordOverlay({ children }: { children: ReactNode }) {
                             : null
                     }
                     origin={origin}
+                    onReady={() => {
+                        const artwork =
+                            source.current?.querySelector<HTMLElement>(
+                                '.catalog-record-art',
+                            ) ?? sourceArtwork.current;
+                        if (artwork) artwork.style.visibility = 'hidden';
+                    }}
                     onBack={close}
                 />
             )}

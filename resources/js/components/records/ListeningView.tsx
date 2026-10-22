@@ -26,6 +26,7 @@ type ListeningViewProps = {
     returnOrigin?: () => SleeveOrigin | null;
     instant: boolean;
     onBack: () => void;
+    onReady?: () => void;
     onArtist: (artist: string) => void;
     origin: SleeveOrigin | null;
     record: CollectionRecordSummary;
@@ -64,6 +65,7 @@ export function ListeningView({
     returnOrigin,
     instant,
     onBack,
+    onReady,
     onArtist,
     origin,
     record,
@@ -92,9 +94,13 @@ export function ListeningView({
     });
     const returning = phase === 'returning';
     const motionClasses = `is-ready ${phaseClasses[phase]}`;
+    const notifyReady = useEffectEvent(() => {
+        onReady?.();
+        dialog.current?.focus({ preventScroll: true });
+    });
 
     useLayoutEffect(() => {
-        if (ready) dialog.current?.focus({ preventScroll: true });
+        if (ready) notifyReady();
     }, [ready]);
 
     useEffect(() => {

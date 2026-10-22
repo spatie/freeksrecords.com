@@ -10,11 +10,13 @@ import type { RecordProps } from '@/modules/social/types';
 export function SocialRecordView({
     data,
     onBack,
+    onReady,
     origin = null,
     returnOrigin,
 }: {
     data: RecordProps;
     onBack: () => void;
+    onReady?: () => void;
     origin?: SleeveOrigin | null;
     returnOrigin?: () => SleeveOrigin | null;
 }) {
@@ -36,6 +38,7 @@ export function SocialRecordView({
                     shareUrl: `/shelves/${record.id}`,
                 }}
                 details={payload}
+                onReady={onReady}
                 onBack={onBack}
                 onArtist={(artist) =>
                     router.visit(

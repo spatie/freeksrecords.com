@@ -235,6 +235,8 @@ it('enforces the full collection visibility matrix on profiles and record pages'
         $profile->assertSee('Private Test Album')->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
         $response->assertOk()->assertSee('Private Test Album');
         $cover->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+        expect($profile->inertiaProps('records.data.0.cover'))->toBe('/shelves/'.$record->id.'/cover')
+            ->and($response->inertiaProps('record.payload.cover'))->toBe($profile->inertiaProps('records.data.0.cover'));
         $cupboard->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('social/ProfilePage')->has('records.data', 1)
             ->where('recordOverlay.record.id', $record->id)

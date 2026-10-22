@@ -87,6 +87,9 @@ class RecordCollection
             'id' => $copy->discogs_release_id, 'instanceId' => $copy->instance_id,
             'addedAt' => $copy->added_at->toIso8601String(),
             'mediaFormats' => $copy->formats(),
+            'cover' => filled($copy->payload['cover'] ?? null) && $copy->payload['cover'] !== '/images/record-placeholder.svg'
+                ? route('shelf.cover', $copy, false)
+                : ($copy->payload['cover'] ?? '/images/record-placeholder.svg'),
         ], $copies);
 
         return array_map(
