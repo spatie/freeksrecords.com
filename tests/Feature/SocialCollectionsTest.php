@@ -27,7 +27,7 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
     $hidden = socialUser('hiddenfriend', 'only_me');
     socialFriends($viewer, $hidden);
     socialRecord($hidden, 'Hidden feed record');
-    socialRecord($second, 'Initial feed import', activity: false, instance: 501);
+    socialRecord($first, 'Initial feed import', activity: false, date: '2026-09-01 12:00:00', instance: 501);
 
     $response = $this->actingAs($viewer)->get('/feed')->assertOk()
         ->assertSeeInOrder(['Newer shared copy', 'Older shared copy'])
@@ -404,7 +404,7 @@ it('keeps the normal feed after importing even an empty collection', function (b
         ->has('records.data', 0)->missing('incomingRequests'));
 })->with([true, false]);
 
-it('orders the feed by original addition date, excludes initial imports, and revokes activity dynamically', function () {
+it('orders the feed by original addition date and revokes activity and welcome records dynamically', function () {
     $viewer = socialUser('viewer');
     $friend = socialUser('friend', 'friends');
     $stranger = socialUser('stranger', 'everyone');
@@ -413,13 +413,48 @@ it('orders the feed by original addition date, excludes initial imports, and rev
     socialRecord($friend, 'Newer addition', true, '2026-10-16 12:00:00', 2);
     socialRecord($friend, 'Initial import', false, '2026-10-17 12:00:00', 3);
     socialRecord($stranger, 'Not a friend');
-    $this->actingAs($viewer)->get('/feed')->assertSeeInOrder(['Newer addition', 'Older addition'])->assertDontSee('Initial import')->assertDontSee('Not a friend');
+    $this->actingAs($viewer)->get('/feed')->assertSeeInOrder(['Initial import', 'Newer addition', 'Older addition'])->assertDontSee('Not a friend');
     $friend->update(['visibility' => 'only_me']);
-    $this->get('/feed')->assertDontSee('Newer addition');
+    $this->get('/feed')->assertDontSee('Newer addition')->assertDontSee('Initial import');
     $friend->update(['visibility' => 'everyone']);
     $connection->delete();
-    $this->get('/feed')->assertDontSee('Newer addition');
+    $this->get('/feed')->assertDontSee('Newer addition')->assertDontSee('Initial import');
 });
+
+it('welcomes each accepted friend with at most five latest records without announcing initial imports', function (bool $importAfterAcceptance) {
+    $viewer = socialUser('welcomeviewer');
+    $friend = socialUser('welcomefriend', 'friends');
+    $other = socialUser('otherfriend', 'everyone');
+    $pending = socialFriends($friend, $viewer);
+    $pending->update(['accepted_at' => null]);
+    socialFriends($viewer, $other);
+    socialRecord($other, 'Other friend latest', false, '2026-10-18 12:00:00');
+
+    $this->actingAs($viewer)->get('/feed')->assertInertia(fn (Assert $page) => $page
+        ->has('records.data', 1));
+
+    if ($importAfterAcceptance) {
+        $this->post('/friends/'.$friend->id, ['action' => 'accept'])->assertRedirect();
+    }
+
+    foreach (range(1, 7) as $instance) {
+        socialRecord($friend, 'Imported record '.$instance, false, '2026-10-17 12:00:00', $instance);
+    }
+    socialRecord($friend, 'Older activity', true, '2026-10-01 12:00:00', 8);
+
+    if (! $importAfterAcceptance) {
+        $this->get('/feed')->assertDontSee('Imported record')->assertDontSee('Older activity');
+        $this->post('/friends/'.$friend->id, ['action' => 'accept'])->assertRedirect();
+    }
+
+    $response = $this->get('/feed')->assertInertia(fn (Assert $page) => $page->has('records.data', 7));
+    expect(array_column($response->inertiaProps('records.data'), 'displayTitle'))->toBe([
+        'Other friend latest', 'Imported record 7', 'Imported record 6', 'Imported record 5',
+        'Imported record 4', 'Imported record 3', 'Older activity',
+    ]);
+    expect($friend->records()->where('is_activity', true)->pluck('instance_id')->all())->toBe([8]);
+    expect(SocialNotification::query()->pluck('kind')->all())->toBe(['friend_accepted']);
+})->with([false, true]);
 
 it('allows signed-in viewers to appreciate once, comment safely, and apply owner moderation', function () {
     $owner = socialUser('owner', 'everyone');
