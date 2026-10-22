@@ -74,5 +74,5 @@ export type CollectionRecordSummary = Omit<
     trackTitles: string[];
     shareUrl: string;
     shareDescription?: string;
-    owner?: { name: string; profileUrl: string };
+    owner?: { name: string; profileUrl: string; avatarUrl: string | null };
 };

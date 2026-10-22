@@ -18,7 +18,7 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
     }
     $older = socialRecord($first, 'Older shared copy', date: '2026-10-15 12:00:00', instance: 500);
     $newer = socialRecord($second, 'Newer shared copy', date: '2026-10-16 12:00:00', instance: 500);
-    $second->update(['discogs_token' => 'owner-token-secret']);
+    $second->update(['discogs_token' => 'owner-token-secret', 'google_avatar_url' => 'https://example.test/avatar.jpg']);
     $newer->update([
         'private_note' => 'Private feed note', 'shared_note' => 'Detail-only feed note',
         'payload' => [...$newer->payload, 'oauth_token' => 'Payload token secret', 'private_note' => 'Payload note secret',
@@ -41,8 +41,8 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
     expect($summaries)->toHaveCount(24)
         ->and(array_column(array_slice($summaries, 0, 2), 'instanceId'))->toBe([500, 500])
         ->and(array_column(array_slice($summaries, 0, 2), 'shareUrl'))->toBe([$newer->url(false), $older->url(false)])
-        ->and($summaries[0]['owner'])->toBe(['name' => $second->name, 'profileUrl' => '/secondfriend'])
-        ->and($summaries[1]['owner'])->toBe(['name' => $first->name, 'profileUrl' => '/firstfriend'])
+        ->and($summaries[0]['owner'])->toBe(['name' => $second->name, 'profileUrl' => '/secondfriend', 'avatarUrl' => 'https://example.test/avatar.jpg'])
+        ->and($summaries[1]['owner'])->toBe(['name' => $first->name, 'profileUrl' => '/firstfriend', 'avatarUrl' => null])
         ->and($summaries[0]['addedAt'])->toBe($newer->added_at->toIso8601String())
         ->and($summaries[0])->not->toHaveKey('tracks');
     $this->get($summaries[0]['shareUrl'])->assertOk()->assertSee('Newer shared copy');

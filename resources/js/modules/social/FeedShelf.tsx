@@ -1,73 +1,58 @@
 import { Link } from '@inertiajs/react';
 
 import '../../../css/feed-shelf.css';
-import { artworkThemeStyle } from '@/components/records/artworkLabel';
 import type { CollectionRecordSummary } from '@/components/records/types';
+import { Avatar } from '@/modules/social/Avatar';
+import { groupFeedRecords } from '@/modules/social/feedGroups';
 import { RecordLink } from '@/modules/social/RecordOverlay';
 
 export function FeedShelf({ records }: { records: CollectionRecordSummary[] }) {
     return (
-        <div className="feed-tickets">
-            {records.map((record) => (
-                <article className="feed-ticket" key={record.shareUrl}>
-                    <div className="ticket-who">
-                        {record.owner && (
-                            <Link href={record.owner.profileUrl}>
-                                {record.owner.name}
+        <div className="feed-shelves">
+            {groupFeedRecords(records).map((group) => (
+                <section className="feed-shelf" key={group.records[0].shareUrl}>
+                    <header className="feed-shelf-heading">
+                        {group.owner && (
+                            <Link href={group.owner.profileUrl}>
+                                <Avatar
+                                    className="feed-avatar"
+                                    person={group.owner}
+                                />
+                                <h2>{group.owner.name}</h2>
                             </Link>
                         )}
-                        <span> added</span>
-                        <time dateTime={record.addedAt}>
+                        <time dateTime={group.date}>
                             {new Intl.DateTimeFormat('en-GB', {
                                 day: 'numeric',
                                 month: 'short',
                                 year: 'numeric',
                                 timeZone: 'Europe/Brussels',
-                            }).format(new Date(record.addedAt))}
+                            }).format(new Date(group.records[0].addedAt))}
                         </time>
-                    </div>
-                    <div className="ticket-record">
-                        <RecordLink href={record.shareUrl}>
-                            <span className="ticket-title">
-                                {record.artist}
-                            </span>
-                            <span className="ticket-album">
-                                {record.displayTitle}
-                            </span>
-                            <span className="ticket-art">
-                                <img
-                                    src={record.cover}
-                                    alt={`${record.displayTitle} by ${record.artist}`}
-                                    loading="lazy"
-                                    onLoad={(event) => {
-                                        const row =
-                                            event.currentTarget.closest<HTMLElement>(
-                                                '.feed-ticket',
-                                            );
-                                        if (row)
-                                            for (const [
-                                                name,
-                                                value,
-                                            ] of Object.entries(
-                                                artworkThemeStyle(
-                                                    event.currentTarget,
-                                                ),
-                                            ))
-                                                row.style.setProperty(
-                                                    name,
-                                                    value,
-                                                );
-                                    }}
-                                    width="180"
-                                    height="180"
-                                />
-                            </span>
-                            <span className="ticket-arrow" aria-hidden="true">
-                                ↗
-                            </span>
-                        </RecordLink>
-                    </div>
-                </article>
+                    </header>
+                    <ul className="feed-shelf-records">
+                        {group.records.map((record) => (
+                            <li key={record.shareUrl}>
+                                <RecordLink href={record.shareUrl}>
+                                    <img
+                                        className="feed-cover"
+                                        src={record.cover}
+                                        alt=""
+                                        loading="lazy"
+                                        width="220"
+                                        height="220"
+                                    />
+                                    <span className="feed-artist">
+                                        {record.artist}
+                                    </span>
+                                    <span className="feed-album">
+                                        {record.displayTitle}
+                                    </span>
+                                </RecordLink>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
             ))}
         </div>
     );

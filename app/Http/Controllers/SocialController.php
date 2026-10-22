@@ -71,6 +71,7 @@ class SocialController extends Controller
                 'owner' => [
                     'name' => $record->user->name,
                     'profileUrl' => route('profile', $record->user->handle, false),
+                    'avatarUrl' => $record->user->google_avatar_url,
                 ],
             ],
             app(RecordCollection::class)->profileSummaries($copies),

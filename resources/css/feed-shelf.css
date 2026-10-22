@@ -1,149 +1,130 @@
-.feed-tickets {
-    position: relative;
-}
-.feed-ticket {
-    --record-primary: #dbee8d;
-    --record-secondary: #c9b8ef;
-    display: grid;
-    grid-template-columns: 140px minmax(0, 1fr);
-    align-items: center;
-    position: relative;
-    border-top: 1px solid #202016;
-    min-height: 175px;
-    isolation: isolate;
-    color: #1e1e15;
-    background: var(--record-primary);
-    transition: background-color 300ms;
-}
-.feed-ticket:nth-child(3n + 2) {
-    --record-primary: #c9b8ef;
-    --record-secondary: #fff0cf;
-}
-.feed-ticket:nth-child(3n) {
-    --record-primary: #ffab78;
-    --record-secondary: #dbee8d;
-}
-.feed-ticket::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: var(--record-secondary);
-    clip-path: polygon(42% 0, 72% 0, 54% 100%, 24% 100%);
-    transition: background-color 300ms;
-}
-.feed-ticket:nth-child(even)::before {
-    clip-path: polygon(68% 0, 100% 0, 100% 100%, 42% 100%);
-}
-.feed-ticket:last-child {
-    border-bottom: 1px solid #202016;
-}
-.feed-ticket:hover,
-.feed-ticket:focus-within {
-    z-index: 2;
-}
-.ticket-who {
-    align-self: start;
-    padding: 28px 10px 20px 16px;
-    font-size: 16px;
-    overflow-wrap: anywhere;
-}
-.ticket-who time {
-    display: block;
-    margin-top: 5px;
-    font-size: 16px;
-}
-.ticket-record {
-    min-width: 0;
-}
-.ticket-record > a {
-    position: relative;
-    display: flex;
-    min-height: 175px;
-    flex-direction: column;
-    justify-content: center;
-    padding: 25px 210px 25px 10px;
-}
-.ticket-title {
-    display: block;
-    font:
-        700 clamp(42px, 6vw, 100px)/0.85 'Club Display',
-        sans-serif;
-    letter-spacing: -0.025em;
-    overflow-wrap: anywhere;
-}
-.ticket-album {
-    font-size: 18px;
-    margin-top: 14px;
-}
-.ticket-art {
-    position: absolute;
-    right: 65px;
-    top: calc(50% - 62px);
-    display: block;
-    width: 125px;
-    height: 125px;
-    transform: rotate(-7deg);
-    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 4px 9px 12px #20201644;
-}
-.feed-ticket:nth-child(even) .ticket-art {
-    transform: rotate(6deg);
-}
-.ticket-art img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.ticket-record > a:hover .ticket-art,
-.ticket-record > a:focus-visible .ticket-art {
-    transform: rotate(8deg) scale(1.18);
-}
-.ticket-arrow {
-    position: absolute;
-    right: 20px;
-    top: calc(50% - 18px);
-    font-size: 30px;
-}
-@media (max-width: 600px) {
-    .feed-ticket {
-        grid-template-columns: minmax(0, 1fr);
-        min-height: 195px;
+@scope (.social-app) {
+    :scope.feed-page .page-heading {
+        max-width: 1200px;
+        margin: 0 auto 24px;
+        padding-bottom: 12px;
     }
-    .ticket-who {
-        position: relative;
-        padding: 15px 12px 0;
-        z-index: 1;
+    :scope.feed-page .page-heading h1 {
+        font-size: clamp(48px, 6vw, 88px);
+        margin-bottom: 18px;
     }
-    .ticket-who time {
-        display: inline;
-        margin-left: 8px;
+    .feed-shelves {
+        max-width: 1200px;
+        margin-inline: auto;
+        padding: clamp(20px, 4vw, 48px);
+        background: #faf6ed;
     }
-    .ticket-record > a {
-        min-height: 145px;
-        padding: 20px 120px 25px 12px;
+    .feed-shelf + .feed-shelf {
+        margin-top: 48px;
     }
-    .ticket-title {
-        font-size: 40px;
+    .feed-shelf-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-bottom: 16px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid #1e1e1540;
     }
-    .ticket-album {
-        margin-top: 10px;
+    .feed-shelf-heading > a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        text-decoration: none;
     }
-    .ticket-art {
-        width: 85px;
-        height: 85px;
-        right: 24px;
-        top: calc(50% - 42px);
+    .feed-shelf-heading h2 {
+        margin: 0;
+        font:
+            700 32px/1.1 'Club Display',
+            sans-serif;
+        overflow-wrap: anywhere;
     }
-    .ticket-arrow {
-        right: 5px;
+    .feed-shelf-heading time {
+        flex: none;
+        font-size: 14px;
+    }
+    .feed-avatar {
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--lilac);
         font-size: 20px;
     }
-}
-@media (prefers-reduced-motion: reduce) {
-    .feed-ticket,
-    .ticket-art {
-        transition: none;
+    .feed-shelf-records {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+        gap: 28px 24px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .feed-shelf-records li {
+        min-width: 0;
+    }
+    .feed-shelf-records a {
+        display: block;
+        text-decoration: none;
+    }
+    .feed-shelf-records li:only-child {
+        grid-column: 1 / -1;
+        max-width: 480px;
+    }
+    .feed-shelf-records li:only-child a {
+        display: grid;
+        grid-template-columns: 125px minmax(0, 1fr);
+        column-gap: 20px;
+    }
+    .feed-shelf-records li:only-child .feed-cover {
+        grid-row: 1 / 3;
+    }
+    .feed-shelf-records li:only-child .feed-artist {
+        align-self: end;
+        margin-top: 0;
+    }
+    .feed-cover {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1;
+        object-fit: cover;
+        background: var(--cream);
+    }
+    .feed-artist {
+        display: block;
+        margin-top: 12px;
+        font:
+            700 24px/1.1 'Club Display',
+            sans-serif;
+        overflow-wrap: anywhere;
+    }
+    .feed-album {
+        display: block;
+        margin-top: 4px;
+        font-size: 15px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+    .feed-shelf-heading > a:hover h2,
+    .feed-shelf-records a:hover .feed-artist,
+    .feed-shelf-records a:focus-visible .feed-artist {
+        text-decoration: underline;
+        text-underline-offset: 4px;
+    }
+    @media (max-width: 600px) {
+        .feed-shelf-heading {
+            flex-wrap: wrap;
+            gap: 8px 16px;
+        }
+        .feed-shelf-heading h2 {
+            font-size: 28px;
+        }
+        .feed-shelf-records {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 24px 16px;
+        }
     }
 }
