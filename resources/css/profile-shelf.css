@@ -794,6 +794,9 @@
             height: auto;
             padding: 0 0 50px;
         }
+        .record-stage:has(.extracted-vinyl, .extracted-cd) {
+            padding-bottom: 90px;
+        }
         .record-stage-art {
             width: 72%;
             max-width: none;
