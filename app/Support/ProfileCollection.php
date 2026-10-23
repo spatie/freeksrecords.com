@@ -143,7 +143,8 @@ class ProfileCollection
         $relativeOffset = $offset - $groups[0]['offset'];
 
         if ($mode === 'decade') {
-            $query->where(function (Builder $query) use ($values): void {
+            // MySQL otherwise prefers the user/instance index and reads every large record row.
+            $query->forceIndex('collection_records_decade_index')->where(function (Builder $query) use ($values): void {
                 $query->whereNull('records.browse_original_year');
                 foreach ($values as $value) {
                     if ($value !== null) {
