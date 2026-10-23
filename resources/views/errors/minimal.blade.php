@@ -6,7 +6,6 @@
         404 => ['This one skipped.', 'We couldn’t find the page you’re looking for. The link may be old, or the collection may no longer be available.'],
         419 => ['Let’s start again.', 'Your session has expired. Head back to the club and try again.'],
         429 => ['One beat at a time.', 'That was a few too many requests. Take a moment, then try again.'],
-        503 => ['Changing the record.', 'We’re making a few improvements to the club. Your collection is safe. We’ll be back soon.'],
         default => ['A little off track.', 'Something isn’t playing quite right on our side. Please try again in a little while.'],
     };
 @endphp
@@ -120,27 +119,6 @@
             }
             .record-label::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #1e1e15; margin-top: 8px; }
             .record-label small { font-size: clamp(9px, 1vw, 14px); letter-spacing: .06em; margin-top: 8px; }
-            .maintenance main { min-height: calc(100svh - 160px); }
-            .maintenance h1 { color: #fff0cf; max-width: 9ch; font-size: clamp(80px, 9vw, 145px); }
-            .maintenance .eyebrow { display: inline-block; background: #dbee8d; padding: 5px 10px; }
-            .maintenance .description { color: #fff0cf; max-width: 33ch; }
-            .maintenance .record-half { clip-path: none; transform: translateX(12%) rotate(12deg); }
-            .maintenance .record-label { font-size: clamp(36px, 5vw, 72px); }
-            .maintenance .broken-record { width: 88%; }
-            .sleeve {
-                position: absolute;
-                inset: 0 42% 0 -10%;
-                display: flex;
-                align-items: flex-start;
-                padding: 9%;
-                background: #fff0cf;
-                box-shadow: 5px 10px 0 #1e1e1520;
-                transform: rotate(-12deg);
-                font: 700 clamp(30px, 5vw, 72px)/.9 'Club Display', sans-serif;
-                overflow: hidden;
-            }
-            .sleeve::after { content: ''; position: absolute; width: 100%; aspect-ratio: 1; border-radius: 50%; background: #f5442a; left: -55%; bottom: -15%; }
-            footer { padding: 18px 4.5vw 28px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
             @media (max-width: 700px) {
                 header { padding: 24px 6vw; }
                 .brand { font-size: 30px; }
@@ -150,49 +128,28 @@
                 .broken-record { width: 72%; justify-self: center; }
                 .record-label { font-size: 48px; }
                 .record-label small { font-size: 9px; }
-                .maintenance main { min-height: auto; gap: 20px; padding-bottom: 48px; }
-                .maintenance h1 { font-size: clamp(72px, 19vw, 125px); }
-                .maintenance .broken-record { width: 70%; }
-                .maintenance .record-label { font-size: 30px; }
-                footer { padding-inline: 8vw; }
             }
         </style>
     </head>
-    <body @class(['maintenance' => $status === 503])>
-        <header>
-            @if($status === 503)
-                <span class="brand">Plaat Club.</span>
-            @else
-                <a class="brand" href="/">Plaat Club.</a>
-            @endif
-        </header>
+    <body>
+        <header><a class="brand" href="/">Plaat Club.</a></header>
         <main>
             <div>
-                <p class="eyebrow">{{ $status === 503 ? 'A short intermission' : $status.' / '.($status === 404 ? 'Side not found' : 'Playback interrupted') }}</p>
+                <p class="eyebrow">{{ $status }} / {{ $status === 404 ? 'Side not found' : 'Playback interrupted' }}</p>
                 <h1>{{ $heading }}</h1>
                 <p class="description">{{ $description }}</p>
-                @if($status !== 503)
-                    <div class="actions">
-                        <a class="club-link" href="/">Back to the club ↗</a>
-                        <a class="public-link" href="/collections">Browse public collections</a>
-                    </div>
-                @endif
+                <div class="actions">
+                    <a class="club-link" href="/">Back to the club ↗</a>
+                    <a class="public-link" href="/collections">Browse public collections</a>
+                </div>
             </div>
             <div class="broken-record" aria-hidden="true">
-                @if($status === 503)
-                    <div class="record-half"><div class="record-label">SIDE B<small>BACK SOON</small></div></div>
-                    <div class="sleeve">PLAAT<br>CLUB.</div>
-                @else
-                    @for($half = 0; $half < 2; $half++)
-                        <div class="record-half">
-                            <div class="record-label">{{ $status }}<small>PLAAT CLUB · SIDE B</small></div>
-                        </div>
-                    @endfor
-                @endif
+                @for($half = 0; $half < 2; $half++)
+                    <div class="record-half">
+                        <div class="record-label">{{ $status }}<small>PLAAT CLUB · SIDE B</small></div>
+                    </div>
+                @endfor
             </div>
         </main>
-        @if($status === 503)
-            <footer>Plaat Club · Good records. Good company.</footer>
-        @endif
     </body>
 </html>

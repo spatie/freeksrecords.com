@@ -206,6 +206,7 @@ it('keeps error status codes and hides internal messages on branded error pages'
 
     if ($status === 503) {
         $response->assertSee('Changing the record.')->assertSee('Your collection is safe.')
+            ->assertSee('Kraftwerk — Computer World')->assertSee('/images/records/11959599.jpg')
             ->assertDontSee('Back to the club')->assertDontSee('Browse public collections');
 
         return;
