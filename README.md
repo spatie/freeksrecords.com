@@ -64,6 +64,7 @@ A token is optional, but raises the Discogs rate limit considerably. Then use th
 | `records:sync-dates --musicbrainz` | Store original and pressing dates, looking up missing ones on MusicBrainz |
 | `records:repair-tracklists`        | Group movements that share a physical track                               |
 | `records:copy-covers`              | Copy cover art into the public object storage disk                        |
+| `records:generate-cover-previews`  | Queue missing 16×16 inline cover previews for all collectors              |
 | `records:export-snapshot`          | Export the collection and verified dates to the bundled snapshot          |
 | `records:import-snapshot`          | Import the bundled snapshot into the configured database                  |
 
@@ -280,6 +281,15 @@ It checkpoints each release: if interrupted or rate-limited, rerun the command t
 An empty biography or release note is stored as empty rather than repeatedly fetched.
 The information is stored for future display; this change only displays attribution.
 The shared release/artist storage redesign is separate from this import.
+
+After deploying inline cover previews, run `php artisan records:generate-cover-previews`
+once, with the queue worker running. It is safe to rerun (or use `--limit=100`): only
+missing previews are queued, and identical artwork reuses an existing preview. New
+Discogs imports queue previews automatically. The GD pipeline stores a 16×16 JPEG
+data URI in the record payload; collection rendering only serializes that value and
+never downloads or generates artwork. Failed jobs can be retried without losing records.
+No database migration is needed. Social collection responses retain their existing
+visibility checks and private/no-store headers; previews do not publish private artwork.
 
 ### Outgoing email
 

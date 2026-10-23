@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
 use App\Models\User;
@@ -92,6 +93,8 @@ class SyncDiscogsCollectionCommand extends Command
                     $record['cover'] = $this->copyCover($record, $images, $mapper);
 
                     $collection->store($record);
+                    $copy = CollectionRecord::legacy()->where('instance_id', $record['instanceId'])->firstOrFail();
+                    GenerateRecordCoverPreview::dispatch($copy->id)->afterCommit();
                     CollectionRecord::legacy()->where('instance_id', $record['instanceId'])->update(['is_activity' => true]);
 
                     $knownInstanceIds[$entry['instance_id']] = true;

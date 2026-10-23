@@ -143,6 +143,11 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                     $seen[] = $instance;
                     if ($known = $user->records()->where('instance_id', $instance)->first()) {
                         $changed = $known->refreshFormats($entry['basic_information'], $mapper) || $changed;
+                        if (empty($known->payload['coverPreview'])) {
+                            if (filled($known->payload['cover'] ?? null) && $known->payload['cover'] !== $mapper->placeholderCover) {
+                                GenerateRecordCoverPreview::dispatch($known->id)->afterCommit();
+                            }
+                        }
 
                         continue;
                     }
@@ -155,11 +160,14 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                     $payload = $mapper->record($entry, $release, $master, $artistBios);
                     // Artwork is public release data, but private collection membership is never published as a share image.
                     $payload['cover'] = $payload['coverSource'];
-                    $user->records()->create([
+                    $record = $user->records()->create([
                         'instance_id' => $instance, 'discogs_release_id' => $payload['id'],
                         'added_at' => CarbonImmutable::parse($payload['addedAt'])->utc()->toDateTimeString(),
                         'payload' => $payload, 'is_activity' => ! $initial,
                     ]);
+                    if ($payload['cover'] !== $mapper->placeholderCover) {
+                        GenerateRecordCoverPreview::dispatch($record->id)->afterCommit();
+                    }
                     $changed = true;
                     $imported++;
                 }

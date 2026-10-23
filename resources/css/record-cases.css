@@ -1,3 +1,12 @@
+.catalog-record-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
 /* Keep every medium on the same ledge, with its own physical packaging. */
 .catalog-record:is([data-media-format='CD'], [data-media-format='Cassette'])
     .catalog-record-open {
@@ -40,6 +49,10 @@
     object-fit: contain;
     background: #242822;
 }
+.catalog-record[data-media-format='CD'] .catalog-record-image {
+    background-size: contain;
+    background-color: #242822;
+}
 .catalog-record[data-media-format='Cassette'] .catalog-record-art {
     display: flex;
     flex-direction: column;
@@ -48,6 +61,10 @@
     padding: 4px 5px 5px;
 }
 .catalog-record[data-media-format='Cassette'] .catalog-record-art img {
+    height: auto;
+    aspect-ratio: 1;
+}
+.catalog-record[data-media-format='Cassette'] .catalog-record-image {
     height: auto;
     aspect-ratio: 1;
 }

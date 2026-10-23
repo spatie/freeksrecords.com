@@ -55,6 +55,24 @@ class RecordCoverImages
         return $this->asJpeg($this->sourceBytes($source));
     }
 
+    public function preview(string $source): string
+    {
+        $image = imagecreatefromstring($this->read($source));
+
+        if (! $image) {
+            throw new RuntimeException('The cover could not be decoded.');
+        }
+
+        $preview = imagecreatetruecolor(16, 16);
+        imagecopyresampled($preview, $image, 0, 0, 0, 0, 16, 16, imagesx($image), imagesy($image));
+
+        ob_start();
+        imagejpeg($preview, null, 60);
+        $bytes = ob_get_clean() ?: throw new RuntimeException('The cover preview could not be converted.');
+
+        return 'data:image/jpeg;base64,'.base64_encode($bytes);
+    }
+
     protected function path(int $releaseId): string
     {
         return "records/{$releaseId}.jpg";

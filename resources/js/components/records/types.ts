@@ -29,6 +29,7 @@ export type CollectionRecord = {
     genres: string[];
     styles: string[];
     cover: string;
+    coverPreview?: string;
     discogsUrl: string;
     appleMusicUrl: string;
     appleMusicSearch: boolean;

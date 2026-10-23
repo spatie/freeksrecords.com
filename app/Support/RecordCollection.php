@@ -81,7 +81,7 @@ class RecordCollection
         $records = array_map(fn (CollectionRecord $copy): array => [
             ...Arr::only($copy->payload, [
                 'artist', 'artists', 'title', 'displayTitle', 'year', 'originalYear',
-                'label', 'format', 'genres', 'styles', 'cover', 'tracks',
+                'label', 'format', 'genres', 'styles', 'cover', 'coverPreview', 'tracks',
                 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
             ]),
             'id' => $copy->discogs_release_id, 'instanceId' => $copy->instance_id,

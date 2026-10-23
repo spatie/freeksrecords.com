@@ -41,18 +41,38 @@ export function RecordSleeve({
                     aria-label={`${onSelect ? 'View' : 'Take out'} ${record.displayTitle} by ${record.artist}${record.mediaFormats?.length ? ` (${record.mediaFormats.join(', ')})` : ''}`}
                 >
                     <span className="catalog-record-art">
-                        <img
-                            alt=""
-                            decoding="async"
-                            draggable={false}
-                            height={600}
-                            loading="lazy"
-                            onLoad={(event) => {
-                                event.currentTarget.dataset.loaded = 'true';
-                            }}
-                            src={record.cover}
-                            width={600}
-                        />
+                        <span
+                            className="catalog-record-image"
+                            style={
+                                record.coverPreview
+                                    ? {
+                                          backgroundImage: `url("${record.coverPreview}")`,
+                                      }
+                                    : undefined
+                            }
+                        >
+                            <img
+                                key={record.cover}
+                                alt=""
+                                decoding="async"
+                                draggable={false}
+                                height={600}
+                                loading="lazy"
+                                ref={(image) => {
+                                    if (
+                                        image?.complete &&
+                                        image.naturalWidth > 0
+                                    ) {
+                                        image.dataset.loaded = 'true';
+                                    }
+                                }}
+                                onLoad={(event) => {
+                                    event.currentTarget.dataset.loaded = 'true';
+                                }}
+                                src={record.cover}
+                                width={600}
+                            />
+                        </span>
                         {record.mediaFormats?.[0] === 'Cassette' && (
                             <span className="cassette-inlay" aria-hidden="true">
                                 <strong>{record.artist}</strong>
