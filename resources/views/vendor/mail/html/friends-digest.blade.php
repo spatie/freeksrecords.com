@@ -6,6 +6,7 @@
 <tr>
 <td class="digest-poster" bgcolor="#d84435">
 <h1 class="digest-heading">Sunday<br />Morning.</h1>
+<p>Records your friends added to their collections this week.</p>
 </td>
 </tr>
 @foreach($records as $record)

@@ -7,6 +7,7 @@
 .digest-masthead a { color: #fff9e8; font-size: 26px; font-weight: 900; letter-spacing: -1px; text-decoration: none; }
 .digest-poster { padding: 0 32px 28px; }
 .digest-heading { color: #d9ed92; font-family: Impact, 'Arial Narrow', Arial, sans-serif; font-size: 64px; font-weight: 900; letter-spacing: -3px; line-height: 0.95; margin: 0; text-transform: uppercase; }
+.digest-poster p { color: #fff9e8; font-size: 16px; line-height: 1.5; margin: 18px 0 0; }
 .digest-row { padding: 28px 32px; border-bottom: 1px solid #292a22; }
 .digest-art { width: 168px; padding-right: 24px; }
 .digest-cover { display: block; width: 144px; height: 144px; object-fit: cover; background-color: #292a22; color: #fff9e8; font-size: 13px; }
