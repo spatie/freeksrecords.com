@@ -239,6 +239,7 @@ it('keeps natural title ordering and current effective dates when browsing artis
         ['Stored date', null, '1981-02'],
         ['Conflicting date', 1979, '1965'],
         ['Unknown date', null, null],
+        ['Decade boundary', 1980, '1980-01'],
     ] as $instance => [$title, $year, $date]) {
         $copy = socialRecord($owner, $title, instance: $instance + 1);
         $releaseId = 900000 + $instance;
@@ -248,11 +249,11 @@ it('keeps natural title ordering and current effective dates when browsing artis
 
     $artists = $this->get('/release_order?mode=artist')->assertOk();
     expect(array_column($artists->inertiaProps('records.data'), 'displayTitle'))
-        ->toBe(['Stored date', 'Conflicting date', 'Album 2', 'Album 10', 'Unknown date']);
+        ->toBe(['Stored date', 'Decade boundary', 'Conflicting date', 'Album 2', 'Album 10', 'Unknown date']);
     $decades = $this->get('/release_order?mode=decade')->assertOk();
     expect(array_column($decades->inertiaProps('groups'), 'name'))->toBe(['1980s', '1970s', 'Unknown year'])
         ->and(array_column($decades->inertiaProps('records.data'), 'displayTitle'))
-        ->toBe(['Stored date', 'Album 2', 'Album 10', 'Conflicting date', 'Unknown date']);
+        ->toBe(['Decade boundary', 'Stored date', 'Album 2', 'Album 10', 'Conflicting date', 'Unknown date']);
 
     RecordReleaseDate::query()->whereKey(900002)->update(['original_release_date' => '1963']);
     $this->get('/release_order?mode=decade&q=1963')->assertOk()

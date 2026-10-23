@@ -142,6 +142,18 @@ class ProfileCollection
         })->select(['records.id as copyId'])->selectRaw("{$section} AS section");
         $relativeOffset = $offset - $groups[0]['offset'];
 
+        if ($mode === 'decade') {
+            $query->where(function (Builder $query) use ($values): void {
+                $query->whereNull('records.browse_original_year');
+                foreach ($values as $value) {
+                    if ($value !== null) {
+                        $year = (int) $value;
+                        $query->orWhereBetween('records.browse_original_year', [$year, $year + 9]);
+                    }
+                }
+            });
+        }
+
         if (in_array($mode, ['recent', 'genre'], true)) {
             if ($mode === 'recent') {
                 $query->orderByDesc('records.browse_added_day');
