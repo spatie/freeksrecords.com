@@ -13,7 +13,10 @@ use Illuminate\Support\Sleep;
 
 class Discogs
 {
-    public function __construct(protected ?User $user = null) {}
+    public function __construct(
+        protected ?User $user = null,
+        protected ?DiscogsRateLimiter $limiter = null,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $query
@@ -21,11 +24,25 @@ class Discogs
      */
     public function get(string $path, array $query = []): array
     {
-        if ($query === [] && preg_match('#^(releases|masters|artists)/[0-9]+$#', $path)) {
-            return Cache::remember('discogs-public-v1:'.$path, now()->addWeek(), fn () => $this->fetch($path, $query));
+        if ($query !== []) {
+            return $this->fetch($path, $query);
         }
 
-        return $this->fetch($path, $query);
+        if (! preg_match('#^(releases|masters|artists)/[0-9]+$#', $path)) {
+            return $this->fetch($path, $query);
+        }
+
+        return Cache::remember('discogs-public-v1:'.$path, now()->addWeek(), function () use ($path): array {
+            try {
+                return $this->fetch($path, []);
+            } catch (RequestException $exception) {
+                if ($exception->response->status() !== 404 || ! str_starts_with($path, 'artists/')) {
+                    throw $exception;
+                }
+
+                return [];
+            }
+        });
     }
 
     /**
@@ -43,17 +60,9 @@ class Discogs
             }
 
             $stored = Artist::query()->find($id);
-            try {
-                $details = $stored?->profile !== null
-                    ? ['name' => $stored->name, 'profile' => $stored->profile]
-                    : $this->get("artists/{$id}");
-            } catch (RequestException $exception) {
-                if ($exception->response->status() !== 404) {
-                    throw $exception;
-                }
-
-                $details = [];
-            }
+            $details = $stored?->profile !== null
+                ? ['name' => $stored->name, 'profile' => $stored->profile]
+                : $this->get("artists/{$id}");
 
             $bios[$id] = [
                 'id' => $id,
@@ -75,7 +84,14 @@ class Discogs
         if ($this->user !== null) {
             for ($attempt = 0; ; $attempt++) {
                 try {
-                    $response = app(DiscogsOAuth::class)->request('GET', $path, $this->user->discogs_token, $this->user->discogs_secret, query: $query);
+                    $response = app(DiscogsOAuth::class)->request(
+                        'GET',
+                        $path,
+                        $this->user->discogs_token,
+                        $this->user->discogs_secret,
+                        query: $query,
+                        limiter: $this->limiter,
+                    );
 
                     break;
                 } catch (ConnectionException|RequestException $exception) {

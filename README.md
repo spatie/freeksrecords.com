@@ -136,16 +136,25 @@ to only one profile. Disconnect keeps imported records and stops sync; reconnect
 the same Discogs identity so collections and conversations cannot accidentally mix.
 Revoke the app on Discogs to revoke its grant as well.
 
-`social:sync-collections` queues verified connected profiles daily at 04:15 Brussels,
-or collectors can queue a manual sync in Settings. Jobs are unique and lock per owner.
+`social:sync-collections` queues full reconciliation for verified connected profiles daily
+at 04:15 Brussels. `social:sync-collections --quick` runs hourly at :30, and Settings' manual
+sync uses the same additions-only check. Quick checks read newest-added first and stop
+before the previous successful check's start time, with a one-minute overlap for timestamp
+ties. They never remove records or advance the full-reconciliation timestamp. First imports
+and collections not fully reconciled for a day always use a full scan instead. Jobs are unique
+and lock per owner; quick checks resume an already-running full scan rather than replacing it.
 Incomplete or interrupted imports keep existing records, remain resumable, and never
 promote an initial import to activity. Removals only apply after complete pagination,
 including a confirmed empty collection. Credentials are not serialized into jobs or errors.
 On graceful worker shutdown (including Cloud deploys), imports release their job at the
 next request boundary and resume on another worker, skipping already saved copies.
-Runs also yield after 25 new copies, five listing pages, or a 60-second work budget
-(checked between requests). Completed-page checkpoints are stored privately on the user;
-an unfinished page is replayed safely. Checkpoints expire after a day, and changed listing
+Runs yield after at most 12 actual API requests, releasing unfinished work to the back of
+the queue so other collectors get a turn even with a single worker. Cached public details
+do not consume that allowance; retries do. Runs also yield after 25 new copies, five listing
+pages, or a 60-second work budget (checked between requests). This bounds request counts,
+not latency: slow responses and shared provider cooldowns can still delay everyone.
+Completed-page checkpoints are stored privately on the user;
+an unfinished page is replayed safely. Checkpoints expire after a week, and changed listing
 totals restart the scan without pruning. Copies keep their complete tracks and original-year
 metadata. Public release/master responses are cached for a week across collectors; private
 collection listings and OAuth responses are never cached. All Discogs API requests, including
@@ -159,7 +168,11 @@ Use a shared cache store such as database or Redis across all web and queue inst
 file or array stores cannot coordinate separate servers. Connection errors and 5xx responses
 receive up to three request attempts with backoff before queue-level retries.
 Normal yields and deploy interruptions do not consume the three-exception retry budget; imports have a
-24-hour retry deadline. Automatic retries are shown as retrying, not paused; only
+seven-day retry deadline. The per-collector unique job lock lasts eight days, covering that
+deadline with a margin, and is released when the job completes or fails. Hourly, nightly and
+manual requests therefore do not enqueue extra jobs during a multi-day import. These are
+separate from the short-lived execution lock and queue visibility timeout below.
+Automatic retries are shown as retrying, not paused; only
 exhausted retries require manual action. Diagnostics retain HTTP status or exception
 class (and a cURL error number when available), never provider response bodies, OAuth headers or credentials.
 Keep queue visibility/retry time greater than the job timeout: the database queue defaults

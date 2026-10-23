@@ -90,7 +90,7 @@ class DiscogsConnectionController extends Controller
     public function sync(Request $request): RedirectResponse
     {
         abort_unless($request->user()->discogs_token !== null, 422);
-        SyncUserCollection::dispatch($request->user()->id);
+        SyncUserCollection::dispatch($request->user()->id, full: false);
 
         return back()->with('status', 'Collection sync requested.');
     }

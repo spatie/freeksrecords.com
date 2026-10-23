@@ -49,6 +49,16 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
     expect(Activity::all()->toJson())->not->toContain('access-token', 'access-secret', 'request-secret');
 });
 
+it('requests an additions check from the manual sync endpoint', function () {
+    Bus::fake();
+    $user = socialUser('manualsync');
+    $user->update(['discogs_token' => 'access']);
+
+    $this->actingAs($user)->post('/discogs/sync')->assertRedirect()->assertSessionHas('status', 'Collection sync requested.');
+
+    Bus::assertDispatched(SyncUserCollection::class, fn ($job) => $job->userId === $user->id && ! $job->full);
+});
+
 it('reports only the signed-in collector’s import progress through completion and failure', function () {
     $this->getJson('/discogs/status')->assertUnauthorized();
     $user = socialUser('importprogress');
@@ -223,16 +233,15 @@ it('finishes a large initial collection over multiple real queue reservations wi
         'api.discogs.com/masters/*' => Http::response(['year' => 1974]),
     ]);
     SyncUserCollection::dispatch($user->id);
-    foreach (range(1, 6) as $run) {
+    foreach (range(1, 30) as $run) {
         $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
         expect($user->records()->where('is_activity', true)->count())->toBe(0);
-        if ($run < 6) {
-            expect($user->fresh()->collection_imported_at)->toBeNull()
-                ->and($user->records()->count())->toBe(1 + 25 * $run)
-                ->and($user->records()->where('instance_id', 9999)->exists())->toBeTrue()
-                ->and($user->fresh()->toArray())->not->toHaveKey('discogs_sync_state');
-            $this->assertDatabaseCount('jobs', 1);
+        if ($user->fresh()->collection_imported_at !== null) {
+            break;
         }
+        expect($user->records()->where('instance_id', 9999)->exists())->toBeTrue()
+            ->and($user->fresh()->toArray())->not->toHaveKey('discogs_sync_state');
+        $this->assertDatabaseCount('jobs', 1);
         $this->travel(2)->seconds();
     }
     expect($user->records()->count())->toBe(126)
@@ -318,6 +327,89 @@ it('renders a personal import celebration with the collection link in HTML and p
     $user->update(['email_verified_at' => null]);
     expect($notification->shouldSend($user, 'mail'))->toBeFalse();
 });
+
+it('checks additions across timestamp ties without scanning old pages or applying deletions', function () {
+    $this->travelTo(now()->startOfSecond());
+    $user = socialUser('quick');
+    $checkedAt = now()->subHour()->toImmutable();
+    $user->update([
+        'discogs_username' => 'quick', 'discogs_token' => 'access', 'discogs_secret' => 'secret',
+        'collection_imported_at' => now()->subDay(), 'last_synced_at' => $checkedAt,
+        'discogs_additions_checked_at' => $checkedAt,
+    ]);
+    socialRecord($user, 'Removed on Discogs, keep until reconciliation', instance: 999);
+    socialRecord($user, 'Known recent copy', activity: false, instance: 101);
+    $entries = collect([101, 102, 103, 104, 105])->map(function ($instance) use ($checkedAt) {
+        $entry = discogsCollectionEntry($instance, $instance + 100);
+        $entry['basic_information']['master_id'] = 0;
+        $entry['date_added'] = match ($instance) {
+            101 => $checkedAt->addMinute()->toIso8601String(),
+            102 => $checkedAt->toIso8601String(),
+            103, 104 => $checkedAt->subMinute()->toIso8601String(),
+            105 => $checkedAt->subSeconds(61)->toIso8601String(),
+        };
+
+        return $entry;
+    });
+    Http::fake([
+        'api.discogs.com/users/*' => function (Request $request) use ($entries) {
+            expect($request['sort'])->toBe('added')->and($request['sort_order'])->toBe('desc');
+            expect($request['page'])->toBeLessThanOrEqual(2);
+
+            return Http::response(['pagination' => ['pages' => 100, 'items' => 10000], 'releases' => $request['page'] === 1 ? $entries->take(3)->all() : $entries->slice(3)->values()->all()]);
+        },
+        'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
+    ]);
+
+    (new SyncUserCollection($user->id, full: false))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+
+    expect($user->records()->orderBy('instance_id')->pluck('instance_id')->all())->toBe([101, 102, 103, 104, 999])
+        ->and($user->records()->where('is_activity', true)->where('instance_id', '!=', 999)->pluck('instance_id')->all())->toBe([102, 103, 104])
+        ->and($user->fresh()->last_synced_at->equalTo($checkedAt))->toBeTrue()
+        ->and($user->fresh()->discogs_additions_checked_at->equalTo($checkedAt->addHour()))->toBeTrue()
+        ->and($user->fresh()->sync_status)->toBe('Additions checked')
+        ->and($user->fresh()->discogs_sync_state)->toBeNull();
+    Http::assertSentCount(5);
+});
+
+it('does not advance the additions checkpoint on an incomplete response', function () {
+    $user = socialUser('quickfailure');
+    $checkedAt = now()->subHour()->startOfSecond()->toImmutable();
+    $user->update([
+        'discogs_username' => 'quickfailure', 'discogs_token' => 'access', 'discogs_secret' => 'secret',
+        'collection_imported_at' => $checkedAt, 'last_synced_at' => $checkedAt, 'discogs_additions_checked_at' => $checkedAt,
+    ]);
+    socialRecord($user, instance: 999);
+    Http::fake(['api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 2, 'items' => 200], 'releases' => []])]);
+
+    expect(fn () => (new SyncUserCollection($user->id, full: false))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))
+        ->toThrow(RuntimeException::class);
+    expect($user->fresh()->discogs_additions_checked_at->equalTo($checkedAt))->toBeTrue()
+        ->and($user->records()->pluck('instance_id')->all())->toBe([999]);
+});
+
+it('uses a full scan for first imports and overdue reconciliation even when a quick sync was requested', function (bool $initial) {
+    $user = socialUser('quickfallback');
+    $user->update([
+        'discogs_username' => 'quickfallback', 'discogs_token' => 'access', 'discogs_secret' => 'secret',
+        'collection_imported_at' => $initial ? null : now()->subDays(3),
+        'last_synced_at' => $initial ? null : now()->subDays(2),
+    ]);
+    socialRecord($user, instance: 999);
+    $entry = discogsCollectionEntry(101, 201);
+    $entry['basic_information']['master_id'] = 0;
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [$entry]]),
+        'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
+    ]);
+
+    (new SyncUserCollection($user->id, full: false))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+
+    expect($user->records()->pluck('instance_id')->all())->toBe([101])
+        ->and($user->records()->sole()->is_activity)->toBe(! $initial)
+        ->and($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->fresh()->last_synced_at)->not->toBeNull();
+})->with([true, false]);
 
 it('resumes the unfinished page after exhausted connection retries and reuses already fetched public details', function () {
     $user = socialUser('checkpoint');

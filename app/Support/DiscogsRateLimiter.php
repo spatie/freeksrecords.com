@@ -9,9 +9,17 @@ use Illuminate\Support\Sleep;
 
 class DiscogsRateLimiter
 {
+    protected int $requests = 0;
+
+    public function __construct(protected ?int $requestLimit = null) {}
+
     /** @param Closure(): Response $request */
     public function request(Closure $request, bool $authenticated = true): Response
     {
+        if ($this->requestLimit !== null && $this->requests >= $this->requestLimit) {
+            throw new DiscogsRateLimitException(1);
+        }
+
         $waited = 0;
 
         while (true) {
@@ -26,6 +34,7 @@ class DiscogsRateLimiter
 
                 $interval = max($authenticated ? 1100 : 2500, $state['interval'] ?? 0);
                 Cache::put('discogs-request-budget', ['next' => $now + $interval, 'interval' => $interval], 120);
+                $this->requests++;
                 $response = $request();
 
                 $limit = $this->number($response, 'X-Discogs-Ratelimit');

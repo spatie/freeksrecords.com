@@ -6,6 +6,7 @@ use App\Models\Release;
 use App\Models\User;
 use App\Notifications\CollectionImported;
 use App\Support\Discogs;
+use App\Support\DiscogsRateLimiter;
 use App\Support\DiscogsRateLimitException;
 use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
@@ -28,15 +29,20 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
 
     public int $timeout = 300;
 
-    public int $uniqueFor = 7500;
+    public int $uniqueFor = 8 * 24 * 60 * 60;
 
     public int $tries = 3;
 
     public int $maxExceptions = 3;
 
+    public bool $full = true;
+
     protected bool $shouldStop = false;
 
-    public function __construct(public int $userId) {}
+    public function __construct(public int $userId, bool $full = true)
+    {
+        $this->full = $full;
+    }
 
     public function uniqueId(): string
     {
@@ -50,7 +56,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
 
     public function retryUntil(): CarbonImmutable
     {
-        return CarbonImmutable::now()->addDay();
+        return CarbonImmutable::now()->addWeek();
     }
 
     public function interrupted(int $signal): void
@@ -100,12 +106,21 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 return;
             }
             $initial = $user->collection_imported_at === null;
+            $full = $this->full || $user->collection_imported_at === null
+                || $user->last_synced_at === null || $user->last_synced_at->lt(now()->subDay());
+            $cutoff = ($user->discogs_additions_checked_at ?? $user->last_synced_at)?->subMinute()->timestamp;
             $state = $user->discogs_sync_state;
-            $starting = $state === null || $state['startedAt'] < now()->subDay()->timestamp;
+
+            $starting = $state === null || $state['startedAt'] < now()->subWeek()->timestamp || ($full && ! ($state['full'] ?? true));
             if ($starting) {
-                $state = ['page' => 1, 'seen' => [], 'total' => null, 'pages' => null, 'startedAt' => now()->timestamp];
+                $state = [
+                    'page' => 1, 'seen' => [], 'total' => null, 'pages' => null, 'startedAt' => now()->timestamp,
+                    'full' => $full,
+                ];
                 $user->sync_total = null;
             }
+
+            $full = $state['full'] ?? true;
             DB::transaction(function () use ($user, $state, $initial, $starting): void {
                 $user->update(['sync_status' => 'Syncing', 'discogs_sync_state' => $state]);
                 if ($initial && $starting) {
@@ -113,18 +128,27 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                         ->event('initial_import_started')->log('Initial collection import started');
                 }
             });
-            $discogs = new Discogs($user);
+            $discogs = new Discogs($user, new DiscogsRateLimiter(requestLimit: 12));
             $seen = $state['seen'];
             $page = $state['page'];
             $imported = 0;
             $pagesProcessed = 0;
             $startedAt = microtime(true);
+            $boundaryReached = false;
             do {
                 if ($this->releaseIfNeeded($imported, $startedAt)) {
                     return;
                 }
-                $response = $discogs->get('users/'.rawurlencode($user->discogs_username).'/collection/folders/0/releases', ['page' => $page, 'per_page' => 100]);
+                $query = ['page' => $page, 'per_page' => 100];
+                if (! $full) {
+                    $query += ['sort' => 'added', 'sort_order' => 'desc'];
+                }
+                $response = $discogs->get('users/'.rawurlencode($user->discogs_username).'/collection/folders/0/releases', $query);
                 if (! isset($response['releases'], $response['pagination']['pages'], $response['pagination']['items']) || ! is_array($response['releases'])) {
+                    $user->update(['discogs_sync_state' => null]);
+                    throw new RuntimeException('Incomplete collection response');
+                }
+                if ($response['releases'] === [] && $response['pagination']['items'] > 0) {
                     $user->update(['discogs_sync_state' => null]);
                     throw new RuntimeException('Incomplete collection response');
                 }
@@ -135,13 +159,19 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 $state['total'] = $response['pagination']['items'];
                 $state['pages'] = $response['pagination']['pages'];
                 $user->update(['sync_total' => $state['total'], 'discogs_sync_state' => $state]);
+                $knownRecords = $user->records()->whereIn('instance_id', array_column($response['releases'], 'instance_id'))->get()->keyBy('instance_id');
                 foreach ($response['releases'] as $entry) {
                     if ($this->releaseIfNeeded($imported, $startedAt)) {
                         return;
                     }
+                    if (! $full && CarbonImmutable::parse($entry['date_added'])->timestamp < $cutoff) {
+                        $boundaryReached = true;
+
+                        break;
+                    }
                     $instance = $entry['instance_id'];
                     $seen[] = $instance;
-                    if ($known = $user->records()->where('instance_id', $instance)->first()) {
+                    if ($known = $knownRecords->get($instance)) {
                         $changed = $known->refreshFormats($entry['basic_information'], $mapper) || $changed;
                         if (empty($known->payload['coverPreview'])) {
                             if (filled($known->payload['cover'] ?? null) && $known->payload['cover'] !== $mapper->placeholderCover) {
@@ -185,6 +215,9 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                     $changed = true;
                     $imported++;
                 }
+                if ($boundaryReached) {
+                    break;
+                }
                 $page++;
                 $pagesProcessed++;
                 if ($page <= $state['pages']) {
@@ -199,14 +232,21 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 }
             } while ($page <= $response['pagination']['pages']);
 
-            if (count(array_unique($seen)) !== $response['pagination']['items']) {
+            if (! $boundaryReached && count(array_unique($seen)) !== $response['pagination']['items']) {
                 $user->update(['discogs_sync_state' => null]);
                 throw new RuntimeException('Incomplete collection response');
             }
-            DB::transaction(function () use ($user, $seen, $initial, &$changed): void {
-                $removed = $user->records()->whereNotIn('instance_id', $seen)->delete();
-                $changed = $changed || $removed > 0;
-                $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date', 'discogs_sync_state' => null]);
+            DB::transaction(function () use ($user, $seen, $full, $state, $initial, &$changed): void {
+                if ($full) {
+                    $removed = $user->records()->whereNotIn('instance_id', $seen)->delete();
+                    $changed = $changed || $removed > 0;
+                    $user->last_synced_at = now();
+                }
+                $user->update([
+                    'collection_imported_at' => $user->collection_imported_at ?? now(),
+                    'discogs_additions_checked_at' => CarbonImmutable::createFromTimestamp($state['startedAt']),
+                    'sync_status' => $full ? 'Up to date' : 'Additions checked', 'discogs_sync_state' => null,
+                ]);
                 if ($initial) {
                     activity('discogs')->causedBy($user)->performedOn($user)->withProperties(['records_count' => count($seen)])
                         ->event('initial_import_completed')->log('Initial collection import completed');

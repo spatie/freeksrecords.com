@@ -33,9 +33,10 @@ use Illuminate\Support\Str;
  * @property ?CarbonImmutable $email_verified_at
  * @property ?CarbonImmutable $collection_imported_at
  * @property ?CarbonImmutable $last_synced_at
+ * @property ?CarbonImmutable $discogs_additions_checked_at
  * @property ?string $sync_status
  * @property ?int $sync_total
- * @property ?array{page: int, seen: list<int>, total: ?int, pages: ?int, startedAt: int} $discogs_sync_state
+ * @property ?array{page: int, seen: list<int>, total: ?int, pages: ?int, startedAt: int, full?: bool} $discogs_sync_state
  */
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
@@ -83,6 +84,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'legacy_owner' => 'boolean', 'comments_enabled' => 'boolean', 'digest_enabled' => 'boolean',
             'discogs_token' => 'encrypted', 'discogs_secret' => 'encrypted',
             'collection_imported_at' => 'immutable_datetime', 'last_synced_at' => 'immutable_datetime',
+            'discogs_additions_checked_at' => 'immutable_datetime',
             'sync_total' => 'integer',
             'discogs_sync_state' => 'array',
         ];

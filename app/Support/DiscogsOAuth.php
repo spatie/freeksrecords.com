@@ -14,8 +14,15 @@ class DiscogsOAuth
      * @param  array<string, string|int>  $extra
      * @param  array<string, mixed>  $query
      */
-    public function request(string $method, string $path, ?string $token = null, ?string $secret = null, array $extra = [], array $query = []): Response
-    {
+    public function request(
+        string $method,
+        string $path,
+        ?string $token = null,
+        ?string $secret = null,
+        array $extra = [],
+        array $query = [],
+        ?DiscogsRateLimiter $limiter = null,
+    ): Response {
         $url = 'https://api.discogs.com/'.$path;
         $oauth = [
             'oauth_consumer_key' => config('services.discogs.consumer_key'),
@@ -33,7 +40,7 @@ class DiscogsOAuth
         $oauth['oauth_signature'] = base64_encode(hash_hmac('sha1', $base, $key, true));
         $header = implode(', ', array_map(fn ($key, $value) => rawurlencode($key).'="'.rawurlencode((string) $value).'"', array_keys($oauth), $oauth));
 
-        return app(DiscogsRateLimiter::class)->request(fn () => Http::withUserAgent(config('services.discogs.user_agent'))
+        return ($limiter ?? app(DiscogsRateLimiter::class))->request(fn () => Http::withUserAgent(config('services.discogs.user_agent'))
             ->withHeaders(['Authorization' => 'OAuth '.$header])
             ->asForm()->connectTimeout(5)->timeout(25)->withoutRedirecting()
             ->send($method, $url, ['query' => $query]));

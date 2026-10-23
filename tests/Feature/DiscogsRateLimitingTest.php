@@ -165,3 +165,137 @@ it('reschedules repeated rate limits without exhausting retries losing saved cop
     $this->assertDatabaseCount('jobs', 0);
     $this->assertDatabaseCount('failed_jobs', 0);
 });
+
+it('gives a small update a turn before a large import finishes while preserving the global request pace', function () {
+    config(['queue.default' => 'database']);
+    $large = socialUser('largeimport');
+    $small = socialUser('smallupdate');
+    foreach ([$large, $small] as $user) {
+        $user->update(['discogs_username' => $user->handle, 'discogs_token' => 'token-'.$user->id, 'discogs_secret' => 'secret']);
+    }
+    $small->update(['collection_imported_at' => now()->subHour(), 'last_synced_at' => now()->subHour()]);
+    $largeEntries = collect(range(1, 40))->map(function ($instance) {
+        $entry = discogsCollectionEntry($instance, 2000 + $instance);
+        $entry['basic_information']['master_id'] = 0;
+
+        return $entry;
+    })->all();
+    $recent = discogsCollectionEntry(501, 2501);
+    $recent['date_added'] = now()->toIso8601String();
+    $recent['basic_information']['master_id'] = 0;
+    $old = discogsCollectionEntry(502, 2502);
+    $old['date_added'] = now()->subDays(2)->toIso8601String();
+    $sentAt = [];
+    Http::fake(function ($request) use ($largeEntries, $recent, $old, &$sentAt) {
+        $sentAt[] = now()->getTimestampMs();
+        if (str_contains($request->url(), '/users/largeimport/')) {
+            return Http::response(['pagination' => ['pages' => 1, 'items' => 40], 'releases' => $largeEntries]);
+        }
+        if (str_contains($request->url(), '/users/smallupdate/')) {
+            return Http::response(['pagination' => ['pages' => 100, 'items' => 10000], 'releases' => [$recent, $old]]);
+        }
+
+        return Http::response(['tracklist' => [['title' => 'Imported track', 'position' => 'A1']]]);
+    });
+    SyncUserCollection::dispatch($large->id);
+    SyncUserCollection::dispatch($small->id, full: false);
+
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+    expect($sentAt)->toHaveCount(12)
+        ->and($large->records()->count())->toBeGreaterThan(0)->toBeLessThan(40)
+        ->and($large->fresh()->collection_imported_at)->toBeNull();
+
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+    expect($small->fresh()->sync_status)->toBe('Additions checked')
+        ->and($small->records()->sole()->instance_id)->toBe(501)
+        ->and($large->fresh()->collection_imported_at)->toBeNull();
+
+    foreach (range(1, 10) as $turn) {
+        $this->travel(2)->seconds();
+        $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+        if ($large->fresh()->collection_imported_at !== null) {
+            break;
+        }
+    }
+    expect($large->records()->count())->toBe(40)
+        ->and($large->fresh()->sync_status)->toBe('Up to date')
+        ->and($large->records()->where('is_activity', true)->count())->toBe(0);
+    foreach (array_slice($sentAt, 1) as $index => $timestamp) {
+        expect($timestamp - $sentAt[$index])->toBeGreaterThanOrEqual(1100);
+    }
+    $this->assertDatabaseCount('jobs', 0);
+    $this->assertDatabaseCount('failed_jobs', 0);
+});
+
+it('resumes a compilation with more missing artist profiles than fit in one request allowance', function () {
+    config(['queue.default' => 'database']);
+    $user = socialUser('compilation');
+    $user->update(['discogs_username' => 'compilation', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    $entry = discogsCollectionEntry(101, 201);
+    $entry['basic_information']['master_id'] = 0;
+    $artists = collect(range(1, 15))->map(fn ($id) => ['id' => $id, 'name' => 'Artist '.$id])->all();
+    Http::fake([
+        'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 1], 'releases' => [$entry]]),
+        'api.discogs.com/releases/*' => Http::response(['artists' => $artists, 'tracklist' => [['title' => 'Compilation track', 'position' => 'A1']]]),
+        'api.discogs.com/artists/*' => Http::response([], 404),
+    ]);
+    SyncUserCollection::dispatch($user->id);
+
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+    expect($user->records()->count())->toBe(0)->and($user->fresh()->collection_imported_at)->toBeNull();
+    $this->travel(2)->seconds();
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+
+    expect($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->records()->sole()->payload['artistBios'])->toHaveCount(15)
+        ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Compilation track');
+    $this->assertDatabaseCount('jobs', 0);
+    $this->assertDatabaseCount('failed_jobs', 0);
+});
+
+it('keeps one resumable import across hourly nightly and manual sync requests after more than a day', function () {
+    config(['queue.default' => 'database']);
+    $user = socialUser('longimport');
+    $user->update(['discogs_username' => 'longimport', 'discogs_token' => 'access', 'discogs_secret' => 'secret']);
+    socialRecord($user, 'Keep until reconciliation finishes', false, instance: 999);
+    $startedAt = now()->timestamp;
+    $first = discogsCollectionEntry(101, 201);
+    $second = discogsCollectionEntry(102, 202);
+    $first['basic_information']['master_id'] = $second['basic_information']['master_id'] = 0;
+    Http::fake([
+        'api.discogs.com/users/*' => Http::sequence()
+            ->push(['pagination' => ['pages' => 2, 'items' => 2], 'releases' => [$first]])
+            ->push([], 429)
+            ->push(['pagination' => ['pages' => 2, 'items' => 2], 'releases' => [$second]]),
+        'api.discogs.com/releases/*' => Http::response(['tracklist' => [['title' => 'Imported once', 'position' => 'A1']]]),
+    ]);
+    SyncUserCollection::dispatch($user->id);
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+    expect($user->records()->pluck('instance_id')->all())->toBe([101, 999])
+        ->and($user->fresh()->discogs_sync_state['page'])->toBe(2);
+
+    foreach ([3, 23] as $hours) {
+        $this->travel($hours)->hours();
+        $this->artisan('social:sync-collections', ['--quick' => true])->assertSuccessful();
+        $this->artisan('social:sync-collections')->assertSuccessful();
+        $this->actingAs($user)->post('/discogs/sync')->assertRedirect();
+
+        $this->assertDatabaseCount('jobs', 1);
+        expect($user->fresh()->discogs_sync_state['page'])->toBe(2)
+            ->and($user->fresh()->collection_imported_at)->toBeNull();
+    }
+
+    $this->artisan('queue:work', ['connection' => 'database', '--once' => true, '--sleep' => 0])->assertSuccessful();
+
+    expect($user->records()->pluck('instance_id')->all())->toBe([101, 102])
+        ->and($user->records()->where('is_activity', true)->count())->toBe(0)
+        ->and($user->fresh()->sync_status)->toBe('Up to date')
+        ->and($user->fresh()->discogs_additions_checked_at->timestamp)->toBe($startedAt)
+        ->and($user->fresh()->discogs_sync_state)->toBeNull();
+    Http::assertSentCount(5);
+    $this->assertDatabaseCount('jobs', 0);
+    $this->assertDatabaseCount('failed_jobs', 0);
+
+    $this->artisan('social:sync-collections', ['--quick' => true])->assertSuccessful();
+    $this->assertDatabaseCount('jobs', 1);
+});
