@@ -62,6 +62,7 @@ A token is optional, but raises the Discogs rate limit considerably. Then use th
 | ---------------------------------- | ------------------------------------------------------------------------- |
 | `records:sync-discogs`             | Import new additions and remove records that left the collection          |
 | `records:sync-dates --musicbrainz` | Store original and pressing dates, looking up missing ones on MusicBrainz |
+| `records:enrich-releases`          | Queue missing Discogs information and direct MusicBrainz listening links  |
 | `records:repair-tracklists`        | Group movements that share a physical track                               |
 | `records:copy-covers`              | Copy cover art into the public object storage disk                        |
 | `records:generate-cover-previews`  | Queue missing 16×16 inline cover previews for all collectors              |
@@ -331,7 +332,58 @@ notes, and both release-level and track-level credits once per release. New coll
 reuse shared releases and stored artist biographies. It leaves personal data, tracklists and
 listening links alone, and checkpoints each release: if interrupted or rate-limited, rerun it
 to resume. Empty biographies and notes are stored as empty rather than repeatedly fetched.
-These fields are stored for future display; the UI currently only displays the attribution.
+Record details display the available information in three initially open, collapsible sections below
+the tracklist: **Release notes**, **About the artist**, and **Credits**. Empty sections are
+omitted. Discogs references and basic formatting are rendered without accepting raw HTML.
+
+### Release enrichment and MusicBrainz listening links
+
+The listening-link schema migration only adds nullable fields; it makes no external requests.
+After migrating, start the one-time pass across all shared releases with the queue worker running:
+
+```sh
+php artisan records:enrich-releases
+```
+
+Each unique job checks one Discogs release, shared by every collector who owns it. It first
+fills missing Discogs artist biographies, release notes and credits through
+`ImportReleaseInfoAction`, then resolves listening links through
+`EnrichReleaseListeningLinksAction`. Both actions persist through `StoreReleaseAction` so
+shared metadata and collection browse indexes stay consistent. The older
+`records:import-discogs-info` command remains available for a Discogs-only backfill; it is
+not necessary to run both commands for this rollout.
+
+MusicBrainz matching first uses an existing release-group ID or a Discogs release/master cross-reference, then
+falls back to an unambiguous artist/title/year search. Direct links are accepted only from
+digital editions with matching artists, album title, track count and ordered track titles;
+extra deluxe/live/bonus editions are rejected. This deliberately favors fewer correct links
+over broad coverage. A matching tracklist does not guarantee identical mastering or regional
+availability. Existing direct links are never replaced, including with `--refresh`.
+
+Bandcamp remains an album search when no compatible direct link is found. Spotify and Apple
+Music keep their existing links/search fallbacks. Artist profiles, notes and credits still
+come from Discogs, not MusicBrainz.
+
+Discogs information is checkpointed with `info_imported_at`; MusicBrainz lookups, including
+no-match results, with `musicbrainz_checked_at`. Interrupted/failed steps remain retryable;
+rerunning the command skips completed releases and does not repeat a completed Discogs import
+when only MusicBrainz failed. `--refresh` explicitly rechecks MusicBrainz, not Discogs.
+
+User collection imports already fetch Discogs information for new releases. After storing a
+copy, `ImportDiscogsRecordAction` queues enrichment after commit if either checkpoint is
+missing, including for reused shared releases and existing copies. MusicBrainz requests run
+in the background rather than slowing down collection imports. The legacy collection command
+also queues enrichment for newly imported copies. Fully enriched releases are reused without
+another API lookup when a second collector imports the same pressing. The scheduler queues
+incomplete releases daily at 05:00 Europe/Brussels as a safety net.
+
+MusicBrainz requests share an atomic lock and are spaced at least 1.1 seconds apart, in
+addition to response time. HTTP 429/503 cooldowns and `Retry-After` are shared across workers;
+failed jobs retry with backoff. As with Discogs, production requires the shared Redis cache.
+Do not run the separate legacy `records:sync-dates --musicbrainz` lookup concurrently, since
+that older date importer has its own request pacing. Large backfills belong in the background,
+not in deployment or page requests. Legacy edge-cached pages can retain old links until their
+normal cache expiry (up to 24 hours); social record details are private/no-store.
 
 The follow-up metadata migration moves scalar release metadata out of `data` into typed
 columns: titles, artist display name, years, partial release dates, label/catalogue,

@@ -96,6 +96,7 @@ class RecordCollection
                 'artist', 'artists', 'title', 'displayTitle', 'year', 'originalYear',
                 'label', 'format', 'genres', 'styles', 'cover', 'coverPreview', 'tracks',
                 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
+                'bandcampUrl', 'bandcampSearch',
             ]),
             'id' => $copy->discogs_release_id, 'instanceId' => $copy->instance_id,
             'publicId' => $copy->public_id,

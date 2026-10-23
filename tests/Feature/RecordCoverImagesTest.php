@@ -3,6 +3,7 @@
 use App\Actions\Collections\StoreCollectionRecordAction;
 use App\Actions\Discogs\CompleteCollectionSyncAction;
 use App\Actions\Discogs\ImportDiscogsRecordAction;
+use App\Jobs\EnrichRelease;
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
@@ -150,7 +151,7 @@ it('backfills inline 16 pixel artwork once and exposes it only to authorized col
 });
 
 it('queues preview generation during import without downloading artwork in the import job', function () {
-    Bus::fake([GenerateRecordCoverPreview::class]);
+    Bus::fake([EnrichRelease::class, GenerateRecordCoverPreview::class]);
     $owner = socialUser('previewimport');
     $owner->update(['discogs_username' => 'collector', 'discogs_token' => 'test-access', 'discogs_secret' => 'test-secret']);
     $entry = discogsCollectionEntry(321, 654);

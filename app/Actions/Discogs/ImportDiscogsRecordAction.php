@@ -3,6 +3,7 @@
 namespace App\Actions\Discogs;
 
 use App\Actions\Collections\StoreCollectionRecordAction;
+use App\Jobs\EnrichRelease;
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Models\CollectionRecord;
 use App\Models\Release;
@@ -50,6 +51,10 @@ class ImportDiscogsRecordAction
             }
             $this->storeRecord->execute($record, $attributes);
             $changed = true;
+        }
+
+        if ($record->release->info_imported_at === null || $record->release->musicbrainz_checked_at === null) {
+            EnrichRelease::dispatch($record->discogs_release_id)->afterCommit();
         }
 
         $payload = $record->payload;

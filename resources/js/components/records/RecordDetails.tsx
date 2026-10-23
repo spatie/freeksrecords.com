@@ -6,6 +6,11 @@ import { ArrowUpRight } from 'lucide-react';
 import { useRecordDetails } from '@/components/records/useRecordDetails';
 import { AppleIcon } from '@/components/records/AppleIcon';
 import { SpotifyIcon } from '@/components/records/SpotifyIcon';
+import { RecordLinerNotes } from '@/components/records/RecordLinerNotes';
+import {
+    bandcampLink,
+    safeExternalUrl,
+} from '@/components/records/discogsText';
 import type {
     CollectionRecord,
     CollectionRecordSummary,
@@ -29,6 +34,7 @@ export function RecordDetails({
     const record = details ?? summary;
     const tracks = details?.tracks ?? [];
     const addedDate = collectionAddedDate(record);
+    const bandcamp = bandcampLink(record);
     return (
         <>
             <div className="listening-artists">
@@ -72,12 +78,13 @@ export function RecordDetails({
                             ? 'Find this release on Apple Music'
                             : 'Open this release on Apple Music'
                     }
-                    href={record.appleMusicUrl}
+                    href={safeExternalUrl(record.appleMusicUrl)}
                     rel="noopener noreferrer"
                     target="_blank"
                     title="Apple Music"
                 >
                     <AppleIcon size={24} />
+                    <span className="album-service-name">Apple Music</span>
                 </a>
                 <a
                     aria-label={
@@ -85,12 +92,35 @@ export function RecordDetails({
                             ? 'Find this release on Spotify'
                             : 'Open this release on Spotify'
                     }
-                    href={record.spotifyUrl}
+                    href={safeExternalUrl(record.spotifyUrl)}
                     rel="noopener noreferrer"
                     target="_blank"
                     title="Spotify"
                 >
                     <SpotifyIcon size={24} />
+                    <span className="album-service-name">Spotify</span>
+                </a>
+                <a
+                    aria-label={
+                        bandcamp.search
+                            ? 'Find this release on Bandcamp'
+                            : 'Open this release on Bandcamp'
+                    }
+                    href={bandcamp.url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    title="Bandcamp"
+                >
+                    <svg
+                        aria-hidden="true"
+                        width={24}
+                        height={24}
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                    >
+                        <path d="M6 5h18l-6 14H0z" />
+                    </svg>
+                    <span className="album-service-name">Bandcamp</span>
                 </a>
             </div>
             <div className="listening-tracklist">
@@ -151,15 +181,7 @@ export function RecordDetails({
                     </p>
                 )}
             </div>
-            <p className="record-attribution">
-                <a
-                    href={`https://www.discogs.com/release/${record.id}`}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                >
-                    Data provided by Discogs ↗
-                </a>
-            </p>
+            {details && <RecordLinerNotes key={record.id} record={details} />}
         </>
     );
 }

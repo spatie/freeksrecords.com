@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Actions\Discogs\FetchDiscogsRecordAction;
 use App\Actions\Discogs\RefreshRecordFormatsAction;
+use App\Jobs\EnrichRelease;
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
@@ -98,6 +99,7 @@ class SyncDiscogsCollectionCommand extends Command
 
                     $collection->store($record);
                     $copy = CollectionRecord::legacy()->where('instance_id', $record['instanceId'])->firstOrFail();
+                    EnrichRelease::dispatch($copy->discogs_release_id)->afterCommit();
                     GenerateRecordCoverPreview::dispatch($copy->id)->afterCommit();
                     CollectionRecord::legacy()->where('instance_id', $record['instanceId'])->update(['is_activity' => true]);
 

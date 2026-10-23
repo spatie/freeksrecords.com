@@ -26,6 +26,7 @@ class Release extends Model
         'cover' => 'cover', 'coverSource' => 'cover_source', 'coverPreview' => 'cover_preview',
         'discogsUrl' => 'discogs_url', 'appleMusicUrl' => 'apple_music_url', 'appleMusicSearch' => 'apple_music_search',
         'spotifyUrl' => 'spotify_url', 'spotifySearch' => 'spotify_search',
+        'bandcampUrl' => 'bandcamp_url', 'bandcampSearch' => 'bandcamp_search',
         'trackSource' => 'track_source', 'releaseNotes' => 'release_notes',
     ];
 
@@ -84,6 +85,7 @@ class Release extends Model
             'year' => 'integer', 'original_year' => 'integer',
             'discogs_master_id' => 'integer', 'discogs_label_id' => 'integer',
             'apple_music_search' => 'boolean', 'spotify_search' => 'boolean',
+            'bandcamp_search' => 'boolean', 'musicbrainz_checked_at' => 'immutable_datetime',
         ];
     }
 }

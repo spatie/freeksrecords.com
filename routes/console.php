@@ -22,5 +22,8 @@ Schedule::command('social:sync-collections')
 Schedule::command('social:sync-collections --quick')
     ->hourlyAt(30)->timezone('Europe/Brussels')->withoutOverlapping()->onOneServer();
 
+Schedule::command('records:enrich-releases')
+    ->dailyAt('05:00')->timezone('Europe/Brussels')->withoutOverlapping()->onOneServer();
+
 Schedule::command('social:send-digests')
     ->weeklyOn(0, '09:00')->timezone('Europe/Brussels')->withoutOverlapping()->onOneServer();

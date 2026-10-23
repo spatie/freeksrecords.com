@@ -325,6 +325,15 @@ export function ListeningView({
                                 details={details}
                             />
                             {children}
+                            <p className="record-attribution">
+                                <a
+                                    href={`https://www.discogs.com/release/${record.id}`}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                >
+                                    Data provided by Discogs ↗
+                                </a>
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -134,7 +134,7 @@ class RecordReleaseDates
         $record['originalReleaseDate'] = $original ?? $discogsYear;
         $record['pressingReleaseDate'] = $date->pressing_release_date ?? $pressingYear;
         $record['originalDateSource'] = $date->original_date_source ?? ($discogsYear ? 'discogs' : null);
-        $record['musicbrainzId'] = $date->musicbrainz_id ?? null;
+        $record['musicbrainzId'] = $record['musicbrainzId'] ?? $date?->musicbrainz_id;
         $record['originalYear'] ??= $original ? $this->yearOf($original) : null;
 
         return $record;

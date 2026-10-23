@@ -1,17 +1,22 @@
 <?php
 
 use App\Actions\Collections\StoreCollectionRecordAction;
+use App\Jobs\EnrichRelease;
 use App\Models\CollectionRecord;
 use App\Models\Friendship;
 use App\Models\User;
 use App\Support\RecordCollection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
-    ->beforeEach(fn () => Storage::fake('public'))
+    ->beforeEach(function () {
+        Storage::fake('public');
+        Bus::fake([EnrichRelease::class]);
+    })
     ->in('Feature');
 
 function socialUser(string $handle, string $visibility = 'only_me'): User

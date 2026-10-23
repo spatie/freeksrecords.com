@@ -1,0 +1,16 @@
+import { discogsText } from '@/components/records/discogsText';
+
+export function DiscogsParagraphs({ text }: { text: string }) {
+    return (
+        <div className="discogs-paragraphs">
+            {text
+                .trim()
+                .split(/\r?\n[\t ]*\r?\n(?:[\t ]*\r?\n)*/)
+                .map((paragraph, index) => (
+                    <p className="discogs-text" key={index}>
+                        {discogsText(paragraph)}
+                    </p>
+                ))}
+        </div>
+    );
+}

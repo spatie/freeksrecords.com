@@ -9,6 +9,21 @@ export type CollectionTrack = {
     spotifySearch: boolean;
 };
 
+export type DiscogsCredit = {
+    id?: number;
+    name: string;
+    anv?: string;
+    role?: string;
+    tracks?: string;
+};
+
+export type ArtistBio = {
+    id: number;
+    name: string;
+    profile: string;
+    discogsUrl?: string | null;
+};
+
 export type CollectionRecord = {
     id: number;
     publicId?: string;
@@ -36,6 +51,14 @@ export type CollectionRecord = {
     appleMusicSearch: boolean;
     spotifyUrl: string;
     spotifySearch: boolean;
+    bandcampUrl?: string | null;
+    bandcampSearch?: boolean;
+    artistBios?: ArtistBio[];
+    releaseNotes?: string | null;
+    credits?: {
+        release: DiscogsCredit[];
+        tracks: { position: string; title: string; artists: DiscogsCredit[] }[];
+    };
     trackSource: 'release' | 'master';
     tracks: CollectionTrack[];
 };

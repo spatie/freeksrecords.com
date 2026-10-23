@@ -1,0 +1,104 @@
+.album-listen-links a:has(.album-service-name) {
+    width: auto;
+    min-height: 44px;
+    padding: 4px 6px;
+    gap: 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    text-decoration: none;
+}
+.album-service-name {
+    white-space: nowrap;
+}
+.record-liner-notes {
+    margin-top: 30px;
+}
+.record-liner-notes details {
+    border-top: 1px solid currentColor;
+}
+.record-liner-notes summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 48px;
+    padding: 14px 0;
+    cursor: pointer;
+    list-style: none;
+    font:
+        700 24px/1.3 var(--font-display, 'Cabinet Display'),
+        sans-serif;
+    text-transform: uppercase;
+}
+.record-liner-notes summary::-webkit-details-marker {
+    display: none;
+}
+.record-liner-notes summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 4px;
+}
+.record-liner-notes details[open] > summary svg {
+    transform: rotate(180deg);
+}
+.record-disclosure-content {
+    padding-bottom: 20px;
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.record-disclosure-content section + section,
+.record-disclosure-content .record-credits + section {
+    margin-top: 20px;
+}
+.record-disclosure-content h3 {
+    margin: 0 0 6px;
+    font:
+        600 16px/1.5 var(--font-body, 'Instrument Sans'),
+        sans-serif;
+}
+.record-disclosure-content a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.record-disclosure-content h3 a {
+    text-decoration: none;
+}
+.record-disclosure-content h3 a:hover {
+    text-decoration: underline;
+}
+.discogs-text {
+    margin: 0;
+    white-space: pre-line;
+}
+.discogs-paragraphs > p + p {
+    margin-top: 8px;
+}
+.record-credits {
+    margin: 0;
+}
+.record-credits > div {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 16px;
+    padding: 10px 0;
+    border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+}
+.record-credits dd {
+    margin: 0;
+}
+.record-credits small {
+    display: block;
+    font-size: 13px;
+}
+@media (max-width: 560px) {
+    .record-credits > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+    }
+    .record-credits dt {
+        font-size: 13px;
+    }
+    .record-credits dd {
+        font-weight: 500;
+    }
+}
