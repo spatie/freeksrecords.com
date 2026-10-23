@@ -68,10 +68,11 @@ Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, Ensure
         Route::post('/email/verification-notification', [AccountController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
 
         Route::middleware('verified')->group(function () {
-            Route::get('/feed', [SocialController::class, 'feed'])->name('feed');
+            Route::get('/feed', fn (Request $request) => redirect()->route('feed', $request->query(), 301));
+            Route::get('/friends', [SocialController::class, 'feed'])->name('feed');
             Route::get('/friends/invite', [InvitationsController::class, 'create'])->name('invitations.create');
             Route::post('/friends/invite', [InvitationsController::class, 'store'])->middleware('throttle:6,1')->name('invitations.store');
-            Route::get('/friends', [SocialController::class, 'friends'])->name('friends');
+            Route::get('/friends/manage', [SocialController::class, 'friends'])->name('friends.manage');
             Route::post('/friends/{user}', [SocialController::class, 'friend'])->whereUuid('user')->middleware('throttle:30,1')->name('friend.action');
             Route::get('/settings', fn () => Inertia::render('social/SettingsPage'))->name('settings');
             Route::patch('/settings', [AccountController::class, 'settings']);

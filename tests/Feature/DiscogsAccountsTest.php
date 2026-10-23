@@ -31,7 +31,7 @@ it('completes session-bound single-use OAuth, verifies identity, and encrypts to
         'api.discogs.com/oauth/identity' => Http::response(['username' => 'discogs-owner']),
     ]);
     $this->actingAs($user)->post('/discogs/connect')->assertRedirect('https://www.discogs.com/oauth/authorize?oauth_token=request-token');
-    $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertRedirect('/feed')->assertSessionHasNoErrors()
+    $this->get('/discogs/callback?oauth_token=request-token&oauth_verifier=verified')->assertRedirect('/friends')->assertSessionHasNoErrors()
         ->assertSessionHas('status', 'Discogs connected.');
     $fresh = $user->fresh();
     expect($fresh->discogs_username)->toBe('discogs-owner')->and($fresh->discogs_token)->toBe('access-token');
@@ -74,7 +74,7 @@ it('reports only the signed-in collector’s import progress through completion 
         ])
         ->assertDontSee('private-access')->assertDontSee('private-secret')->assertDontSee('Another collector');
     expect($response->headers->get('Cache-Control'))->toContain('private', 'no-store');
-    $this->get('/feed')->assertOk()->assertDontSee('Not in import summaries')->assertDontSee('Another collector’s private record')
+    $this->get('/friends')->assertOk()->assertDontSee('Not in import summaries')->assertDontSee('Another collector’s private record')
         ->assertInertia(fn (Assert $page) => $page
             ->where('auth.user.syncStatus', 'Syncing')->where('auth.user.syncTotal', 850)
             ->where('collectionCount', 1)->where('auth.user.importedAt', null)
@@ -82,12 +82,12 @@ it('reports only the signed-in collector’s import progress through completion 
 
     $user->update(['sync_status' => 'Sync failed. Existing records were kept.']);
     $this->getJson('/discogs/status')->assertJsonPath('failed', true)->assertJsonPath('count', 1);
-    $this->get('/feed')->assertInertia(fn (Assert $page) => $page->where('auth.user.syncStatus', 'Sync failed. Existing records were kept.'));
+    $this->get('/friends')->assertInertia(fn (Assert $page) => $page->where('auth.user.syncStatus', 'Sync failed. Existing records were kept.'));
     $user->update(['handle' => 'renamedcollector', 'visibility' => 'friends', 'sync_status' => 'Up to date', 'collection_imported_at' => now()]);
     $this->getJson('/discogs/status')->assertJsonPath('complete', true)->assertJsonPath('failed', false)
         ->assertJsonPath('collectorId', $user->id)->assertJsonPath('collectionUrl', url('/renamedcollector'))
         ->assertJsonPath('visibility', 'Friends');
-    $this->get('/feed')->assertInertia(fn (Assert $page) => $page
+    $this->get('/friends')->assertInertia(fn (Assert $page) => $page
         ->where('auth.user.profileUrl', '/renamedcollector')->where('auth.user.importedAt', $user->collection_imported_at->toIso8601String()));
 });
 

@@ -54,7 +54,7 @@ export function InviteFriendsPage() {
                         <button className="button" disabled={form.processing}>
                             {form.processing ? 'Sending…' : 'Send invitation'}
                         </button>
-                        <Link href="/friends">Back to friends</Link>
+                        <Link href="/friends/manage">Back to friends</Link>
                     </div>
                 </form>
                 <p>

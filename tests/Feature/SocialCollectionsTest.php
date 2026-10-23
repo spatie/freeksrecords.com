@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
 
-it('renders only the current authorized feed page with distinct mixed-owner copies and safe attribution', function () {
+it('shows every friend with at most five latest releases and safe attribution', function () {
     $viewer = socialUser('feedviewer');
     $first = socialUser('firstfriend', 'friends');
     $second = socialUser('secondfriend', 'everyone');
@@ -31,9 +31,11 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
     $hidden = socialUser('hiddenfriend', 'only_me');
     socialFriends($viewer, $hidden);
     socialRecord($hidden, 'Hidden feed record');
+    $empty = socialUser('emptyfriend', 'friends');
+    socialFriends($viewer, $empty);
     socialRecord($first, 'Initial feed import', activity: false, date: '2026-09-01 12:00:00', instance: 501);
 
-    $response = $this->actingAs($viewer)->get('/feed')->assertOk()
+    $response = $this->actingAs($viewer)->get('/friends')->assertOk()
         ->assertSeeInOrder(['Newer shared copy', 'Older shared copy'])
         ->assertDontSee('Hidden feed record')->assertDontSee('Initial feed import')
         ->assertDontSee('record-grid')->assertDontSee('record-card')
@@ -41,18 +43,28 @@ it('renders only the current authorized feed page with distinct mixed-owner copi
         ->assertDontSee('Payload token secret')->assertDontSee('Payload note secret')
         ->assertDontSee('owner-token-secret')->assertDontSee($second->email)
         ->assertDontSee('</script><script>alert', false);
-    $summaries = $response->inertiaProps('records.data');
-    expect($summaries)->toHaveCount(30)
+    $friends = $response->inertiaProps('friends');
+    $summaries = array_merge(...array_column($friends, 'records'));
+    expect(array_column(array_column($friends, 'person'), 'handle'))->toBe(['secondfriend', 'firstfriend', 'emptyfriend', 'hiddenfriend'])
+        ->and(array_map(fn (array $friend) => count($friend['records']), $friends))->toBe([1, 5, 0, 0])
+        ->and($friends[2]['visible'])->toBeTrue()
+        ->and($friends[3]['visible'])->toBeFalse()
+        ->and($summaries)->toHaveCount(6)
         ->and(array_column(array_slice($summaries, 0, 2), 'instanceId'))->toBe([500, 500])
         ->and(array_column(array_slice($summaries, 0, 2), 'shareUrl'))->toBe([$newer->url(false), $older->url(false)])
-        ->and($summaries[0]['owner'])->toBe(['name' => $second->name, 'profileUrl' => '/secondfriend', 'avatarUrl' => 'https://example.test/avatar.jpg'])
-        ->and($summaries[1]['owner'])->toBe(['name' => $first->name, 'profileUrl' => '/firstfriend', 'avatarUrl' => null])
+        ->and($friends[0]['person']['avatarUrl'])->toBe('https://example.test/avatar.jpg')
+        ->and($friends[1]['person']['profileUrl'])->toBe('/firstfriend')
         ->and($summaries[0]['addedAt'])->toBe($newer->added_at->toIso8601String())
         ->and($summaries[0])->not->toHaveKey('tracks');
     $this->get($summaries[0]['shareUrl'])->assertOk()->assertSee('Newer shared copy');
     $this->get($summaries[1]['shareUrl'])->assertOk()->assertSee('Older shared copy');
-    $this->get('/feed?page=2')->assertOk()->assertDontSee('Newer shared copy')->assertDontSee('Older shared copy')
-        ->assertInertia(fn (Assert $page) => $page->has('records.data', 2));
+    socialRecord($first, 'Most recent import', activity: false, date: '2026-10-20 12:00:00', instance: 502);
+    $this->get('/friends')->assertInertia(fn (Assert $page) => $page
+        ->where('friends.0.person.handle', 'firstfriend')->has('friends.0.records', 5)
+        ->where('friends.0.records.0.displayTitle', 'Most recent import')
+        ->where('friends.1.person.handle', 'secondfriend'));
+    $this->get('/feed')->assertStatus(301)->assertRedirect('/friends');
+    $this->get('/feed?notifications=1')->assertStatus(301)->assertRedirect('/friends?notifications=1');
 });
 
 it('loads visible shelf pages with owner-specific social links and only safe summary fields', function () {
@@ -423,12 +435,12 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
     $this->actingAs($c)->post('/friends/'.$a->public_id, ['action' => 'accept'])->assertForbidden();
     $this->post('/logout');
     $this->actingAs($b)->post('/friends/'.$a->public_id, ['action' => 'request'])->assertRedirect();
-    $this->get('/friends')->assertInertia(fn (Assert $page) => $page
+    $this->get('/friends/manage')->assertInertia(fn (Assert $page) => $page
         ->where('connections.0.accepted_at', null)->where('connections.0.requested_by', $a->id)->where('people.data.0.id', $a->id));
     $this->post('/friends/'.$a->public_id, ['action' => 'accept'])->assertRedirect();
     $this->post('/logout');
     $this->actingAs($a)->get('/shelves/'.$record->public_id)->assertOk();
-    $this->get('/friends?q=bob')->assertSee('Bob')->assertDontSee('Carol');
+    $this->get('/friends/manage?q=bob')->assertSee('Bob')->assertDontSee('Carol');
     $this->post('/friends/'.$b->public_id, ['action' => 'unfriend'])->assertRedirect();
     $this->get('/shelves/'.$record->public_id)->assertRedirect('/bob');
     foreach (['cancel', 'decline'] as $action) {
@@ -449,7 +461,7 @@ it('requires mutual acceptance, prevents self acceptance, and supports the compl
 it('finds an exact username with the displayed at prefix and optional whitespace', function (string $input, string $handle) {
     $viewer = socialUser('search_viewer');
     $person = socialUser($handle);
-    $this->actingAs($viewer)->get('/friends?'.http_build_query(['q' => $input]))
+    $this->actingAs($viewer)->get('/friends/manage?'.http_build_query(['q' => $input]))
         ->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('query', $handle)->has('people.data', 1)->where('people.data.0.id', $person->id));
 })->with([
@@ -459,10 +471,10 @@ it('finds an exact username with the displayed at prefix and optional whitespace
 
 it('prioritizes importing a first collection without empty feed and request clutter', function () {
     $viewer = socialUser('newcollector');
-    $this->actingAs($viewer)->get('/feed')->assertOk()
+    $this->actingAs($viewer)->get('/friends')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('social/FeedPage')
             ->where('collectionCount', 0)->where('auth.user.discogsConnected', false)
-            ->where('auth.user.importedAt', null)->has('records.data', 0)->missing('incomingRequests'));
+            ->where('auth.user.importedAt', null)->has('friends', 0)->missing('incomingRequests'));
     foreach (['/settings', '/newcollector'] as $path) {
         $this->get($path)->assertInertia(fn (Assert $page) => $page
             ->where('auth.user.collectionCount', 0)->where('auth.user.importedAt', null));
@@ -473,11 +485,11 @@ it('prioritizes importing a first collection without empty feed and request clut
         'user_low' => min($viewer->id, $requester->id), 'user_high' => max($viewer->id, $requester->id),
         'requested_by' => $requester->id,
     ]);
-    $this->get('/feed')->assertInertia(fn (Assert $page) => $page
+    $this->get('/friends')->assertInertia(fn (Assert $page) => $page
         ->where('collectionCount', 0)->missing('incomingRequests'));
 
     $viewer->update(['discogs_token' => 'test-token', 'sync_status' => 'Syncing']);
-    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('auth.user.syncStatus', 'Syncing')->where('auth.user.discogsConnected', true));
 });
 
@@ -492,11 +504,11 @@ it('shows collection counts on the friends page only while the viewer has access
         socialRecord($owner, instance: $instance, activity: false);
     }
 
-    $this->actingAs($viewer)->get('/friends')->assertInertia(fn (Assert $page) => $page
+    $this->actingAs($viewer)->get('/friends/manage')->assertInertia(fn (Assert $page) => $page
         ->has('people.data', 1)->where('people.data.0.id', $owner->id)
         ->where('people.data.0.recordCount', $expected));
     $connection->delete();
-    $this->get('/friends?q=count_owner')->assertInertia(fn (Assert $page) => $page
+    $this->get('/friends/manage?q=count_owner')->assertInertia(fn (Assert $page) => $page
         ->where('people.data.0.recordCount', $visibility === 'everyone' ? $count : null));
 })->with([
     'public friend' => ['everyone', true, 3, 3],
@@ -512,13 +524,13 @@ it('keeps the normal feed after importing even an empty collection', function (b
     $hasRecords
         ? socialRecord($viewer)
         : $viewer->update(['collection_imported_at' => now()]);
-    $this->actingAs($viewer)->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->actingAs($viewer)->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('collectionCount', $hasRecords ? 1 : 0)->where('auth.user.profileUrl', '/returningcollector')
         ->where('auth.user.importedAt', $viewer->collection_imported_at?->toIso8601String())
-        ->has('records.data', 0)->missing('incomingRequests'));
+        ->has('friends', 0)->missing('incomingRequests'));
 })->with([true, false]);
 
-it('orders the feed by original addition date and revokes activity and welcome records dynamically', function () {
+it('orders friends releases by original addition date and respects privacy and unfriending dynamically', function () {
     $viewer = socialUser('viewer');
     $friend = socialUser('friend', 'friends');
     $stranger = socialUser('stranger', 'everyone');
@@ -527,15 +539,15 @@ it('orders the feed by original addition date and revokes activity and welcome r
     socialRecord($friend, 'Newer addition', true, '2026-10-16 12:00:00', 2);
     socialRecord($friend, 'Initial import', false, '2026-10-17 12:00:00', 3);
     socialRecord($stranger, 'Not a friend');
-    $this->actingAs($viewer)->get('/feed')->assertSeeInOrder(['Initial import', 'Newer addition', 'Older addition'])->assertDontSee('Not a friend');
+    $this->actingAs($viewer)->get('/friends')->assertSeeInOrder(['Initial import', 'Newer addition', 'Older addition'])->assertDontSee('Not a friend');
     $friend->update(['visibility' => 'only_me']);
-    $this->get('/feed')->assertDontSee('Newer addition')->assertDontSee('Initial import');
+    $this->get('/friends')->assertDontSee('Newer addition')->assertDontSee('Initial import');
     $friend->update(['visibility' => 'everyone']);
     $connection->delete();
-    $this->get('/feed')->assertDontSee('Newer addition')->assertDontSee('Initial import');
+    $this->get('/friends')->assertDontSee('Newer addition')->assertDontSee('Initial import');
 });
 
-it('welcomes each accepted friend with at most five latest records without announcing initial imports', function (bool $importAfterAcceptance) {
+it('shows only each accepted friends five latest records regardless of activity or import timing', function (bool $importAfterAcceptance) {
     $viewer = socialUser('welcomeviewer');
     $friend = socialUser('welcomefriend', 'friends');
     $other = socialUser('otherfriend', 'everyone');
@@ -544,8 +556,8 @@ it('welcomes each accepted friend with at most five latest records without annou
     socialFriends($viewer, $other);
     socialRecord($other, 'Other friend latest', false, '2026-10-18 12:00:00');
 
-    $this->actingAs($viewer)->get('/feed')->assertInertia(fn (Assert $page) => $page
-        ->has('records.data', 1));
+    $this->actingAs($viewer)->get('/friends')->assertInertia(fn (Assert $page) => $page
+        ->has('friends', 1)->has('friends.0.records', 1));
 
     if ($importAfterAcceptance) {
         $this->post('/friends/'.$friend->public_id, ['action' => 'accept'])->assertRedirect();
@@ -557,14 +569,14 @@ it('welcomes each accepted friend with at most five latest records without annou
     socialRecord($friend, 'Older activity', true, '2026-10-01 12:00:00', 8);
 
     if (! $importAfterAcceptance) {
-        $this->get('/feed')->assertDontSee('Imported record')->assertDontSee('Older activity');
+        $this->get('/friends')->assertDontSee('Imported record')->assertDontSee('Older activity');
         $this->post('/friends/'.$friend->public_id, ['action' => 'accept'])->assertRedirect();
     }
 
-    $response = $this->get('/feed')->assertInertia(fn (Assert $page) => $page->has('records.data', 7));
-    expect(array_column($response->inertiaProps('records.data'), 'displayTitle'))->toBe([
-        'Other friend latest', 'Imported record 7', 'Imported record 6', 'Imported record 5',
-        'Imported record 4', 'Imported record 3', 'Older activity',
+    $response = $this->get('/friends')->assertDontSee('Older activity')
+        ->assertInertia(fn (Assert $page) => $page->has('friends', 2)->has('friends.0.records', 1)->has('friends.1.records', 5));
+    expect(array_column($response->inertiaProps('friends.1.records'), 'displayTitle'))->toBe([
+        'Imported record 7', 'Imported record 6', 'Imported record 5', 'Imported record 4', 'Imported record 3',
     ]);
     expect($friend->records()->where('is_activity', true)->pluck('instance_id')->all())->toBe([8]);
     expect(SocialNotification::query()->pluck('kind')->all())->toBe(['friend_accepted']);
@@ -612,7 +624,7 @@ it('shows only the recipient’s currently visible notifications and scopes read
     $record->update(['payload' => [...$record->payload, 'artist' => 'Notification Artist'], 'private_note' => 'Never in a notification']);
     SocialNotification::send($viewer, $owner, 'comment', $record);
     SocialNotification::send($owner, $viewer, 'friend_accepted');
-    $this->actingAs($viewer)->get('/notifications')->assertRedirect('/feed?notifications=1');
+    $this->actingAs($viewer)->get('/notifications')->assertRedirect('/friends?notifications=1');
     $this->get('/settings')->assertInertia(fn (Assert $page) => $page->where('notificationCount', 1));
     $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
         ->assertOk()->assertJsonCount(1, 'notifications.data')->assertJsonPath('notifications.data.0.url', $record->url(false).'#comments')
@@ -749,7 +761,7 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
     ];
     $personKeys = ['id', 'publicId', 'name', 'handle', 'profileUrl', 'avatarUrl'];
 
-    foreach (['/community', '/collections', '/contract_owner', '/feed', '/friends', '/settings', '/shelves/'.$record->public_id] as $path) {
+    foreach (['/community', '/collections', '/contract_owner', '/friends', '/friends/manage', '/settings', '/shelves/'.$record->public_id] as $path) {
         $response = $this->actingAs($viewer)->get($path, $headers)->assertOk()->assertHeader('X-Inertia', 'true');
         $response->assertJsonPath('props.auth.user.email', $viewer->email)
             ->assertJsonPath('props.auth.user.googleConnected', true)->assertJsonPath('props.auth.user.discogsConnected', true)
@@ -766,7 +778,7 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
 
     $profile = $this->get('/contract_owner', $headers)->assertJsonPath('props.visible', true)
         ->assertJsonPath('props.person.avatarUrl', $owner->google_avatar_url);
-    $this->get('/friends', $headers)->assertJsonPath('props.people.data.0.avatarUrl', $owner->google_avatar_url);
+    $this->get('/friends/manage', $headers)->assertJsonPath('props.people.data.0.avatarUrl', $owner->google_avatar_url);
     expect(array_keys($profile->json('props.person')))->toBe($personKeys);
     $release = $this->get('/shelves/'.$record->public_id, $headers)
         ->assertJsonMissingPath('props.record.privateNote')->assertJsonPath('props.record.canEditNotes', false)
@@ -806,8 +818,8 @@ it('redirects Inertia forms back with validation errors and refreshed props inst
     $this->get('/forms_viewer', $headers)->assertJsonPath('props.auth.user.visibility', 'everyone');
     $actor = socialUser('forms_actor');
     SocialNotification::send($viewer, $actor, 'friend_request');
-    $this->from('/feed')->post('/notifications/read', [], $headers)->assertRedirect('/feed');
-    $this->get('/feed', $headers)->assertJsonPath('props.notificationCount', 0)
+    $this->from('/friends')->post('/notifications/read', [], $headers)->assertRedirect('/friends');
+    $this->get('/friends', $headers)->assertJsonPath('props.notificationCount', 0)
         ->assertJsonPath('props.flash.status', 'Notifications marked as read.');
 });
 

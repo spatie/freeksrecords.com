@@ -149,10 +149,10 @@ it('keeps friend requests off the feed and available on the friends page', funct
     Friendship::query()->create(['user_low' => $viewer->id, 'user_high' => $requester->id, 'requested_by' => $requester->id]);
     Friendship::query()->create(['user_low' => $other->id, 'user_high' => $stranger->id, 'requested_by' => $other->id]);
 
-    $this->actingAs($viewer)->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->actingAs($viewer)->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('social/FeedPage')->where('collectionCount', 3)->missing('incomingRequests')
         ->where('auth.user.profileUrl', '/homeviewer'));
-    $this->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->get('/friends/manage')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('social/FriendsPage')->has('people.data', 1)->where('people.data.0.id', $requester->id)
         ->has('connections', 1)->where('connections.0.requested_by', $requester->id)->where('connections.0.accepted_at', null));
 });

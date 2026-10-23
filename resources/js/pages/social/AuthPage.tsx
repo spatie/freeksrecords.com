@@ -325,7 +325,7 @@ export function AuthPage({ artwork, mode, token = '', email = '' }: AuthProps) {
                                 <input
                                     type="hidden"
                                     name="redirect_url"
-                                    value="/feed"
+                                    value="/friends"
                                 />
                                 <button className="button secondary">
                                     {demo.label}

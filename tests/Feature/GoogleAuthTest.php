@@ -96,7 +96,7 @@ it('creates a friends-only verified Google account and sends it straight to impo
     Notification::assertSentOnDemand(NewUserRegistered::class, fn ($notification, $channels, $notifiable) => $notification->user->is($user) && $notifiable->routes['mail'] === 'freek@spatie.be');
     Notification::assertSentOnDemandTimes(NewUserRegistered::class, 1);
     Notification::assertCount(1);
-    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0)
+    $this->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0)
         ->where('auth.user.importedAt', null)->where('auth.user.discogsConnected', false)->where('auth.user.googleConnected', true)
         ->where('auth.user.avatarUrl', $this->googleProfile['picture']));
 });
@@ -118,7 +118,7 @@ it('lets a deleted legacy owner start fresh through Google without restoring the
         ->and($user->collection_imported_at)->toBeNull()
         ->and($user->discogs_token)->toBeNull();
     $this->assertDatabaseCount('collection_records', 0);
-    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0));
+    $this->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0));
     $this->get('/collection')->assertNotFound();
 });
 
@@ -159,7 +159,7 @@ it('falls back to initials when Google removes a photo or supplies an unsafe ima
     $this->get(route('google.callback', ['state' => session('state'), 'code' => 'valid-code']))->assertRedirect('/');
     $this->assertAuthenticatedAs($linked);
     expect($linked->fresh()->google_avatar_url)->toBeNull();
-    $this->get('/feed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.avatarUrl', null));
+    $this->get('/friends')->assertOk()->assertInertia(fn (Assert $page) => $page->where('auth.user.avatarUrl', null));
 })->with([null, 'http://example.test/photo.jpg', 'javascript:alert(1)']);
 
 it('never claims an existing password account or Freeks reserved ownership by email match', function (bool $legacy) {

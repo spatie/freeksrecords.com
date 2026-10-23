@@ -164,17 +164,10 @@ class CollectionRecord extends Model
     }
 
     /** @return Builder<CollectionRecord> */
-    public static function friendActivity(User $viewer, bool $includeLatestRecords = false): Builder
+    public static function friendActivity(User $viewer): Builder
     {
-        $friendIds = $viewer->friends()->whereIn('visibility', ['everyone', 'friends'])->pluck('id');
-        $latestIds = $includeLatestRecords
-            ? $friendIds->flatMap(fn (int $friendId) => self::query()->where('user_id', $friendId)
-                ->orderByDesc('added_at')->orderByDesc('id')->limit(5)->pluck('id'))
-            : collect();
-
-        return self::query()->where(fn (Builder $query) => $query
-            ->where(fn (Builder $query) => $query->where('is_activity', true)->whereIn('user_id', $friendIds))
-            ->orWhereIn('id', $latestIds))
+        return self::query()->where('is_activity', true)
+            ->whereIn('user_id', $viewer->friends()->whereIn('visibility', ['everyone', 'friends'])->select('id'))
             ->orderByDesc('added_at')->orderByDesc('id');
     }
 

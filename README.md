@@ -90,8 +90,11 @@ provided by Google. Anonymous visitors can still browse public collections.
 - New collections default to **Only me**. **Friends** means accepted mutual friends;
   **Everyone** includes anonymous visitors. Hidden profiles expose only a name/handle,
   never record counts or Discogs connection details.
-- Find friends by exact handle at `/friends`. Requests can be accepted, declined or
-  cancelled; either friend can unfriend. Only accepted friends appear in `/feed`.
+- Find friends by exact handle at `/friends/manage`. Requests can be accepted, declined or
+  cancelled; either friend can unfriend. `/friends` shows all accepted friends, ordered
+  by their most recent visible collection addition, with their latest five releases.
+  Empty and private collections appear last without exposing private records.
+  The old `/feed` URL redirects to `/friends`.
   Pending requests can also be answered inside the notification popover. New requests
   queue an email to verified recipients with seven-day Laravel signed links. Those
   links work without signing in, but require a confirmation POST: opening or scanning
@@ -100,8 +103,8 @@ provided by Google. Anonymous visitors can still browse public collections.
   Acceptance queues a confirmation email to the original requester after the transaction
   commits. Delivery is skipped if their email is unverified or that friendship has since
   been removed. Declining a request sends no email.
-- Feed entries use the original Discogs addition date, newest first. First imports
-  and migrated records never generate activity. Visibility and friendship are queried
+- Friends’ shelves use the original Discogs addition date, newest first, including imports.
+  First imports and migrated records still never generate digest activity. Visibility and friendship are queried
   again on every visit, notification listing, and digest send.
 - Any verified signed-in viewer with access can appreciate or comment on a specific
   collection copy. Authors can delete their comments even after losing access; collection

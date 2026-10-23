@@ -65,7 +65,7 @@ class DiscogsConnectionController extends Controller
         }
         SyncUserCollection::dispatch($request->user()->id);
 
-        return redirect('/feed')->with('status', 'Discogs connected.');
+        return redirect('/friends')->with('status', 'Discogs connected.');
     }
 
     public function status(Request $request): JsonResponse

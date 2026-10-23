@@ -25,7 +25,7 @@ class DemoLoginLinks
             'user_attributes' => '[]',
             'user_model' => User::class,
             'guard' => 'web',
-            'redirect_url' => '/feed',
+            'redirect_url' => '/friends',
         ]);
 
         return $next($request);

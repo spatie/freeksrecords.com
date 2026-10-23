@@ -63,23 +63,20 @@ class SocialController extends Controller
     public function feed(Request $request): InertiaResponse
     {
         $user = $request->user();
-        $records = CollectionRecord::friendActivity($user, includeLatestRecords: true)->with('user')->paginate(30);
-        $copies = array_values($records->items());
-        $feedRecords = array_map(
-            fn (array $summary, CollectionRecord $record): array => [
-                ...$summary,
-                'owner' => [
-                    'name' => $record->user->name,
-                    'profileUrl' => route('profile', $record->user->handle, false),
-                    'avatarUrl' => $record->user->google_avatar_url,
-                ],
-            ],
-            app(RecordCollection::class)->profileSummaries($copies),
-            $copies,
-        );
+        $friends = $user->friends()->orderBy('handle')
+            ->with(['records' => fn ($query) => $query
+                ->whereHas('user', fn ($query) => $query->whereIn('visibility', ['everyone', 'friends']))
+                ->orderByDesc('added_at')->orderByDesc('id')->limit(5)])
+            ->get()
+            ->sortByDesc(fn (User $friend) => $friend->records->first()?->added_at?->getTimestamp() ?? PHP_INT_MIN)
+            ->map(fn (User $friend) => [
+                'person' => SocialData::person($friend),
+                'visible' => $friend->visibility !== 'only_me',
+                'records' => app(RecordCollection::class)->profileSummaries(array_values($friend->records->all())),
+            ])->values()->all();
 
         return Inertia::render('social/FeedPage', [
-            'records' => SocialData::pagination($records, $feedRecords),
+            'friends' => $friends,
             'importRecords' => fn () => $user->discogs_token && ! $user->collection_imported_at
                 ? app(RecordCollection::class)->profileSummaries(array_values($user->records()->orderByDesc('added_at')->orderByDesc('id')->limit(48)->get()->all()))
                 : [],
@@ -186,7 +183,7 @@ class SocialController extends Controller
                 ] : null,
                 'url' => $notification->record
                     ? $notification->record->url(false).($notification->kind === 'comment' ? '#comments' : '')
-                    : route('friends', absolute: false),
+                    : route('friends.manage', absolute: false),
                 'unread' => $notification->read_at === null,
                 'canRespond' => $notification->kind === 'friend_request' && $pendingSenders->contains($notification->actor_id),
             ])->all()),

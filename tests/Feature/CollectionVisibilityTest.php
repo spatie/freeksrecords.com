@@ -36,7 +36,7 @@ it('changes sharing from anywhere without leaving the current page or changing i
         ->and($owner->fresh()->sync_status)->toBe('Syncing')
         ->and($owner->fresh()->collection_imported_at)->toBeNull();
 })->with([
-    ['/feed', 'social/FeedPage'],
+    ['/friends', 'social/FeedPage'],
     ['/settings', 'social/SettingsPage'],
     ['/collections', 'social/CollectionsPage'],
 ]);

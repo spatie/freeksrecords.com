@@ -5,11 +5,10 @@ import { isSettingUpCollection } from '@/modules/social/collectionSetup';
 import { DiscogsConnectButton } from '@/modules/social/DiscogsConnectButton';
 import { FeedShelf } from '@/modules/social/FeedShelf';
 import { ImportStatus } from '@/modules/social/ImportStatus';
-import { Pagination } from '@/modules/social/Pagination';
 import { ImportedShelf } from '@/modules/social/ProfileShelf';
 import type { FeedProps, SocialProps } from '@/modules/social/types';
 
-export function FeedPage({ importRecords, records }: FeedProps) {
+export function FeedPage({ friends, importRecords }: FeedProps) {
     const { auth } = usePage<SocialProps>().props;
     const user = auth.user!;
     const starting = isSettingUpCollection(user);
@@ -84,10 +83,6 @@ export function FeedPage({ importRecords, records }: FeedProps) {
                                     added on Discogs, not directly on Plaat
                                     Club.
                                 </p>
-                                <p>
-                                    Your first import stays off your friends’
-                                    feeds.
-                                </p>
                             </details>
                         </>
                     )}
@@ -96,9 +91,10 @@ export function FeedPage({ importRecords, records }: FeedProps) {
                 <div className="page-heading">
                     <h1>Friends’ finds.</h1>
                     <p className="lede">
-                        The latest additions to your friends’ collections,
-                        grouped by friend.
+                        Your friends’ latest five releases, most recently added
+                        first.
                     </p>
+                    <Link href="/friends/manage">Manage friends</Link>
                 </div>
             )}
             {!starting && (
@@ -107,26 +103,28 @@ export function FeedPage({ importRecords, records }: FeedProps) {
                         className="feed-main"
                         aria-label="Friends’ additions"
                     >
-                        {records.data.length ? (
-                            <FeedShelf records={records.data} />
+                        {friends.length ? (
+                            <FeedShelf friends={friends} />
                         ) : (
                             <section className="empty panel">
-                                <h2>Nothing new yet.</h2>
+                                <h2>Your first friend starts here.</h2>
                                 <p>
-                                    New records shared by your friends appear
-                                    here.
+                                    Find your friends to see the latest
+                                    additions to their collections.
                                 </p>
                                 <div className="actions">
-                                    <Link className="button" href="/friends">
+                                    <Link
+                                        className="button"
+                                        href="/friends/manage"
+                                    >
                                         Find friends
                                     </Link>
-                                    <Link href="/friends">
-                                        Browse collections
+                                    <Link href="/collections">
+                                        Browse public collections
                                     </Link>
                                 </div>
                             </section>
                         )}
-                        <Pagination {...records} />
                     </section>
                 </div>
             )}

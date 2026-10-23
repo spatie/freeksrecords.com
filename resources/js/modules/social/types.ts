@@ -87,7 +87,11 @@ export type ProfileProps = {
     browse: { mode: CollectionMode; group: string | null; query: string };
 };
 export type FeedProps = {
-    records: Pagination<CollectionRecordSummary>;
+    friends: {
+        person: Person;
+        visible: boolean;
+        records: CollectionRecordSummary[];
+    }[];
     importRecords: CollectionRecordSummary[];
     collectionCount: number;
 };

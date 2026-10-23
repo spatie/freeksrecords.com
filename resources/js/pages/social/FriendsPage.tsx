@@ -70,7 +70,7 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                 className="search"
                 onSubmit={(event) => {
                     event.preventDefault();
-                    search.get('/friends');
+                    search.get('/friends/manage');
                 }}
             >
                 <label htmlFor="find-handle">Find someone by username</label>
@@ -88,7 +88,7 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                     <button className="button" disabled={search.processing}>
                         Search
                     </button>
-                    {query && <Link href="/friends">Clear search</Link>}
+                    {query && <Link href="/friends/manage">Clear search</Link>}
                 </div>
             </form>
             {groups

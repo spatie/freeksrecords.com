@@ -1,10 +1,9 @@
 import { Link } from '@inertiajs/react';
 
 import '../../../css/feed-shelf.css';
-import type { CollectionRecordSummary } from '@/components/records/types';
 import { Avatar } from '@/modules/social/Avatar';
-import { groupFeedRecords } from '@/modules/social/feedGroups';
 import { RecordLink } from '@/modules/social/RecordOverlay';
+import type { FeedProps } from '@/modules/social/types';
 
 const additionDate = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
@@ -13,34 +12,36 @@ const additionDate = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Brussels',
 });
 
-export function FeedShelf({ records }: { records: CollectionRecordSummary[] }) {
+export function FeedShelf({ friends }: Pick<FeedProps, 'friends'>) {
     return (
         <div className="feed-shelves">
-            {groupFeedRecords(records).map((group) => (
-                <section className="feed-shelf" key={group.records[0].shareUrl}>
+            {friends.map(({ person, records, visible }) => (
+                <section className="feed-shelf" key={person.publicId}>
                     <header className="feed-shelf-heading">
-                        {group.owner && (
-                            <>
-                                <Link href={group.owner.profileUrl}>
-                                    <Avatar
-                                        className="feed-avatar"
-                                        person={group.owner}
-                                    />
-                                    <h2>{group.owner.name}</h2>
-                                </Link>
-                                <Link
-                                    className="feed-collection-link"
-                                    href={group.owner.profileUrl}
-                                    aria-label={`View ${group.owner.name}’s full collection`}
-                                >
-                                    View full collection{' '}
-                                    <span aria-hidden="true">→</span>
-                                </Link>
-                            </>
+                        <Link href={person.profileUrl}>
+                            <Avatar className="feed-avatar" person={person} />
+                            <h2>{person.name}</h2>
+                        </Link>
+                        {visible && (
+                            <Link
+                                className="feed-collection-link"
+                                href={person.profileUrl}
+                                aria-label={`View ${person.name}’s full collection`}
+                            >
+                                View full collection{' '}
+                                <span aria-hidden="true">→</span>
+                            </Link>
                         )}
                     </header>
+                    {!records.length && (
+                        <p>
+                            {visible
+                                ? 'No records yet.'
+                                : 'This collection is private.'}
+                        </p>
+                    )}
                     <ul className="feed-shelf-records">
-                        {group.records.map((record) => (
+                        {records.map((record) => (
                             <li key={record.shareUrl}>
                                 <RecordLink href={record.shareUrl}>
                                     <img

@@ -29,7 +29,7 @@ export function ProfilePage({
                 {!owner && user?.verified && (
                     <Link
                         className="collection-visibility"
-                        href={`/friends?q=${encodeURIComponent(person.handle)}`}
+                        href={`/friends/manage?q=${encodeURIComponent(person.handle)}`}
                     >
                         Manage friendship
                     </Link>
@@ -113,7 +113,7 @@ export function ProfilePage({
                     {owner && (
                         <Link
                             className="button"
-                            href={user?.importedAt ? '/settings' : '/feed'}
+                            href={user?.importedAt ? '/settings' : '/friends'}
                         >
                             {user?.importedAt
                                 ? 'Manage Discogs connection'

@@ -140,7 +140,7 @@ it('uses opaque verification and admin URLs without accepting numeric replacemen
     $this->actingAs($user);
     $numeric = URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]);
     $this->get($numeric)->assertNotFound();
-    $this->get($url)->assertRedirect('/feed');
+    $this->get($url)->assertRedirect('/friends');
     $this->flushSession();
     $freek = User::freek();
     $freek->update(['email_verified_at' => now()]);

@@ -69,7 +69,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
         }[component] ?? '';
 
     useEffect(() => {
-        if (path !== '/' && path !== '/feed') return;
+        if (path !== '/' && path !== '/friends') return;
         const destination = legacyCollectionUrl(window.location.hash);
         if (destination) window.location.replace(destination);
     }, [path]);
@@ -118,7 +118,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 <Link
                                     href={
                                         settingUpCollection
-                                            ? '/feed'
+                                            ? '/friends'
                                             : user.profileUrl
                                     }
                                     aria-current={
@@ -132,12 +132,12 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 <Link
                                     href={
                                         settingUpCollection
-                                            ? '/friends'
-                                            : '/feed'
+                                            ? '/friends/manage'
+                                            : '/friends'
                                     }
                                     aria-current={
-                                        (path === '/feed' && !onboarding) ||
-                                        path === '/friends'
+                                        (path === '/friends' && !onboarding) ||
+                                        path.startsWith('/friends/')
                                             ? 'page'
                                             : undefined
                                     }

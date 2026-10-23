@@ -28,7 +28,7 @@ it('shows local demo login controls only on the login page', function () {
     $this->get('/people/alex')->assertRedirect('/login');
 
     $this->actingAs($alex);
-    foreach (['/people/alex', '/feed', '/settings'] as $path) {
+    foreach (['/people/alex', '/friends', '/settings'] as $path) {
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->where('demoUsers', []));
     }
 
@@ -44,18 +44,18 @@ it('switches existing local demo accounts without passwords and ignores forged p
     $this->get('/login')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->has('demoUsers', 2)->where('demoUsers.0.label', 'Alex')->where('demoUsers.1.label', 'Robin'));
 
-    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/feed');
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/friends');
     $this->assertAuthenticatedAs($alex);
-    $this->get('/feed')->assertOk();
+    $this->get('/friends')->assertOk();
 
     $forged = ['key' => User::freek()->id, 'user_attributes' => json_encode(['email' => User::freek()->email]), 'user_model' => 'AnUntrustedModel', 'guard' => 'not-a-guard', 'redirect_url' => 'https://untrusted.example'];
-    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), [...$forged, 'email' => $robin->email, '_token' => 'demo-login'])->assertRedirect('/feed');
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin'), [...$forged, 'email' => $robin->email, '_token' => 'demo-login'])->assertRedirect('/friends');
     $this->assertAuthenticatedAs($robin);
-    $this->get('/feed')->assertOk();
+    $this->get('/friends')->assertOk();
 
-    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin').'?'.http_build_query($forged), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/feed');
+    $this->withSession(['_token' => 'demo-login'])->post(route('loginLinkLogin').'?'.http_build_query($forged), ['email' => $alex->email, '_token' => 'demo-login'])->assertRedirect('/friends');
     $this->assertAuthenticatedAs($alex);
-    $this->get('/feed')->assertOk();
+    $this->get('/friends')->assertOk();
 });
 
 it('does not allow login links for Freek, arbitrary accounts or missing demo accounts', function ($email) {
@@ -97,7 +97,7 @@ it('renders a branded verification email with the same signed link and expiry in
     expect($html)->toContain('ALMOST', 'One more spin.', 'Verify my email', '#d9ed92', '#d3c0ea', $user->email, '37 minutes')
         ->and(html_entity_decode($html))->toContain('href="'.$url.'"')
         ->and($text)->toContain('Verify my email: '.$url, '37 minutes')->not->toContain('<table', '<style');
-    $this->actingAs($user)->get($url)->assertRedirect('/feed');
+    $this->actingAs($user)->get($url)->assertRedirect('/friends');
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 
@@ -123,12 +123,12 @@ it('registers a friends-only account, verifies the inbox, and authenticates secu
     expect(Hash::check('a-long-demo-password', $user->password))->toBeTrue();
     Notification::assertSentTo($user, VerifyEmail::class);
     Notification::assertSentOnDemand(NewUserRegistered::class, fn ($notification, $channels, $notifiable) => $notification->user->is($user) && $notifiable->routes['mail'] === 'freek@spatie.be');
-    $this->get('/feed')->assertRedirect('/verify-email');
+    $this->get('/friends')->assertRedirect('/verify-email');
     $this->get('/verify-email')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('social/AuthPage')->where('mode', 'verify')->where('auth.user.email', $user->email)
         ->where('auth.user.verified', false));
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->public_id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
-    $this->get('/feed')->assertOk()->assertViewHas('page.encryptHistory', true);
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->public_id, 'hash' => sha1($user->email)]))->assertRedirect('/friends');
+    $this->get('/friends')->assertOk()->assertViewHas('page.encryptHistory', true);
     $this->post('/logout')->assertRedirect('/');
     $this->assertGuest();
     $this->get('/')->assertViewHas('page.clearHistory', true);
@@ -248,7 +248,7 @@ it('requires inbox verification throughout the app while keeping verification an
     $record = socialRecord($public);
 
     $this->actingAs($user);
-    foreach (['/', '/feed', '/friends', '/settings', '/notifications', '/collections', '/community', '/unverified', '/people/unverified', "/shelves/{$record->public_id}", '/public_collector'] as $path) {
+    foreach (['/', '/friends', '/friends/manage', '/settings', '/notifications', '/collections', '/community', '/unverified', '/people/unverified', "/shelves/{$record->public_id}", '/public_collector'] as $path) {
         $this->get($path)->assertRedirect('/verify-email');
     }
     $this->get('/verify-email')->assertOk();
@@ -353,7 +353,7 @@ it('seeds repeatable real catalog local data without touching Freek and refuses 
         }
     }
     expect(User::query()->where('handle', 'casey')->first()->visibility)->toBe('only_me');
-    $this->actingAs(User::query()->where('handle', 'jamie')->firstOrFail())->get('/feed')
+    $this->actingAs(User::query()->where('handle', 'jamie')->firstOrFail())->get('/friends')
         ->assertOk()->assertInertia(fn (Assert $page) => $page->where('collectionCount', 0)
         ->where('auth.user.discogsConnected', false)->where('auth.user.importedAt', null));
     Notification::assertNothingSent();

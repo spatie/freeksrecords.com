@@ -29,12 +29,14 @@ export function AccountMenu({ path, user }: { path: string; user: Viewer }) {
             >
                 {user.verified && (
                     <Link
-                        href="/friends"
-                        aria-current={path === '/friends' ? 'page' : undefined}
+                        href="/friends/manage"
+                        aria-current={
+                            path === '/friends/manage' ? 'page' : undefined
+                        }
                         onClick={() => popover.current?.hidePopover()}
                     >
                         <Users size={16} aria-hidden="true" />
-                        Your friends
+                        Manage friends
                     </Link>
                 )}
                 {user.verified && (
