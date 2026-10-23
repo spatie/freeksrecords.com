@@ -93,6 +93,8 @@ class SocialController extends Controller
         $request->validate(['q' => ['nullable', 'string', 'max:31']]);
         $query = $request->string('q')->trim()->lower()->ltrim('@')->toString();
         $connections = Friendship::query()->where('user_low', $user->id)->orWhere('user_high', $user->id)->get();
+        $friendIds = $connections->whereNotNull('accepted_at')
+            ->map(fn (Friendship $friendship) => $friendship->user_low === $user->id ? $friendship->user_high : $friendship->user_low);
         $people = User::query()->whereKeyNot($user->id)->where(function ($builder) use ($query, $connections, $user): void {
             if ($query !== '') {
                 $builder->where('handle', $query);
@@ -105,7 +107,8 @@ class SocialController extends Controller
             'query' => $query,
             'people' => SocialData::pagination($people, $people->getCollection()->map(fn (User $person) => [
                 ...SocialData::person($person),
-                'recordCount' => $person->canViewCollection($user) ? $person->records_count : null,
+                'recordCount' => $person->visibility === 'everyone' || ($person->visibility === 'friends' && $friendIds->contains($person->id))
+                    ? $person->records_count : null,
             ])->all()),
             'connections' => $connections->map(fn (Friendship $friendship) => [
                 'user_low' => $friendship->user_low,
@@ -160,7 +163,7 @@ class SocialController extends Controller
             return redirect()->route('feed', ['notifications' => 1]);
         }
 
-        $notifications = SocialNotification::visibleTo($request->user())->with(['actor', 'record'])->latest('id')->simplePaginate(15);
+        $notifications = SocialNotification::visibleTo($request->user())->with(['actor', 'record.user'])->latest('id')->simplePaginate(15);
         $pendingSenders = Friendship::query()->whereNull('accepted_at')->where('requested_by', '!=', $request->user()->id)
             ->where(fn ($query) => $query->where('user_low', $request->user()->id)->orWhere('user_high', $request->user()->id))
             ->pluck('requested_by');

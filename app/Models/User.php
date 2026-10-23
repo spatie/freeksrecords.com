@@ -98,7 +98,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     /** @return HasMany<CollectionRecord, $this> */
     public function records(): HasMany
     {
-        return $this->hasMany(CollectionRecord::class);
+        return $this->hasMany(CollectionRecord::class)->chaperone();
     }
 
     /** @return Builder<User> */

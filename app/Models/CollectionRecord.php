@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $instance_id
@@ -100,19 +99,15 @@ class CollectionRecord extends Model
     /** @return Builder<CollectionRecord> */
     public static function friendActivity(User $viewer, bool $includeLatestRecords = false): Builder
     {
-        return static::visibleTo($viewer)->where(function (Builder $query) use ($viewer, $includeLatestRecords): void {
-            $query->where('is_activity', true);
+        $friendIds = $viewer->friends()->whereIn('visibility', ['everyone', 'friends'])->pluck('id');
+        $latestIds = $includeLatestRecords
+            ? $friendIds->flatMap(fn (int $friendId) => self::query()->where('user_id', $friendId)
+                ->orderByDesc('added_at')->orderByDesc('id')->limit(5)->pluck('id'))
+            : collect();
 
-            if ($includeLatestRecords) {
-                $rankedRecords = self::query()->select('id')
-                    ->selectRaw('ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY added_at DESC, id DESC) AS record_rank')
-                    ->whereIn('user_id', $viewer->friends()->select('id'));
-
-                $query->orWhereIn('id', DB::query()->fromSub($rankedRecords, 'latest_friend_records')
-                    ->select('id')->where('record_rank', '<=', 5));
-            }
-        })
-            ->whereIn('user_id', $viewer->friends()->select('id'))
+        return self::query()->where(fn (Builder $query) => $query
+            ->where(fn (Builder $query) => $query->where('is_activity', true)->whereIn('user_id', $friendIds))
+            ->orWhereIn('id', $latestIds))
             ->orderByDesc('added_at')->orderByDesc('id');
     }
 

@@ -64,25 +64,28 @@ class ProfileCollection
         }
 
         $state = $this->state();
-        $fields = ['artist', 'artists', 'title', 'year', 'originalYear', 'genres'];
+        $needsMetadata = $state['mode'] !== 'recent' || $state['query'] !== '';
+        $fields = $needsMetadata ? ['artist', 'artists', 'title', 'year', 'originalYear', 'genres'] : [];
         if ($state['query'] !== '') {
             $fields = [...$fields, 'label', 'styles', 'tracks'];
         }
         // Read only small indexing fields; hydrate full payloads for the requested page only.
         $rows = DB::table('collection_records')->where('user_id', $this->user->id)
             ->select(['id as copyId', 'discogs_release_id as id', 'added_at', ...array_map(fn ($field) => "payload->{$field} as {$field}", $fields)])
-            ->orderByDesc('added_at')->orderByDesc('collection_records.id')->get();
+            ->get();
         $metadata = $rows->map(function (object $row): array {
             $record = (array) $row;
             foreach (['artists', 'genres', 'styles', 'tracks'] as $field) {
                 $record[$field] = json_decode($record[$field] ?? '[]', true) ?? [];
             }
-            $record['originalYear'] = $record['originalYear'] ? (int) $record['originalYear'] : null;
-            $record['year'] = (int) $record['year'];
+            $record['originalYear'] = ($record['originalYear'] ?? null) ? (int) $record['originalYear'] : null;
+            $record['year'] = (int) ($record['year'] ?? 0);
 
             return $record;
-        })->all();
-        $metadata = app(RecordReleaseDates::class)->enrich($metadata);
+        })->sortBy([['added_at', 'desc'], ['copyId', 'desc']])->values()->all();
+        if ($needsMetadata) {
+            $metadata = app(RecordReleaseDates::class)->enrich($metadata);
+        }
         $terms = preg_split('/\s+/', Str::lower(Str::ascii(trim($state['query']))), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $sections = [];
         foreach ($metadata as $record) {
