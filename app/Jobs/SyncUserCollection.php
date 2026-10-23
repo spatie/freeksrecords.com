@@ -106,7 +106,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 return;
             }
             $initial = $user->collection_imported_at === null;
-            $full = $this->full || $user->collection_imported_at === null
+            $full = $this->full || $initial
                 || $user->last_synced_at === null || $user->last_synced_at->lt(now()->subDay());
             $cutoff = ($user->discogs_additions_checked_at ?? $user->last_synced_at)?->subMinute()->timestamp;
             $state = $user->discogs_sync_state;
