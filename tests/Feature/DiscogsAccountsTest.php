@@ -402,7 +402,7 @@ it('shares only public release details between collectors while fetching each pr
                 ['id' => 634, 'name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.', 'discogsUrl' => 'https://www.discogs.com/artist/634'],
             ])
             ->and($user->records()->sole()->payload['credits']['release'][0]['role'])->toBe('Producer')
-            ->and($user->records()->sole()->payload['credits']['tracks'])->toBe([
+            ->and($user->records()->sole()->payload['credits']['tracks'])->toEqual([
                 ['position' => 'A1', 'title' => 'Shared public song', 'artists' => [['id' => 5049, 'name' => 'Robert Wyatt', 'role' => 'Piano']]],
             ]);
     }

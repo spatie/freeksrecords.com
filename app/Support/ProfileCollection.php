@@ -66,7 +66,7 @@ class ProfileCollection
         $page = min($page, max(1, (int) ceil($total / $perPage)));
         $slice = $this->entries(($page - 1) * $perPage, $perPage);
         $copies = $this->user->records()->whereIn('id', array_column($slice, 'copyId'))
-            ->with('user')->get(['id', 'user_id', 'instance_id', 'discogs_release_id', 'added_at', 'payload'])->keyBy('id');
+            ->with('user')->get(['id', 'user_id', 'instance_id', 'discogs_release_id', 'added_at'])->keyBy('id');
         $summaries = app(RecordCollection::class)->profileSummaries(array_map(fn (array $entry) => $copies->get($entry['copyId']), $slice));
         $items = array_map(fn (array $summary, array $entry) => [...$summary, 'section' => $entry['section'], 'key' => $entry['key']], $summaries, $slice);
 

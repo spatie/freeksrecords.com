@@ -103,9 +103,10 @@ class SocialData
     public static function publicArtwork(array $excludeCovers = [], int $limit = 6): array
     {
         return array_values(CollectionRecord::visibleTo(null)
-            ->whereNotNull('payload->cover')->where('payload->cover', '!=', '')
-            ->whereNotIn('payload->cover', $excludeCovers)
-            ->inRandomOrder()->limit($limit)->with('user')->get(['id', 'user_id', 'payload'])
+            ->whereHas('release', fn ($query) => $query
+                ->whereNotNull('data->cover')->where('data->cover', '!=', '')
+                ->whereNotIn('data->cover', $excludeCovers))
+            ->inRandomOrder()->limit($limit)->with('user')->get(['id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at'])
             ->unique('payload.cover')->map(self::artwork(...))->all());
     }
 

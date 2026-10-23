@@ -2,14 +2,14 @@
 
 namespace App\Console\Commands;
 
-use App\Models\CollectionRecord;
+use App\Models\Release;
 use App\Support\Discogs;
 use App\Support\DiscogsRateLimitException;
 use App\Support\DiscogsRecordMapper;
+use App\Support\EdgeCache;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\DB;
 
 class ImportDiscogsInfoCommand extends Command
 {
@@ -19,31 +19,34 @@ class ImportDiscogsInfoCommand extends Command
 
     public function handle(Discogs $discogs, DiscogsRecordMapper $mapper): int
     {
-        $releaseIds = CollectionRecord::query()
-            ->whereNull('payload->releaseNotes')
-            ->distinct()->pluck('discogs_release_id');
+        $releaseIds = Release::query()->whereHas('records')
+            ->whereNull('info_imported_at')->orderBy('id')->pluck('id');
+        $legacyIds = array_fill_keys(Release::query()->whereHas('records.user', fn ($query) => $query->where('legacy_owner', true))->pluck('id')->all(), true);
         $imported = 0;
+        $legacyChanged = false;
 
-        foreach ($releaseIds as $releaseId) {
-            $this->info("Importing Discogs information for release {$releaseId}...");
+        try {
+            foreach ($releaseIds as $releaseId) {
+                $this->info("Importing Discogs information for release {$releaseId}...");
 
-            try {
-                $release = $discogs->get("releases/{$releaseId}");
-                $info = $mapper->releaseInfo($release, $discogs->artistBios($release['artists'] ?? []));
-            } catch (ConnectionException|RequestException|DiscogsRateLimitException $exception) {
-                $reason = $exception instanceof RequestException ? 'HTTP '.$exception->response->status() : class_basename($exception);
-                $this->error("Import stopped: {$reason}. Saved information was kept; rerun this command to resume.");
+                try {
+                    $release = $discogs->get("releases/{$releaseId}");
+                    $info = $mapper->releaseInfo($release, $discogs->artistBios($release['artists'] ?? []));
+                } catch (ConnectionException|RequestException|DiscogsRateLimitException $exception) {
+                    $reason = $exception instanceof RequestException ? 'HTTP '.$exception->response->status() : class_basename($exception);
+                    $this->error("Import stopped: {$reason}. Saved information was kept; rerun this command to resume.");
 
-                return self::FAILURE;
+                    return self::FAILURE;
+                }
+
+                Release::storePayload($releaseId, $info, replace: true);
+                $legacyChanged = $legacyChanged || isset($legacyIds[$releaseId]);
+                $imported++;
             }
-
-            DB::transaction(function () use ($releaseId, $info): void {
-                CollectionRecord::query()->where('discogs_release_id', $releaseId)
-                    ->whereNull('payload->releaseNotes')->lockForUpdate()->eachById(function (CollectionRecord $record) use ($info): void {
-                        $record->update(['payload' => [...$record->payload, ...$info]]);
-                    });
-            });
-            $imported++;
+        } finally {
+            if ($legacyChanged) {
+                app(EdgeCache::class)->purge();
+            }
         }
 
         $this->comment("Imported information for {$imported} releases.");

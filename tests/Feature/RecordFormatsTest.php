@@ -4,7 +4,10 @@ use App\Jobs\SyncUserCollection;
 use App\Models\User;
 use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Sleep;
 
 it('imports mixed bundles and unknown media without losing descriptions', function () {
@@ -21,6 +24,7 @@ it('imports mixed bundles and unknown media without losing descriptions', functi
         ['name' => 'CD', 'qty' => '1'], ['name' => 'Cassette', 'qty' => '1'],
     ];
     $unknown = [...$mixed, 'instance_id' => 102];
+    $unknown['basic_information']['id'] = 202;
     $unknown['basic_information']['formats'] = [['name' => 'DVD', 'descriptions' => ['LP sized sleeve']]];
     Http::fake([
         'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$mixed, $unknown]]),
@@ -37,14 +41,28 @@ it('imports mixed bundles and unknown media without losing descriptions', functi
 
 it('backfills legacy descriptions without changing dates or activity and recognizes snapshots stored later', function () {
     $user = socialUser('legacyformats');
-    foreach (['5 LP', 'CD, Cassette', 'DVD', ''] as $index => $format) {
-        $record = socialRecord($user, instance: 100 + $index, activity: false);
-        $record->update(['payload' => [...$record->payload, 'format' => $format]]);
+    Schema::table('collection_records', function (Blueprint $table) {
+        $table->dropForeign(['discogs_release_id']);
+        $table->json('payload');
+    });
+    foreach (['artist_release', 'artists', 'releases'] as $table) {
+        Schema::drop($table);
     }
-    $before = $user->records()->get()->map(fn ($record) => [$record->added_at, $record->updated_at, $record->is_activity])->toJson();
+    foreach (['5 LP', 'CD, Cassette', 'DVD', ''] as $index => $format) {
+        $payload = [...app(RecordCollection::class)->snapshot()[0], 'format' => $format];
+        unset($payload['mediaFormats']);
+        DB::table('collection_records')->insert([
+            'user_id' => $user->id, 'instance_id' => 100 + $index, 'discogs_release_id' => 200 + $index,
+            'payload' => json_encode($payload, JSON_THROW_ON_ERROR), 'is_activity' => false,
+            'added_at' => '2026-10-01 12:00:00', 'updated_at' => '2026-10-02 12:00:00',
+        ]);
+    }
+    $before = DB::table('collection_records')->get(['added_at', 'updated_at', 'is_activity'])->toJson();
     $migration = require database_path('migrations/2026_10_18_120000_backfill_record_formats.php');
     $migration->up();
-    expect($user->records()->get()->map(fn ($record) => [$record->added_at, $record->updated_at, $record->is_activity])->toJson())->toBe($before)
+    $migration = require database_path('migrations/2026_10_23_120000_share_releases_and_artists.php');
+    $migration->up();
+    expect(DB::table('collection_records')->get(['added_at', 'updated_at', 'is_activity'])->toJson())->toBe($before)
         ->and($user->records()->where('instance_id', 100)->firstOrFail()->formats())->toBe(['Vinyl'])
         ->and($user->records()->where('instance_id', 101)->firstOrFail()->formats())->toBe(['CD', 'Cassette'])
         ->and($user->records()->where('instance_id', 102)->firstOrFail()->formats())->toBe([]);
@@ -99,7 +117,7 @@ it('keeps useful legacy descriptions when listing metadata is incomplete', funct
     $record = socialRecord(socialUser('incompleteformats'));
     $payload = $record->payload;
     expect($record->refreshFormats(['formats' => [['descriptions' => ['LP']]]], app(DiscogsRecordMapper::class)))->toBeFalse()
-        ->and($record->fresh()->payload)->toBe($payload);
+        ->and($record->fresh()->payload)->toEqual($payload);
 });
 
 it('seeds all three formats without overwriting edited demo records', function () {
@@ -112,7 +130,7 @@ it('seeds all three formats without overwriting edited demo records', function (
     ], ['year' => 2026, 'tracklist' => [['title' => 'A Small Beginning', 'position' => 'A1', 'duration' => '4:12']]], []);
     $legacy['cover'] = '/images/demo-sleeve-1.svg';
     $original = $owner->records()->create(['instance_id' => 900000, 'discogs_release_id' => 900000, 'payload' => $legacy, 'added_at' => '2026-09-01 12:00:00', 'is_activity' => false, 'private_note' => 'My gift']);
-    $edited = $owner->records()->create(['instance_id' => 900001, 'discogs_release_id' => 900001, 'payload' => [...$legacy, 'title' => 'Tester changed this'], 'added_at' => '2026-09-01 12:00:00', 'is_activity' => false]);
+    $edited = $owner->records()->create(['instance_id' => 900001, 'discogs_release_id' => 900001, 'payload' => [...$legacy, 'id' => 900001, 'title' => 'Tester changed this'], 'added_at' => '2026-09-01 12:00:00', 'is_activity' => false]);
     $this->artisan('social:seed-demo')->assertSuccessful();
     $robin = User::query()->where('handle', 'robin')->firstOrFail();
     expect($original->fresh()->id)->toBe($original->id)
@@ -120,7 +138,8 @@ it('seeds all three formats without overwriting edited demo records', function (
         ->and($original->fresh()->private_note)->toBe('My gift')
         ->and($original->fresh()->added_at->equalTo($original->added_at))->toBeTrue()
         ->and($original->fresh()->is_activity)->toBeFalse()
-        ->and($edited->fresh()->payload)->toBe($edited->payload);
+        ->and($edited->fresh()->payload)->toEqual($edited->payload)
+        ->and($edited->fresh()->payload['title'])->toBe('Tester changed this');
     foreach (['Vinyl', 'CD', 'Cassette'] as $format) {
         expect($robin->records()->get()->contains(fn ($record) => in_array($format, $record->formats(), true)))->toBeTrue();
     }

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Release;
 use App\Models\User;
 use App\Notifications\CollectionImported;
 use App\Support\Discogs;
@@ -147,6 +148,20 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                                 GenerateRecordCoverPreview::dispatch($known->id)->afterCommit();
                             }
                         }
+
+                        continue;
+                    }
+                    if ($shared = Release::query()->where('id', $entry['basic_information']['id'])->first()) {
+                        $record = $user->records()->create([
+                            'instance_id' => $instance, 'discogs_release_id' => $shared->id,
+                            'added_at' => CarbonImmutable::parse($entry['date_added'])->utc()->toDateTimeString(),
+                            'is_activity' => ! $initial,
+                        ]);
+                        if (empty($shared->data['coverPreview']) && filled($shared->data['cover'] ?? null) && $shared->data['cover'] !== $mapper->placeholderCover) {
+                            GenerateRecordCoverPreview::dispatch($record->id)->afterCommit();
+                        }
+                        $changed = true;
+                        $imported++;
 
                         continue;
                     }

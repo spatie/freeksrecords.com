@@ -76,7 +76,7 @@ class HomeController
     {
         return User::query()->where('visibility', 'everyone')->has('records')
             ->withCount('records')
-            ->with(['records' => fn ($query) => $query->select(['id', 'user_id', 'payload'])->orderByDesc('added_at')->orderByDesc('id')->limit(6)])
+            ->with(['records' => fn ($query) => $query->select(['id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at'])->orderByDesc('added_at')->orderByDesc('id')->limit(6)])
             ->orderBy('handle');
     }
 }

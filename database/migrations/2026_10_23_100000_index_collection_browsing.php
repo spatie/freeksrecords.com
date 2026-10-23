@@ -31,9 +31,14 @@ return new class extends Migration
             $table->index(['user_id', 'kind', 'name'], 'collection_browse_groups_index');
         });
 
-        CollectionRecord::query()->select('id')->chunkById(50, function ($ids): void {
+        DB::table('collection_records')->select('id')->chunkById(50, function ($ids): void {
             DB::transaction(function () use ($ids): void {
-                $copies = CollectionRecord::query()->whereKey($ids->modelKeys())->lockForUpdate()->get(['id', 'user_id', 'payload', 'added_at']);
+                // Read the historical payload schema without eager-loading newer model relations.
+                $copies = DB::table('collection_records')->whereIn('id', $ids->pluck('id'))->lockForUpdate()
+                    ->get(['id', 'user_id', 'payload', 'added_at'])
+                    ->map(fn ($row) => new CollectionRecord([
+                        ...(array) $row, 'payload' => json_decode($row->payload, true, flags: JSON_THROW_ON_ERROR),
+                    ]));
                 foreach ($copies as $copy) {
                     DB::table('collection_records')->where('id', $copy->id)
                         ->update(CollectionBrowseIndex::attributes($copy->payload, $copy->added_at));

@@ -1,4 +1,14 @@
 services:
+    mysql:
+        command: >-
+            /opt/mysql/bin/mysqld --no-defaults --basedir=/opt/mysql
+            --datadir="$HOME/.local/share/plaat-mysql"
+            --socket="$HOME/.local/share/plaat-mysql/mysql.sock"
+            --pid-file="$HOME/.local/share/plaat-mysql/mysql.pid"
+            --init-file="$HOME/.local/share/plaat-mysql/init.sql"
+            --bind-address=127.0.0.1 --port="$PORT" --mysqlx=OFF
+            --innodb-buffer-pool-size=128M
+        port: 3306
     web:
         command: >-
             APP_URL="$PUBLIC_URL" ASSET_URL=/

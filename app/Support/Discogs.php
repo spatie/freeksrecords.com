@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Artist;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -41,8 +42,11 @@ class Discogs
                 continue;
             }
 
+            $stored = Artist::query()->find($id);
             try {
-                $details = $this->get("artists/{$id}");
+                $details = $stored?->profile !== null
+                    ? ['name' => $stored->name, 'profile' => $stored->profile]
+                    : $this->get("artists/{$id}");
             } catch (RequestException $exception) {
                 if ($exception->response->status() !== 404) {
                     throw $exception;

@@ -18,9 +18,10 @@ function socialUser(string $handle, string $visibility = 'only_me'): User
     return User::query()->create(['name' => ucfirst($handle), 'handle' => $handle, 'email' => $handle.'@example.test', 'password' => 'a-long-demo-password', 'email_verified_at' => now(), 'visibility' => $visibility]);
 }
 
-function socialRecord(User $owner, string $title = 'Private Test Album', bool $activity = true, string $date = '2026-10-17 12:00:00', int $instance = 123): CollectionRecord
+function socialRecord(User $owner, string $title = 'Private Test Album', bool $activity = true, string $date = '2026-10-17 12:00:00', int $instance = 123, ?int $releaseId = null): CollectionRecord
 {
     $payload = app(RecordCollection::class)->snapshot()[0];
+    $payload['id'] = $releaseId ?? crc32($title);
     $payload['displayTitle'] = $payload['title'] = $title;
     $payload['instanceId'] = $instance;
 

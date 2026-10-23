@@ -15,6 +15,29 @@ if ! php -m | grep -qi '^intl$'; then
     sudo apt-get update -qq
     sudo apt-get install -y -qq php8.5-intl
 fi
+if ! php -m | grep -qi '^pdo_mysql$' || ! dpkg-query -W libaio1 libnuma1 >/dev/null 2>&1; then
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq php8.5-mysql libaio1 libnuma1
+fi
+if ! test -x /opt/mysql/bin/mysqld; then
+    curl -fsSL https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.13-linux-glibc2.28-x86_64-minimal.tar.xz -o /tmp/plaat-mysql.tar.xz
+    echo '5dfbb764f731df40ef9e4f5d69aed32bdac8ba1af20bd96b7d40a942d83d4ed2  /tmp/plaat-mysql.tar.xz' | sha256sum -c -
+    sudo mkdir -p /opt/mysql
+    sudo tar -xJf /tmp/plaat-mysql.tar.xz -C /opt/mysql --strip-components=1
+    rm /tmp/plaat-mysql.tar.xz
+fi
+mysql_data="$HOME/.local/share/plaat-mysql"
+mkdir -p "$mysql_data"
+if ! test -d "$mysql_data/mysql"; then
+    /opt/mysql/bin/mysqld --no-defaults --initialize-insecure --basedir=/opt/mysql --datadir="$mysql_data"
+fi
+cat > "$mysql_data/init.sql" <<'SQL'
+CREATE DATABASE IF NOT EXISTS plaat_club CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS plaat_club_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'plaat'@'127.0.0.1' IDENTIFIED BY '';
+GRANT ALL ON plaat_club.* TO 'plaat'@'127.0.0.1';
+GRANT ALL ON plaat_club_test.* TO 'plaat'@'127.0.0.1';
+SQL
 if ! command -v composer >/dev/null; then
     curl -fsSL https://getcomposer.org/installer -o /tmp/freeks-composer.php
     curl -fsSL https://composer.github.io/installer.sig -o /tmp/freeks-composer.sig
@@ -30,9 +53,21 @@ if ! command -v mailpit >/dev/null; then
     rm /tmp/mailpit /tmp/freeks-mailpit.tar.gz
 fi
 composer install --no-interaction --prefer-dist
-test -f .env || cp .env.example .env
+if ! test -f .env; then
+    cp .env.example .env
+    sed -i 's/^DB_CONNECTION=sqlite$/DB_CONNECTION=mysql/' .env
+    cat >> .env <<'ENV'
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=plaat_club
+DB_USERNAME=plaat
+DB_PASSWORD=
+ENV
+fi
 if ! rg -q '^APP_KEY=base64:' .env; then php artisan key:generate; fi
 test -f database/database.sqlite || touch database/database.sqlite
+amp orb services ensure
 php artisan migrate --force
 npm ci --no-audit --no-fund
 npm run build

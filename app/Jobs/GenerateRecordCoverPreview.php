@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\CollectionRecord;
-use App\Support\RecordCollection;
+use App\Models\Release;
 use App\Support\RecordCoverImages;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,7 +33,7 @@ class GenerateRecordCoverPreview implements ShouldBeUnique, ShouldQueue
         return 120;
     }
 
-    public function handle(RecordCoverImages $images, RecordCollection $legacy): void
+    public function handle(RecordCoverImages $images): void
     {
         $record = CollectionRecord::query()->find($this->recordId);
         $source = $record?->payload['cover'] ?? null;
@@ -49,17 +49,14 @@ class GenerateRecordCoverPreview implements ShouldBeUnique, ShouldQueue
         );
 
         DB::transaction(function () use ($source, $preview): void {
-            $record = CollectionRecord::query()->lockForUpdate()->find($this->recordId);
+            $record = CollectionRecord::query()->without('release')->find($this->recordId);
+            $release = $record ? Release::query()->lockForUpdate()->find($record->discogs_release_id) : null;
 
-            if (! $record || ($record->payload['cover'] ?? null) !== $source) {
+            if (! $release || ($release->data['cover'] ?? null) !== $source || filled($release->data['coverPreview'] ?? null)) {
                 return;
             }
 
-            $record->update(['payload' => [...$record->payload, 'coverPreview' => $preview]]);
+            $release->update(['data' => [...$release->data, 'coverPreview' => $preview]]);
         });
-
-        if ($record->user->legacy_owner) {
-            $legacy->flush();
-        }
     }
 }

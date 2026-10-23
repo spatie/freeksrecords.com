@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\CollectionRecord;
+use App\Models\Release;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
@@ -30,7 +31,7 @@ class RecordCollection
         return CollectionRecord::legacy()
             ->orderByDesc('added_at')
             ->orderByDesc('instance_id')
-            ->pluck('payload')
+            ->get()->map(fn (CollectionRecord $record): array => $record->payload)
             ->all();
     }
 
@@ -115,7 +116,7 @@ class RecordCollection
     {
         CollectionRecord::query()->updateOrCreate(
             ['user_id' => User::freek()->id, 'instance_id' => $record['instanceId']],
-            $this->attributes($record),
+            [...$this->attributes($record), 'payload' => $record],
         );
 
         $this->flush();
@@ -124,24 +125,27 @@ class RecordCollection
     /** @param array<int, array<string, mixed>> $records */
     public function storeMany(array $records): void
     {
-        $now = now()->toDateTimeString();
+        DB::transaction(function () use ($records): void {
+            $knownIds = CollectionRecord::legacy()->whereIn('instance_id', array_column($records, 'instanceId'))->pluck('discogs_release_id')->all();
+            $releases = [];
+            foreach (collect($records)->unique('id') as $record) {
+                $releases[$record['id']] = Release::storePayload($record['id'], $record, replace: in_array($record['id'], $knownIds, true))->recordData();
+            }
+            $now = now()->toDateTimeString();
+            $rows = array_map(fn (array $record): array => [
+                'instance_id' => $record['instanceId'],
+                ...$this->attributes([...$record, ...$releases[$record['id']]]),
+                'updated_at' => $now,
+            ], $records);
 
-        $rows = array_map(fn (array $record): array => [
-            'instance_id' => $record['instanceId'],
-            ...$this->attributes($record),
-            'payload' => json_encode($record, JSON_THROW_ON_ERROR),
-            'updated_at' => $now,
-        ], $records);
-
-        DB::transaction(function () use ($rows): void {
             foreach (array_chunk($rows, 100) as $chunk) {
                 CollectionRecord::query()->upsert(
                     $chunk,
                     ['user_id', 'instance_id'],
-                    ['discogs_release_id', 'added_at', 'payload', 'updated_at', 'browse_title', 'browse_original_year', 'browse_added_day', 'browse_search'],
+                    ['discogs_release_id', 'added_at', 'updated_at', 'browse_title', 'browse_original_year', 'browse_added_day', 'browse_search'],
                 );
                 CollectionBrowseIndex::sync(CollectionRecord::legacy()->whereIn('instance_id', array_column($chunk, 'instance_id'))
-                    ->get(['id', 'user_id', 'payload']));
+                    ->get(['id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at']));
             }
         });
 
@@ -179,7 +183,6 @@ class RecordCollection
             'user_id' => User::freek()->id,
             'discogs_release_id' => $record['id'],
             'added_at' => CarbonImmutable::parse($record['addedAt'])->utc()->toDateTimeString(),
-            'payload' => $record,
             ...CollectionBrowseIndex::attributes($record, CarbonImmutable::parse($record['addedAt'])),
         ];
     }

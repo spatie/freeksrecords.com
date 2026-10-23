@@ -19,10 +19,11 @@ class GenerateRecordCoverPreviewsCommand extends Command
         $queued = 0;
         $limit = max(0, (int) $this->option('limit'));
 
-        $records = CollectionRecord::query()->select('id')->where('id', '>', max(0, (int) $this->option('after-id')))
-            ->whereNull('payload->coverPreview')
-            ->whereNotNull('payload->cover')->whereNotIn('payload->cover', ['', '/images/record-placeholder.svg'])
-            ->lazyById(100);
+        $records = CollectionRecord::query()->without('release')->selectRaw('MIN(id) as id')
+            ->whereHas('release', fn ($query) => $query->whereNull('data->coverPreview')
+                ->whereNotNull('data->cover')->whereNotIn('data->cover', ['', '/images/record-placeholder.svg']))
+            ->groupBy('discogs_release_id')->havingRaw('MIN(id) > ?', [max(0, (int) $this->option('after-id'))])
+            ->orderBy('id')->cursor();
 
         foreach ($records as $record) {
             $this->line("Queueing cover preview for record {$record->id}...");

@@ -207,9 +207,11 @@ ends the whole session, including the ability to switch back without signing in 
 
 ### Amp orb preview
 
-`.agents/setup` installs PHP 8.5/extensions, Composer, locked dependencies, SQLite and
-compiled assets without overwriting an existing `.env`. It does not contact Discogs,
-send external mail, or seed demo credentials automatically.
+`.agents/setup` installs PHP 8.5/extensions, Composer, locked dependencies, MySQL 8.4 and
+compiled assets. Fresh orbs use an isolated MySQL database, matching the Laravel MySQL
+engine attached to Plaat Club on Laravel Cloud; no production connection or data is used.
+Existing `.env` files are preserved. SQLite remains available for the default test suite.
+Setup does not contact Discogs, send external mail, or seed demo credentials automatically.
 
 ```bash
 .agents/setup
@@ -219,12 +221,21 @@ amp orb services ensure
 amp orb portal 8000 --title 'Plaat Club social preview'
 ```
 
-The supervised services are the web app, database queue worker, Laravel scheduler,
-and Mailpit preview inbox. Mailpit captures SMTP locally; no preview emails leave the orb.
+The supervised services are MySQL (loopback-only, not exposed through a portal), the web
+app, database queue worker, Laravel scheduler, and Mailpit preview inbox. The disposable
+local MySQL user is `plaat` with an empty password and access only to `plaat_club` and
+`plaat_club_test`; never use these credentials outside the orb. Mailpit captures SMTP
+locally; no preview emails leave the orb.
 The web service uses its portal origin for app/assets URLs; share the exact generated
 Portal URL, not a sandbox host or localhost address. Services survive pause/resume.
 Setup/services become defaults for future orbs only after this branch reaches the
 project’s default branch.
+
+To run the PHP suite against MySQL instead of the default in-memory SQLite database:
+
+```bash
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_DATABASE=plaat_club_test DB_USERNAME=plaat DB_PASSWORD= php artisan test
+```
 
 Local-only demo accounts: `alex@example.test`, `robin@example.test`, `sam@example.test`,
 `casey@example.test`, and `jamie@example.test`, all with password `demo-listening-2026`.
@@ -271,16 +282,39 @@ secrets. Run `php artisan queue:restart` after deployments. The social preview d
 configure or deploy these production services, and a fake-HTTP OAuth test is not a live
 Discogs authorization test.
 
-When deploying the Discogs information import, run `php artisan records:import-discogs-info`
-after migrations to backfill existing collections. This imports artist biographies (with
-Discogs markup preserved), release notes, and both release-level and track-level credits
-into each record's JSON payload. New collection imports include these fields automatically.
-The backfill fetches each distinct release once, shares public artist responses through
-the Discogs cache, and leaves personal notes, dates, activity and listening links alone.
-It checkpoints each release: if interrupted or rate-limited, rerun the command to resume.
-An empty biography or release note is stored as empty rather than repeatedly fetched.
-The information is stored for future display; this change only displays attribution.
-The shared release/artist storage redesign is separate from this import.
+Before deploying shared releases, back up the database, use maintenance mode and pause
+collection imports/queue workers: the old copy-level payload column is removed, so old
+code must not run against the migrated schema. With the new code, first run:
+
+```sh
+php artisan migrate --force
+```
+
+Bring the app online and resume workers with the new code, then run the resumable metadata
+import separately. Discogs rate limits can make this take hours; do not hold the site in
+maintenance mode or block a deployment on this import:
+
+```sh
+php artisan records:import-discogs-info
+```
+
+The migration works offline: it moves core metadata, tracklists, artwork references, inline
+cover previews, release notes and credits into one `releases` row per Discogs release ID. Different pressings remain
+separate releases. Artist biographies are shared in `artists`, linked through `artist_release`.
+Existing enrichment and cached artwork are retained; collection copy IDs, owners, dates,
+personal notes, activity, comments, appreciations and URLs are unchanged. When copies disagree,
+the oldest copy's metadata wins, with missing enrichment filled from other copies, cached
+artwork preferred over Discogs image URLs, and resolved listening links preferred over searches.
+Artwork files remain keyed by release ID, so copies share both the stored reference and file.
+SQL browse projections and memberships are retained, and shared metadata edits refresh them
+transactionally for every copy without changing personal addition dates or notes.
+
+The import then fills missing artist biographies (with Discogs markup preserved), release
+notes, and both release-level and track-level credits once per release. New collection imports
+reuse shared releases and stored artist biographies. It leaves personal data, tracklists and
+listening links alone, and checkpoints each release: if interrupted or rate-limited, rerun it
+to resume. Empty biographies and notes are stored as empty rather than repeatedly fetched.
+These fields are stored for future display; the UI currently only displays the attribution.
 
 After deploying inline cover previews, run `php artisan records:generate-cover-previews`
 once, with the queue worker running. It is safe to rerun (or use `--limit=100`): only
@@ -289,9 +323,10 @@ For command runtimes with short execution limits, process bounded batches with
 `--limit=500 --after-id=<last logged record ID>` to resume the scan.
 The artwork-only cache holds one tiny preview per source, never collection metadata.
 New Discogs imports queue previews automatically. The GD pipeline stores a 16×16 JPEG
-data URI in the record payload; collection rendering only serializes that value and
+data URI once in shared release data, exposed through each copy's virtual record payload;
+collection rendering only serializes that value and
 never downloads or generates artwork. Failed jobs can be retried without losing records.
-No database migration is needed. Social collection responses retain their existing
+No separate preview migration is needed. Social collection responses retain their existing
 visibility checks and private/no-store headers; previews do not publish private artwork.
 
 ### Outgoing email

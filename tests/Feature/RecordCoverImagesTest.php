@@ -119,6 +119,7 @@ it('backfills inline 16 pixel artwork once and exposes it only to authorized col
     $friend = socialUser('previewfriend');
     $friendship = socialFriends($owner, $friend);
     $record = socialRecord($owner);
+    $otherCopy = socialRecord(socialUser('otherpreviewowner'));
     $record->update(['private_note' => 'Keep this private', 'shared_note' => 'Keep this too']);
     $original = $record->payload;
 
@@ -128,7 +129,8 @@ it('backfills inline 16 pixel artwork once and exposes it only to authorized col
     $dimensions = getimagesizefromstring(base64_decode(explode(',', $preview, 2)[1]));
     expect([$dimensions[0], $dimensions[1], $dimensions['mime']])->toBe([16, 16, 'image/jpeg'])
         ->and(strlen($preview))->toBeLessThan(1800)
-        ->and($record->fresh()->payload)->toBe([...$original, 'coverPreview' => $preview])
+        ->and($record->fresh()->payload)->toEqual([...$original, 'coverPreview' => $preview])
+        ->and($otherCopy->fresh()->payload['coverPreview'])->toBe($preview)
         ->and($record->fresh()->private_note)->toBe('Keep this private')
         ->and($record->fresh()->shared_note)->toBe('Keep this too');
 
@@ -170,17 +172,20 @@ it('preserves concurrent metadata edits and reuses previews for identical artwor
     $record->update(['payload' => [...$record->payload, 'cover' => $source]]);
     $bytes = file_get_contents(public_path(ltrim($this->record['cover'], '/')));
     Http::fake([$source => function () use ($record, $bytes) {
+        $record->update(['private_note' => 'Changed during download', 'shared_note' => 'Still my copy']);
         $record->update(['payload' => [...$record->payload, 'releaseNotes' => 'Updated during download']]);
 
         return Http::response($bytes);
     }]);
 
-    (new GenerateRecordCoverPreview($record->id))->handle(app(RecordCoverImages::class), $this->collection);
-    $second = socialRecord($owner, instance: 456);
+    (new GenerateRecordCoverPreview($record->id))->handle(app(RecordCoverImages::class));
+    $second = socialRecord($owner, instance: 456, releaseId: 202);
     $second->update(['payload' => [...$second->payload, 'cover' => $source]]);
-    (new GenerateRecordCoverPreview($second->id))->handle(app(RecordCoverImages::class), $this->collection);
+    (new GenerateRecordCoverPreview($second->id))->handle(app(RecordCoverImages::class));
 
     expect($record->fresh()->payload['releaseNotes'])->toBe('Updated during download')
+        ->and($record->fresh()->private_note)->toBe('Changed during download')
+        ->and($record->fresh()->shared_note)->toBe('Still my copy')
         ->and($record->fresh()->payload['coverPreview'])->toBe($second->fresh()->payload['coverPreview']);
     Http::assertSentCount(1);
 });
@@ -201,18 +206,19 @@ it('does not attach stale previews when the cover changes during generation and 
         return Http::response($bytes);
     }]);
     $job = new GenerateRecordCoverPreview($record->id);
-    expect(fn () => $job->handle(app(RecordCoverImages::class), $this->collection))->toThrow(RequestException::class);
+    expect(fn () => $job->handle(app(RecordCoverImages::class)))->toThrow(RequestException::class);
     expect($record->fresh()->payload)->not->toHaveKey('coverPreview');
 
-    $job->handle(app(RecordCoverImages::class), $this->collection);
+    $job->handle(app(RecordCoverImages::class));
     expect($record->fresh()->payload)->not->toHaveKey('coverPreview');
 });
 
 it('resumes bounded backfill batches after the last processed record', function () {
     $owner = socialUser('previewbatches');
     $first = socialRecord($owner, instance: 1);
-    $second = socialRecord($owner, instance: 2);
-    $third = socialRecord($owner, instance: 3);
+    $second = socialRecord($owner, instance: 2, releaseId: 202);
+    $third = socialRecord($owner, instance: 3, releaseId: 203);
+    socialRecord($owner, instance: 4);
 
     $this->artisan('records:generate-cover-previews', ['--after-id' => $first->id, '--limit' => 1])
         ->expectsOutput('Queued 1 cover previews.')->assertSuccessful();
@@ -220,5 +226,11 @@ it('resumes bounded backfill batches after the last processed record', function 
     expect($first->fresh()->payload)->not->toHaveKey('coverPreview')
         ->and($second->fresh()->payload)->toHaveKey('coverPreview')
         ->and($third->fresh()->payload)->not->toHaveKey('coverPreview');
+    $this->artisan('records:generate-cover-previews', ['--after-id' => $second->id, '--limit' => 1])
+        ->expectsOutput('Queued 1 cover previews.')->assertSuccessful();
+    $this->artisan('records:generate-cover-previews', ['--after-id' => $third->id, '--limit' => 1])
+        ->expectsOutput('Queued 0 cover previews.')->assertSuccessful();
+    expect($first->fresh()->payload)->not->toHaveKey('coverPreview')
+        ->and($third->fresh()->payload)->toHaveKey('coverPreview');
     Http::assertNothingSent();
 });

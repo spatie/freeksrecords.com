@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
+use App\Models\Release;
 use App\Models\User;
 use App\Support\Discogs;
 use App\Support\DiscogsRateLimitException;
@@ -131,6 +132,13 @@ class SyncDiscogsCollectionCommand extends Command
     protected function fetchRecord(array $entry, Discogs $discogs, DiscogsRecordMapper $mapper): array
     {
         $basic = $entry['basic_information'];
+
+        if ($shared = Release::query()->where('id', $basic['id'])->first()) {
+            return [
+                'id' => $shared->id, 'instanceId' => $entry['instance_id'],
+                ...$shared->recordData(), 'addedAt' => $entry['date_added'],
+            ];
+        }
 
         $release = $discogs->get("releases/{$basic['id']}");
 
