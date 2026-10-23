@@ -24,7 +24,7 @@ export function RecordSocial({
     });
     const comment = useForm({ body: '' });
     const action = useForm({});
-    const base = `/shelves/${record.id}`;
+    const base = `/shelves/${record.publicId}`;
     return (
         <>
             {record.canEditNotes ? (
@@ -167,7 +167,7 @@ export function RecordSocial({
                                         aria-label={`Delete comment by ${item.user.name}`}
                                         onClick={() =>
                                             action.delete(
-                                                `${base}/comments/${item.id}`,
+                                                `${base}/comments/${item.publicId}`,
                                                 visitOptions,
                                             )
                                         }

@@ -196,7 +196,7 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                                                 </button>
                                             ) : (
                                                 <FriendActions
-                                                    personId={person.id}
+                                                    personId={person.publicId}
                                                     actions={actions}
                                                 />
                                             )}
@@ -262,7 +262,7 @@ export function FriendsPage({ connections, people, query }: FriendsProps) {
                         onSubmit={(event) => {
                             event.preventDefault();
                             if (!selected || unfriend.processing) return;
-                            unfriend.post(`/friends/${selected.id}`, {
+                            unfriend.post(`/friends/${selected.publicId}`, {
                                 preserveScroll: true,
                                 onSuccess: closeDialog,
                             });

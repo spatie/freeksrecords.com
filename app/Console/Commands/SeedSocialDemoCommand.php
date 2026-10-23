@@ -7,6 +7,7 @@ use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\DiscogsRecordMapper;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
@@ -76,7 +77,7 @@ class SeedSocialDemoCommand extends Command
                 // Notes, dates, activity and social interactions are never replaced.
                 if (! $record->wasRecentlyCreated && $number < 3 && $record->discogs_release_id === $instance) {
                     $legacy['addedAt'] = $record->payload['addedAt'] ?? '';
-                    if ($record->payload == $legacy) {
+                    if (Arr::whereNotNull($record->payload) == Arr::whereNotNull($legacy)) {
                         $payload['addedAt'] = $legacy['addedAt'];
                         $record->update(['discogs_release_id' => $payload['id'], 'payload' => $payload]);
                     }

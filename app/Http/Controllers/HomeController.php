@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,7 +24,7 @@ class HomeController
             }
 
             $record = $request->query('record');
-            if (is_string($record) && ctype_digit($record)) {
+            if (is_string($record) && Str::isUuid($record)) {
                 return redirect()->route('shelf.record', $record);
             }
 
@@ -59,6 +60,7 @@ class HomeController
         ] as $index => [$name, $title, $artist, $format]) {
             $record = new CollectionRecord([
                 'id' => $index + 1,
+                'public_id' => (string) Str::uuid(),
                 'added_at' => now()->subDays($index + 1),
                 'payload' => ['displayTitle' => $title, 'artist' => $artist, 'mediaFormats' => [$format], 'cover' => '/images/demo-sleeve-'.($index + 1).'.jpg'],
             ]);
@@ -76,7 +78,7 @@ class HomeController
     {
         return User::query()->where('visibility', 'everyone')->has('records')
             ->withCount('records')
-            ->with(['records' => fn ($query) => $query->select(['id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at'])->orderByDesc('added_at')->orderByDesc('id')->limit(6)])
+            ->with(['records' => fn ($query) => $query->select(['id', 'public_id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at'])->orderByDesc('added_at')->orderByDesc('id')->limit(6)])
             ->orderBy('handle');
     }
 }

@@ -6,7 +6,7 @@ export function FriendActions({
     onSuccess,
 }: {
     actions: { value: string; label: string }[];
-    personId: number;
+    personId: string;
     onSuccess?: () => void;
 }) {
     const form = useForm({ action: '' });

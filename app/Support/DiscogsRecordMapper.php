@@ -20,6 +20,8 @@ class DiscogsRecordMapper
     public function record(array $entry, array $release, array $master, array $artistBios = []): array
     {
         $basic = $entry['basic_information'];
+        $release['master_id'] ??= $basic['master_id'] ?? 0;
+        $release['labels'] ??= $basic['labels'] ?? [];
         $artists = array_map(fn (array $artist): string => $this->artistName($artist['name']), $basic['artists']);
         $artist = implode(', ', $artists);
 
@@ -56,6 +58,9 @@ class DiscogsRecordMapper
     public function releaseInfo(array $release, array $artistBios): array
     {
         return [
+            'discogsMasterId' => ($release['master_id'] ?? 0) ?: null,
+            'discogsLabelId' => ($release['labels'][0]['id'] ?? 0) ?: null,
+            'labels' => $release['labels'] ?? [],
             'artistBios' => $artistBios,
             'releaseNotes' => $release['notes'] ?? '',
             'credits' => [

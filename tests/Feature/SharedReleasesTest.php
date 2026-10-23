@@ -21,13 +21,18 @@ it('migrates duplicate releases without losing copies, enrichment, artwork or pe
 
     try {
         $normalization = database_path('migrations/2026_10_23_120000_share_releases_and_artists.php');
+        $metadata = database_path('migrations/2026_10_23_130000_promote_release_metadata_columns.php');
+        $publicIds = database_path('migrations/2026_10_23_140000_add_public_ids.php');
         $browsing = [database_path('migrations/2026_10_23_100000_index_collection_browsing.php'), database_path('migrations/2026_10_23_110000_cover_decade_browse_queries.php')];
         $this->artisan('migrate', [
             '--database' => 'release_migration', '--realpath' => true,
-            '--path' => array_values(array_diff(glob(database_path('migrations/*.php')), [$normalization, ...$browsing])),
+            '--path' => array_values(array_diff(glob(database_path('migrations/*.php')), [$normalization, $metadata, $publicIds, ...$browsing])),
         ])->assertSuccessful();
-        $first = socialUser('first');
-        $second = socialUser('second');
+        foreach (['first', 'second'] as $handle) {
+            DB::table('users')->insert(['name' => $handle, 'handle' => $handle, 'email' => "{$handle}@example.test", 'password' => 'unused']);
+        }
+        $first = User::query()->where('handle', 'first')->firstOrFail();
+        $second = User::query()->where('handle', 'second')->firstOrFail();
         $base = [...app(RecordCollection::class)->snapshot()[0],
             'id' => 201, 'title' => 'Ambient 1', 'cover' => 'https://i.discogs.com/original.jpg',
             'spotifyUrl' => 'https://open.spotify.com/search/Ambient', 'spotifySearch' => true,
@@ -68,6 +73,10 @@ it('migrates duplicate releases without losing copies, enrichment, artwork or pe
 
         expect(Schema::hasColumn('collection_records', 'payload'))->toBeFalse()
             ->and(DB::table('collection_records')->get()->map(fn ($copy) => (array) $copy)->all())->toBe($copies);
+        $releaseTimestamps = DB::table('releases')->get(['id', 'created_at', 'updated_at'])->toArray();
+        (require $metadata)->up();
+        expect(DB::table('releases')->get(['id', 'created_at', 'updated_at'])->toArray())->toEqual($releaseTimestamps);
+        (require $publicIds)->up();
         $this->assertDatabaseCount('releases', 2);
         $this->assertDatabaseCount('artists', 1);
         $this->assertDatabaseCount('artist_release', 2);
@@ -80,7 +89,11 @@ it('migrates duplicate releases without losing copies, enrichment, artwork or pe
             ->and($record->payload['artistBios'][0]['profile'])->toBe('Composer and producer.')
             ->and($record->payload['spotifyUrl'])->toBe('https://open.spotify.com/album/ambient')
             ->and($record->payload['spotifySearch'])->toBeFalse()
-            ->and($record->release->info_imported_at)->not->toBeNull()
+            ->and($record->release->title)->toBe('Ambient 1')
+            ->and($record->release->cover)->toBe('/storage/records/201.jpg')
+            ->and($record->release->spotify_search)->toBeFalse()
+            ->and($record->release->data)->not->toHaveKeys(['title', 'cover', 'coverPreview', 'releaseNotes', 'spotifySearch'])
+            ->and($record->release->info_imported_at)->toBeNull()
             ->and(CollectionRecord::query()->findOrFail(102)->payload['title'])->toBe('Another pressing')
             ->and(CollectionRecord::query()->findOrFail(102)->payload)->not->toHaveKey('coverPreview');
         $this->assertDatabaseHas('comments', ['collection_record_id' => 101, 'body' => 'Great album!']);
@@ -105,7 +118,7 @@ it('shares release updates and artwork across owners while keeping copies indepe
         ->and($second->fresh()->payload['releaseNotes'])->toBe('Shared notes.')
         ->and($second->fresh()->payload['instanceId'])->toBe(456)
         ->and($second->fresh()->payload['addedAt'])->toBe('2026-10-20T10:00:00+00:00')
-        ->and(Release::query()->firstOrFail()->data)->not->toHaveKeys(['instanceId', 'addedAt', 'private_note', 'shared_note']);
+        ->and(Release::query()->firstOrFail()->recordData())->not->toHaveKeys(['instanceId', 'addedAt', 'private_note', 'shared_note']);
     $first->user->delete();
 
     $this->assertDatabaseCount('releases', 1);
@@ -158,8 +171,8 @@ it('keeps every owners SQL browsing current when shared metadata changes or a bu
     $unrelated->update(['payload' => [...$unrelated->payload, 'artists' => ['Other artist'], 'genres' => ['Rock']]]);
     $this->travel(5)->minutes();
 
+    Release::query()->findOrFail(201)->update(['title' => 'Lucid Music', 'display_title' => 'Lucid Music', 'original_year' => 1957]);
     Release::storePayload(201, [
-        'title' => 'Lucid Music', 'displayTitle' => 'Lucid Music', 'originalYear' => 1957,
         'artists' => ['Brian Eno'], 'genres' => ['Ambient'], 'tracks' => [['title' => 'Needle Song']],
     ], replace: true);
 
@@ -185,4 +198,22 @@ it('keeps every owners SQL browsing current when shared metadata changes or a bu
         ->where('records.total', 1)->where('groups.0.name', 'Updated artist'));
     $this->get('/shared_second?mode=genre&q=unrelated')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('records.total', 1)->where('groups.0.name', 'Rock'));
+});
+
+it('queries shared metadata and Discogs identifiers through typed columns without reading JSON', function () {
+    $first = socialRecord(socialUser('column_owner'), releaseId: 201);
+    Release::storePayload(201, [
+        'title' => 'Computer World', 'year' => 1981, 'originalYear' => 1981,
+        'label' => 'EMI', 'catalogNumber' => 'EMC 3370', 'discogsMasterId' => 2893, 'discogsLabelId' => 26126,
+        'spotifySearch' => false, 'originalReleaseDate' => '1981-05',
+    ], replace: true);
+    socialRecord($first->user, instance: 202, releaseId: 202);
+    Release::storePayload(202, ['title' => 'Other pressing', 'year' => 2009, 'discogsMasterId' => 2893], replace: true);
+
+    expect(Release::query()->where('title', 'Computer World')->where('year', 1981)
+        ->where('discogs_label_id', 26126)->where('spotify_search', false)->pluck('id')->all())->toBe([201])
+        ->and(Release::query()->where('discogs_master_id', 2893)->orderBy('year')->pluck('year')->all())->toBe([1981, 2009])
+        ->and($first->fresh()->payload['originalReleaseDate'])->toBe('1981-05')
+        ->and($first->fresh()->payload['discogsMasterId'])->toBe(2893)
+        ->and($first->fresh()->release->data)->not->toHaveKeys(['year', 'title', 'discogsMasterId']);
 });

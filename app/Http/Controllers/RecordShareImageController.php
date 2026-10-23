@@ -8,9 +8,10 @@ use Illuminate\Http\RedirectResponse;
 
 class RecordShareImageController extends Controller
 {
-    public function __invoke(int $instanceId, RecordCollection $collection, StoredShareImages $shareImages): RedirectResponse
+    public function __invoke(string $instanceId, RecordCollection $collection, StoredShareImages $shareImages): RedirectResponse
     {
-        $record = $collection->findSummary($instanceId);
+        $copy = $collection->findByPublicId($instanceId);
+        $record = $copy ? $collection->findSummary($copy['instanceId']) : null;
 
         abort_if($record === null, 404);
 

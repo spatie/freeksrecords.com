@@ -55,7 +55,8 @@ it('enriches pages with stored original dates without overwriting the pressing d
         ->where('collection.records.0.originalReleaseDate', '1970-11-27')
         ->where('collection.records.0.originalYear', 1970));
 
-    $this->getJson(route('recordDetails', ['instanceId' => 2189134981]))
+    $publicId = collect(app(RecordCollection::class)->records())->firstWhere('instanceId', 2189134981)['publicId'];
+    $this->getJson(route('recordDetails', ['instanceId' => $publicId]))
         ->assertJsonPath('originalReleaseDate', '1970-11-27')
         ->assertJsonPath('pressingReleaseDate', '2021-08-06');
 });

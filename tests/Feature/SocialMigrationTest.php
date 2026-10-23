@@ -38,6 +38,10 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
         foreach (['collection_browse_entries', 'social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'artist_release', 'artists', 'releases', 'invitations', 'users', 'password_reset_tokens'] as $table) {
             Schema::drop($table);
         }
+        Schema::table('activity_log', function (Blueprint $table) {
+            $table->dropUnique(['public_id']);
+            $table->dropColumn('public_id');
+        });
         Schema::create('collection_records', function (Blueprint $table) {
             $table->unsignedBigInteger('instance_id')->primary();
             $table->unsignedBigInteger('discogs_release_id');
@@ -55,6 +59,10 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
         $migration->up();
         $migration = require database_path('migrations/2026_10_23_120000_share_releases_and_artists.php');
         $migration->up();
+        $migration = require database_path('migrations/2026_10_23_130000_promote_release_metadata_columns.php');
+        $migration->up();
+        $migration = require database_path('migrations/2026_10_23_140000_add_public_ids.php');
+        $migration->up();
         $freek = User::freek();
         expect($freek->email)->toBe('freek@spatie.be')->and($freek->visibility)->toBe('everyone')->and($freek->collection_imported_at)->not->toBeNull();
         expect(CollectionRecord::legacy()->count())->toBe(3)->and(CollectionRecord::query()->where('is_activity', true)->count())->toBe(0);
@@ -63,7 +71,9 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
             expect($copy->payload)->toEqual([...$record, 'addedAt' => '2026-10-01T12:00:00+00:00'])->and($copy->added_at->format('Y-m-d H:i:s'))->toBe('2026-10-01 12:00:00');
         }
         $this->assertDatabaseCount('social_notifications', 0);
-        $this->getJson('/api/records/'.$records[0]['instanceId'])->assertOk()->assertJsonPath('title', $records[0]['title']);
+        $publicId = CollectionRecord::legacy()->where('instance_id', $records[0]['instanceId'])->value('public_id');
+        $this->getJson('/api/records/'.$publicId)->assertOk()->assertJsonPath('title', $records[0]['title']);
+        $this->getJson('/api/records/'.$records[0]['instanceId'])->assertNotFound();
 
         $this->get('/freek?mode=artist')->assertOk()->assertInertia(fn (Assert $page) => $page->where('records.total', 3));
         foreach ($records as $record) {

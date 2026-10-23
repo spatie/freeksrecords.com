@@ -22,7 +22,7 @@ function shareImageUrl(
     sharedRecord: SharedRecord | null,
     social: SocialMeta,
 ): string {
-    if (!record) {
+    if (!record?.publicId) {
         return social.image;
     }
 
@@ -31,7 +31,7 @@ function shareImageUrl(
     }
 
     return new URL(
-        RecordShareImageController.url(record.instanceId, {
+        RecordShareImageController.url(record.publicId, {
             query: { v: recordShareImageVersion },
         }),
         social.url,

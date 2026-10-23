@@ -28,7 +28,7 @@ Route::withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, Pr
             ->name('collectionShareImage');
 
         Route::get('record/{instanceId}/image.png', RecordShareImageController::class)
-            ->whereNumber('instanceId')
+            ->whereUuid('instanceId')
             ->name('recordShareImage');
     });
 
@@ -36,11 +36,11 @@ Route::withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, Pr
         Route::get('/collection', ShowCollectionController::class)->name('collection');
 
         Route::get('api/records/{instanceId}', RecordDetailsController::class)
-            ->whereNumber('instanceId')
+            ->whereUuid('instanceId')
             ->name('recordDetails');
 
         Route::get('record/{instanceId}/{slug?}', ShowRecordController::class)
-            ->whereNumber('instanceId')
+            ->whereUuid('instanceId')
             ->name('recordShare');
     });
 });

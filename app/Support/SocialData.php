@@ -42,6 +42,7 @@ class SocialData
             'collectionUrl' => $collectionUrl,
             'record' => [
                 'id' => $record->id,
+                'publicId' => $record->public_id,
                 'url' => $record->url(false),
                 'owner' => self::person($record->user),
                 'payload' => $payload,
@@ -54,6 +55,7 @@ class SocialData
             ],
             'comments' => self::pagination($comments, $comments->getCollection()->map(fn (Comment $comment) => [
                 'id' => $comment->id,
+                'publicId' => $comment->public_id,
                 'body' => $comment->body,
                 'user' => self::person($comment->user),
                 'canDelete' => in_array($request->user()?->id, [$comment->user_id, $record->user_id], true),
@@ -68,6 +70,7 @@ class SocialData
     {
         return [
             'id' => $user->id,
+            'publicId' => $user->public_id,
             'name' => $user->name,
             'handle' => $user->handle,
             'profileUrl' => route('profile', $user->handle, false),
@@ -104,9 +107,9 @@ class SocialData
     {
         return array_values(CollectionRecord::visibleTo(null)
             ->whereHas('release', fn ($query) => $query
-                ->whereNotNull('data->cover')->where('data->cover', '!=', '')
-                ->whereNotIn('data->cover', $excludeCovers))
-            ->inRandomOrder()->limit($limit)->with('user')->get(['id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at'])
+                ->whereNotNull('cover')->where('cover', '!=', '')
+                ->whereNotIn('cover', $excludeCovers))
+            ->inRandomOrder()->limit($limit)->with('user')->get(['id', 'public_id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at'])
             ->unique('payload.cover')->map(self::artwork(...))->all());
     }
 

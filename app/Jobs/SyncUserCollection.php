@@ -157,7 +157,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                             'added_at' => CarbonImmutable::parse($entry['date_added'])->utc()->toDateTimeString(),
                             'is_activity' => ! $initial,
                         ]);
-                        if (empty($shared->data['coverPreview']) && filled($shared->data['cover'] ?? null) && $shared->data['cover'] !== $mapper->placeholderCover) {
+                        if (empty($shared->cover_preview) && filled($shared->cover) && $shared->cover !== $mapper->placeholderCover) {
                             GenerateRecordCoverPreview::dispatch($record->id)->afterCommit();
                         }
                         $changed = true;

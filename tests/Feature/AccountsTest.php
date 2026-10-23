@@ -107,7 +107,7 @@ it('renders the new collector email with escaped account details and an admin li
     $message = (new NewUserRegistered($user))->toMail($user);
     $html = (string) $message->render();
     $text = (string) app(Markdown::class)->renderText($message->markdown, $message->data());
-    $url = url("admin/users/{$user->id}");
+    $url = url("admin/users/{$user->public_id}");
 
     expect($html)->toContain('NEW', 'COMPANY.', '#d9ed92', '#d3c0ea', '&lt;b&gt;Robin &amp; Alex&lt;/b&gt;', '@newcollector', $user->email, 'href="'.$url.'"')
         ->not->toContain('<b>Robin & Alex</b>', '<link rel="stylesheet"')
@@ -127,7 +127,7 @@ it('registers a friends-only account, verifies the inbox, and authenticates secu
     $this->get('/verify-email')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('social/AuthPage')->where('mode', 'verify')->where('auth.user.email', $user->email)
         ->where('auth.user.verified', false));
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->public_id, 'hash' => sha1($user->email)]))->assertRedirect('/feed');
     $this->get('/feed')->assertOk()->assertViewHas('page.encryptHistory', true);
     $this->post('/logout')->assertRedirect('/');
     $this->assertGuest();
@@ -161,7 +161,7 @@ it('registers with only an email and password and lets the username change in se
     $this->assertAuthenticatedAs($user);
     Notification::assertSentTo($user, VerifyEmail::class);
     $this->get('/settings')->assertRedirect('/verify-email');
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/settings');
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->public_id, 'hash' => sha1($user->email)]))->assertRedirect('/settings');
     $this->patch('/settings', [
         'name' => 'The record collector', 'handle' => ' Chosen_Handle ', 'visibility' => 'only_me',
         'comments_enabled' => true, 'digest_enabled' => true,
@@ -248,17 +248,17 @@ it('requires inbox verification throughout the app while keeping verification an
     $record = socialRecord($public);
 
     $this->actingAs($user);
-    foreach (['/', '/feed', '/friends', '/settings', '/notifications', '/collections', '/community', '/unverified', '/people/unverified', "/shelves/{$record->id}", '/public_collector'] as $path) {
+    foreach (['/', '/feed', '/friends', '/settings', '/notifications', '/collections', '/community', '/unverified', '/people/unverified', "/shelves/{$record->public_id}", '/public_collector'] as $path) {
         $this->get($path)->assertRedirect('/verify-email');
     }
     $this->get('/verify-email')->assertOk();
     $this->from('/verify-email')->post('/email/verification-notification')->assertRedirect('/verify-email')->assertSessionMissing('status');
     Notification::assertSentTo($user, VerifyEmail::class);
 
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => 'wrong']))->assertForbidden();
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->public_id, 'hash' => 'wrong']))->assertForbidden();
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->subMinute(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertForbidden();
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->id, 'hash' => sha1($user->email)]))->assertRedirect('/public_collector');
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->subMinute(), ['id' => $user->public_id, 'hash' => sha1($user->email)]))->assertForbidden();
+    $this->get(URL::temporarySignedRoute('verification.verify', now()->addHour(), ['id' => $user->public_id, 'hash' => sha1($user->email)]))->assertRedirect('/public_collector');
     $this->get('/public_collector')->assertOk();
 
     $user->update(['email_verified_at' => null]);

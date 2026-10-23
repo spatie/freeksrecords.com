@@ -10,12 +10,13 @@ use Inertia\Response;
 class ShowRecordController extends Controller
 {
     public function __invoke(
-        int $instanceId,
+        string $instanceId,
         RecordCollection $collection,
         CollectionPage $page,
         ?string $slug = null,
     ): Response|RedirectResponse {
-        $record = $collection->findSummary($instanceId);
+        $copy = $collection->findByPublicId($instanceId);
+        $record = $copy ? $collection->findSummary($copy['instanceId']) : null;
 
         abort_if($record === null, 404);
 

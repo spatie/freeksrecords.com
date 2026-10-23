@@ -23,7 +23,7 @@ export function RecordDetails({
     titleId: string;
 }) {
     const { details, error, retry } = useRecordDetails(
-        summary.instanceId,
+        summary.publicId,
         supplied,
     );
     const record = details ?? summary;

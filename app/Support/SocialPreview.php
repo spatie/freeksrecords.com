@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\CollectionRecord;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class SocialPreview
 {
@@ -26,8 +27,8 @@ class SocialPreview
 
         $record = $request->route('record');
         $id = $request->query('record');
-        if (! $record instanceof CollectionRecord && is_string($id) && ctype_digit($id)) {
-            $record = CollectionRecord::query()->find($id);
+        if (! $record instanceof CollectionRecord && is_string($id) && Str::isUuid($id)) {
+            $record = CollectionRecord::query()->where('public_id', $id)->first();
         }
         if ($record instanceof CollectionRecord && $record->user->canViewCollection(null)) {
             $title = "{$record->payload['displayTitle']} by {$record->payload['artist']}";

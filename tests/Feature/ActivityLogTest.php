@@ -11,13 +11,13 @@ it('logs social actions once without storing private content or invitation token
     $record = socialRecord($owner);
     $this->actingAs($viewer);
 
-    $this->post("/shelves/{$record->id}/appreciations")->assertRedirect();
-    $this->post("/shelves/{$record->id}/appreciations")->assertRedirect();
-    $this->delete("/shelves/{$record->id}/appreciations")->assertRedirect();
-    $this->delete("/shelves/{$record->id}/appreciations")->assertRedirect();
-    $this->post("/shelves/{$record->id}/comments", ['body' => 'Private comment body'])->assertRedirect();
+    $this->post("/shelves/{$record->public_id}/appreciations")->assertRedirect();
+    $this->post("/shelves/{$record->public_id}/appreciations")->assertRedirect();
+    $this->delete("/shelves/{$record->public_id}/appreciations")->assertRedirect();
+    $this->delete("/shelves/{$record->public_id}/appreciations")->assertRedirect();
+    $this->post("/shelves/{$record->public_id}/comments", ['body' => 'Private comment body'])->assertRedirect();
     $comment = Comment::query()->sole();
-    $this->delete("/shelves/{$record->id}/comments/{$comment->id}")->assertRedirect();
+    $this->delete("/shelves/{$record->public_id}/comments/{$comment->public_id}")->assertRedirect();
     $this->post('/friends/invite', ['email' => 'invited@example.test'])->assertRedirect();
     $this->post('/friends/invite', ['email' => 'invited@example.test'])->assertRedirect();
 

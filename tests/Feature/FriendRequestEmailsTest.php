@@ -14,8 +14,8 @@ it('emails one verified recipient per new friend request with signed accept and 
     $sender = socialUser('sender');
     $recipient = socialUser('recipient');
     $sender->update(['name' => '<script>Not markup</script>']);
-    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'request'])->assertRedirect()->assertSessionMissing('status');
-    $this->post('/friends/'.$recipient->id, ['action' => 'request'])->assertRedirect();
+    $this->actingAs($sender)->post('/friends/'.$recipient->public_id, ['action' => 'request'])->assertRedirect()->assertSessionMissing('status');
+    $this->post('/friends/'.$recipient->public_id, ['action' => 'request'])->assertRedirect();
     Notification::assertSentToTimes($recipient, FriendRequest::class, 1);
     Notification::assertNotSentTo($sender, FriendRequest::class);
     Notification::assertSentTo($recipient, FriendRequest::class, function (FriendRequest $notification) use ($recipient) {
@@ -31,7 +31,7 @@ it('emails one verified recipient per new friend request with signed accept and 
         expect($text)->toContain('Only me stay private', 'expire in seven days')
             ->not->toContain('<table', '<style');
         foreach ($message->viewData['links'] as $action => $url) {
-            expect($url)->toContain('/'.$recipient->id.'/'.$action.'?', 'signature=');
+            expect($url)->toContain('/'.$recipient->public_id.'/'.$action.'?', 'signature=');
             expect(html_entity_decode($html))->toContain('href="'.$url.'"');
             expect($text)->toContain(ucfirst($action).' friend request: '.$url);
         }
@@ -45,7 +45,7 @@ it('confirms email responses without signing in, never mutates on GET and consum
     $sender = socialUser('sender', 'friends');
     $recipient = socialUser('recipient', 'only_me');
     socialRecord($sender);
-    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'request']);
+    $this->actingAs($sender)->post('/friends/'.$recipient->public_id, ['action' => 'request']);
     $pending = Friendship::query()->firstOrFail();
     $links = (new FriendRequest($pending->id))->toMail($recipient)->viewData['links'];
     $this->post('/logout');
@@ -73,7 +73,7 @@ it('confirms email responses without signing in, never mutates on GET and consum
         $this->get($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('sender', null));
     }
     expect(Friendship::query()->whereNotNull('accepted_at')->count())->toBe($action === 'accept' ? 1 : 0);
-    $this->get('/shelves/'.$sender->records()->first()->id)->assertRedirect('/login');
+    $this->get('/shelves/'.$sender->records()->first()->public_id)->assertRedirect('/login');
     $responses = Activity::query()->whereIn('event', ['friend_request_accepted', 'friend_request_declined'])->get();
     expect($responses)->toHaveCount(1)
         ->and($responses->first()->causer_id)->toBe($recipient->id)
@@ -88,11 +88,11 @@ it('emails the requester once with a collection link only when the accepted frie
     $friend = $requesterCreatedFirst ? $second : $first;
     $friend->update(['name' => '<em>Robin & friends</em>', 'visibility' => $visibility]);
 
-    $this->actingAs($requester)->post('/friends/'.$friend->id, ['action' => 'request'])->assertRedirect();
+    $this->actingAs($requester)->post('/friends/'.$friend->public_id, ['action' => 'request'])->assertRedirect();
     Notification::assertNotSentTo($requester, FriendRequestAccepted::class);
     $this->post('/logout');
-    $this->actingAs($friend)->post('/friends/'.$requester->id, ['action' => 'accept'])->assertRedirect();
-    $this->post('/friends/'.$requester->id, ['action' => 'accept'])->assertForbidden();
+    $this->actingAs($friend)->post('/friends/'.$requester->public_id, ['action' => 'accept'])->assertRedirect();
+    $this->post('/friends/'.$requester->public_id, ['action' => 'accept'])->assertForbidden();
     Notification::assertSentToTimes($requester, FriendRequestAccepted::class, 1);
     Notification::assertNotSentTo($friend, FriendRequestAccepted::class);
     Notification::assertSentTo($requester, FriendRequestAccepted::class, function (FriendRequestAccepted $notification) use ($requester, $friend, $visibility) {
@@ -141,11 +141,11 @@ it('rejects tampered and expired links and never applies an old email to a repla
     $sender = socialUser('sender');
     $recipient = socialUser('recipient');
     $stranger = socialUser('stranger');
-    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'request']);
+    $this->actingAs($sender)->post('/friends/'.$recipient->public_id, ['action' => 'request']);
     $pending = Friendship::query()->firstOrFail();
     $url = (new FriendRequest($pending->id))->toMail($recipient)->viewData['links']['accept'];
     $this->post('/logout');
-    foreach ([str_replace('/accept?', '/decline?', $url), str_replace('/'.$recipient->id.'/accept?', '/'.$stranger->id.'/accept?', $url), strtok($url, '?')] as $tampered) {
+    foreach ([str_replace('/accept?', '/decline?', $url), str_replace('/'.$recipient->public_id.'/accept?', '/'.$stranger->public_id.'/accept?', $url), strtok($url, '?')] as $tampered) {
         $this->get($tampered)->assertForbidden();
         $this->post($tampered)->assertForbidden();
     }
@@ -155,8 +155,8 @@ it('rejects tampered and expired links and never applies an old email to a repla
     $this->post($url)->assertForbidden();
     $this->travelBack();
     expect($pending->fresh()->accepted_at)->toBeNull();
-    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'cancel']);
-    $this->post('/friends/'.$recipient->id, ['action' => 'request']);
+    $this->actingAs($sender)->post('/friends/'.$recipient->public_id, ['action' => 'cancel']);
+    $this->post('/friends/'.$recipient->public_id, ['action' => 'request']);
     $this->post('/logout');
     $this->post($url)->assertOk()->assertInertia(fn (Assert $page) => $page->where('sender', null));
     expect(Friendship::query()->firstOrFail()->accepted_at)->toBeNull();
@@ -166,11 +166,11 @@ it('offers notification actions only for current incoming requests and removes t
     Notification::fake();
     $sender = socialUser('sender');
     $recipient = socialUser('recipient');
-    $this->actingAs($sender)->post('/friends/'.$recipient->id, ['action' => 'request']);
+    $this->actingAs($sender)->post('/friends/'.$recipient->public_id, ['action' => 'request']);
     $this->post('/logout');
     $this->actingAs($recipient)->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
         ->assertJsonPath('notifications.data.0.canRespond', true);
-    $this->post('/friends/'.$sender->id, ['action' => $action])->assertRedirect();
+    $this->post('/friends/'.$sender->public_id, ['action' => $action])->assertRedirect();
     $this->get('/notifications', ['X-Requested-With' => 'XMLHttpRequest'])
         ->assertJsonPath('notifications.data.0.canRespond', false);
     expect(SocialNotification::query()->where('user_id', $recipient->id)->count())->toBe(1);

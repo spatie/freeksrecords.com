@@ -36,17 +36,17 @@ Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, Ensure
     Route::get('/about/weekly-email', [HomeController::class, 'weeklyEmail'])->name('weeklyEmail');
     Route::get('/invitations/{token}', [InvitationsController::class, 'show'])->name('invitations.show');
     Route::get('/people/{user:handle}', [SocialController::class, 'profile']);
-    Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereNumber('record')->name('shelf.record');
-    Route::get('/shelves/{record}/cover', RecordCoverController::class)->whereNumber('record')->name('shelf.cover');
+    Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereUuid('record')->name('shelf.record');
+    Route::get('/shelves/{record}/cover', RecordCoverController::class)->whereUuid('record')->name('shelf.cover');
     Route::middleware('throttle:shareImages')->group(function () {
         Route::get('share/site.jpg', [SocialPreviewController::class, 'home'])->name('socialPreview.home');
         Route::get('share/collections/{user:handle}.jpg', [SocialPreviewController::class, 'collection'])->name('socialPreview.collection');
-        Route::get('share/shelves/{record}.jpg', [SocialPreviewController::class, 'record'])->whereNumber('record')->name('socialPreview.record');
+        Route::get('share/shelves/{record}.jpg', [SocialPreviewController::class, 'record'])->whereUuid('record')->name('socialPreview.record');
     });
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:20,1')->name('google.callback');
 
     Route::match(['get', 'post'], '/friends/respond/{friendship}/{recipient}/{action}', FriendRequestResponseController::class)
-        ->whereNumber(['friendship', 'recipient'])->whereIn('action', ['accept', 'decline'])
+        ->whereUuid(['friendship', 'recipient'])->whereIn('action', ['accept', 'decline'])
         ->middleware(['signed', 'throttle:30,1'])->name('friendRequest.respond');
 
     Route::middleware('guest')->group(function () {
@@ -64,7 +64,7 @@ Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, Ensure
     Route::middleware(['auth', 'auth.session'])->group(function () {
         Route::post('/logout', [AccountController::class, 'logout'])->name('logout');
         Route::get('/verify-email', fn () => Inertia::render('social/AuthPage', ['mode' => 'verify', 'artwork' => SocialData::publicArtwork(limit: 12)]))->name('verification.notice');
-        Route::get('/verify-email/{id}/{hash}', [AccountController::class, 'verify'])->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
+        Route::get('/verify-email/{id}/{hash}', [AccountController::class, 'verify'])->whereUuid('id')->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
         Route::post('/email/verification-notification', [AccountController::class, 'resend'])->middleware('throttle:6,1')->name('verification.send');
 
         Route::middleware('verified')->group(function () {
@@ -72,14 +72,14 @@ Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, Ensure
             Route::get('/friends/invite', [InvitationsController::class, 'create'])->name('invitations.create');
             Route::post('/friends/invite', [InvitationsController::class, 'store'])->middleware('throttle:6,1')->name('invitations.store');
             Route::get('/friends', [SocialController::class, 'friends'])->name('friends');
-            Route::post('/friends/{user}', [SocialController::class, 'friend'])->middleware('throttle:30,1')->name('friend.action');
+            Route::post('/friends/{user}', [SocialController::class, 'friend'])->whereUuid('user')->middleware('throttle:30,1')->name('friend.action');
             Route::get('/settings', fn () => Inertia::render('social/SettingsPage'))->name('settings');
             Route::patch('/settings', [AccountController::class, 'settings']);
             Route::get('/settings/delete-account', [AccountDeletionController::class, 'show'])->name('accountDeletion.show');
             Route::delete('/settings/account', [AccountDeletionController::class, 'destroy'])->middleware('throttle:6,1')->name('accountDeletion.destroy');
             Route::post('/settings/google', [GoogleAuthController::class, 'link'])->middleware('throttle:6,1')->name('google.link');
             Route::patch('/collection/visibility', [CollectionVisibilityController::class, 'update'])->name('collection.visibility.update');
-            Route::patch('/shelves/{record}/notes', [RecordNotesController::class, 'update'])->whereNumber('record')->name('shelf.notes.update');
+            Route::patch('/shelves/{record}/notes', [RecordNotesController::class, 'update'])->whereUuid('record')->name('shelf.notes.update');
             Route::post('/shelves/{record}/appreciations', [SocialController::class, 'appreciate'])->middleware('throttle:60,1');
             Route::delete('/shelves/{record}/appreciations', [SocialController::class, 'unappreciate']);
             Route::post('/shelves/{record}/comments', [SocialController::class, 'comment'])->middleware('throttle:20,1');
@@ -96,6 +96,6 @@ Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, Ensure
     });
 
     Route::get('/{user:handle}/records/{record}/{slug?}', [SocialController::class, 'profileRecord'])
-        ->where('user', '[a-z0-9_]{3,30}')->whereNumber('record')->scopeBindings()->name('profile.record');
+        ->where('user', '[a-z0-9_]{3,30}')->whereUuid('record')->scopeBindings()->name('profile.record');
     Route::get('/{user:handle}', [SocialController::class, 'profile'])->where('user', '[a-z0-9_]{3,30}')->name('profile');
 });

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Sleep;
+use Illuminate\Support\Str;
 
 it('imports mixed bundles and unknown media without losing descriptions', function () {
     Http::preventStrayRequests();
@@ -53,6 +54,7 @@ it('backfills legacy descriptions without changing dates or activity and recogni
         unset($payload['mediaFormats']);
         DB::table('collection_records')->insert([
             'user_id' => $user->id, 'instance_id' => 100 + $index, 'discogs_release_id' => 200 + $index,
+            'public_id' => (string) Str::uuid(),
             'payload' => json_encode($payload, JSON_THROW_ON_ERROR), 'is_activity' => false,
             'added_at' => '2026-10-01 12:00:00', 'updated_at' => '2026-10-02 12:00:00',
         ]);
@@ -61,6 +63,8 @@ it('backfills legacy descriptions without changing dates or activity and recogni
     $migration = require database_path('migrations/2026_10_18_120000_backfill_record_formats.php');
     $migration->up();
     $migration = require database_path('migrations/2026_10_23_120000_share_releases_and_artists.php');
+    $migration->up();
+    $migration = require database_path('migrations/2026_10_23_130000_promote_release_metadata_columns.php');
     $migration->up();
     expect(DB::table('collection_records')->get(['added_at', 'updated_at', 'is_activity'])->toJson())->toBe($before)
         ->and($user->records()->where('instance_id', 100)->firstOrFail()->formats())->toBe(['Vinyl'])

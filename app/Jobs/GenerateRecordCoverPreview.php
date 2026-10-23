@@ -52,11 +52,11 @@ class GenerateRecordCoverPreview implements ShouldBeUnique, ShouldQueue
             $record = CollectionRecord::query()->without('release')->find($this->recordId);
             $release = $record ? Release::query()->lockForUpdate()->find($record->discogs_release_id) : null;
 
-            if (! $release || ($release->data['cover'] ?? null) !== $source || filled($release->data['coverPreview'] ?? null)) {
+            if (! $release || $release->cover !== $source || filled($release->cover_preview)) {
                 return;
             }
 
-            $release->update(['data' => [...$release->data, 'coverPreview' => $preview]]);
+            $release->update(['cover_preview' => $preview]);
         });
     }
 }

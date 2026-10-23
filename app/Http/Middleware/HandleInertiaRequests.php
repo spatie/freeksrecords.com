@@ -10,6 +10,7 @@ use App\Support\SocialPreview;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -55,9 +56,9 @@ class HandleInertiaRequests extends Middleware
                 if ($id === null) {
                     return null;
                 }
-                abort_unless(is_string($id) && ctype_digit($id), 404);
+                abort_unless(is_string($id) && Str::isUuid($id), 404);
 
-                return SocialData::record($request, CollectionRecord::query()->findOrFail($id));
+                return SocialData::record($request, CollectionRecord::query()->where('public_id', $id)->firstOrFail());
             },
         ];
     }

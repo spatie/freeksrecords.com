@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use Carbon\CarbonImmutable;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $handle
  * @property string $email
@@ -37,6 +39,7 @@ use Illuminate\Support\Str;
  */
 class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
+    use HasPublicId;
     use Notifiable;
 
     public const RESERVED_HANDLES = [

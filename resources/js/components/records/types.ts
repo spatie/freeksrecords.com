@@ -11,6 +11,7 @@ export type CollectionTrack = {
 
 export type CollectionRecord = {
     id: number;
+    publicId?: string;
     instanceId: number;
     artist: string;
     artists: string[];

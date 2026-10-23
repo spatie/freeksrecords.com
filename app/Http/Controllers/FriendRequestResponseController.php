@@ -12,15 +12,15 @@ use Inertia\Response;
 
 class FriendRequestResponseController extends Controller
 {
-    public function __invoke(Request $request, int $friendship, int $recipient, string $action, RespondToFriendRequestAction $respondToFriendRequest): Response|RedirectResponse
+    public function __invoke(Request $request, string $friendship, User $recipient, string $action, RespondToFriendRequestAction $respondToFriendRequest): Response|RedirectResponse
     {
         abort_unless(in_array($action, ['accept', 'decline'], true), 404);
-        $pending = Friendship::query()->whereKey($friendship)->whereNull('accepted_at')
-            ->where('requested_by', '!=', $recipient)
-            ->where(fn ($query) => $query->where('user_low', $recipient)->orWhere('user_high', $recipient))->first();
+        $pending = Friendship::query()->where('public_id', $friendship)->whereNull('accepted_at')
+            ->where('requested_by', '!=', $recipient->id)
+            ->where(fn ($query) => $query->where('user_low', $recipient->id)->orWhere('user_high', $recipient->id))->first();
 
         if ($request->isMethod('post') && $pending) {
-            $respondToFriendRequest->execute($pending, User::query()->findOrFail($recipient), $action);
+            $respondToFriendRequest->execute($pending, $recipient, $action);
 
             return redirect($request->fullUrl())->with('status', $action === 'accept' ? 'Friend request accepted.' : 'Friend request declined.');
         }

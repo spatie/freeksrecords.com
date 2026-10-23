@@ -2,6 +2,7 @@
 
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
+use App\Models\CollectionRecord;
 use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
 use App\Support\RecordCoverImages;
@@ -47,7 +48,8 @@ it('copies a deferred Discogs cover and replaces the placeholder with its public
     $this->disk->assertExists($path);
     expect($this->collection->find($this->record['instanceId'])['cover'])->toBe($this->disk->url($path));
     Http::assertSentCount(1);
-    $this->get(route('recordShareImage', $this->record['instanceId']))->assertRedirect();
+    $publicId = CollectionRecord::legacy()->where('instance_id', $this->record['instanceId'])->value('public_id');
+    $this->get(route('recordShareImage', $publicId))->assertRedirect();
     expect($this->disk->allFiles('share/records'))->toHaveCount(1);
 });
 
@@ -79,8 +81,8 @@ it('serves Discogs artwork from the same origin for detail and overlay palettes'
     Http::fake(['https://i.discogs.com/palette.jpg' => Http::response($bytes)]);
 
     $url = route('shelf.cover', $record, false);
-    $this->get('/shelves/'.$record->id)->assertInertia(fn (Assert $page) => $page->where('record.payload.cover', $url));
-    $this->get('/coverowner?record='.$record->id)->assertInertia(fn (Assert $page) => $page->where('recordOverlay.record.payload.cover', $url));
+    $this->get('/shelves/'.$record->public_id)->assertInertia(fn (Assert $page) => $page->where('record.payload.cover', $url));
+    $this->get('/coverowner?record='.$record->public_id)->assertInertia(fn (Assert $page) => $page->where('recordOverlay.record.payload.cover', $url));
     $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/jpeg')->assertContent($bytes);
     $cached = $this->get($url)->assertOk()->assertContent($bytes);
     expect($cached->headers->get('Cache-Control'))->toContain('private', 'no-store');

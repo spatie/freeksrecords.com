@@ -83,7 +83,7 @@ export function InvitationPage({
                             the time.
                         </p>
                         <FriendActions
-                            personId={sender.id}
+                            personId={sender.publicId}
                             actions={[
                                 { value: 'accept', label: 'Accept' },
                                 { value: 'decline', label: 'Decline' },

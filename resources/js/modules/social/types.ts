@@ -9,6 +9,7 @@ export type Visibility = 'only_me' | 'friends' | 'everyone';
 
 export type Person = {
     id: number;
+    publicId: string;
     name: string;
     handle: string;
     profileUrl: string;
@@ -104,6 +105,7 @@ export type RecordProps = {
     collectionUrl: string;
     record: {
         id: number;
+        publicId: string;
         url: string;
         owner: Person;
         payload: CollectionRecord;
@@ -116,6 +118,7 @@ export type RecordProps = {
     };
     comments: Pagination<{
         id: number;
+        publicId: string;
         body: string;
         user: Person;
         canDelete: boolean;

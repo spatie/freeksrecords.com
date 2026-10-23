@@ -6,6 +6,7 @@ use App\Models\CollectionRecord;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureCollectionAccess
@@ -23,8 +24,9 @@ class EnsureCollectionAccess
 
         $record = $request->route('record');
         $id = $request->query('record');
-        if (! $record instanceof CollectionRecord && is_string($id) && ctype_digit($id)) {
-            $record = CollectionRecord::query()->findOrFail($id);
+        if (! $record instanceof CollectionRecord && $id !== null) {
+            abort_unless(is_string($id) && Str::isUuid($id), 404);
+            $record = CollectionRecord::query()->where('public_id', $id)->firstOrFail();
         }
         $owner = $record instanceof CollectionRecord ? $record->user : $request->route('user');
 

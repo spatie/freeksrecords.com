@@ -27,7 +27,7 @@ it('only allows the verified freek@spatie.be account into every admin page', fun
     $this->actingAs($user);
     $allowed ? $this->get('/admin')->assertRedirect('/admin/users') : $this->get('/admin')->assertForbidden();
     $activity = activity()->causedBy($user)->log('Test activity');
-    foreach (['/admin/users', '/admin/users/'.$user->id, '/admin/activities', '/admin/activities/'.$activity->id] as $path) {
+    foreach (['/admin/users', '/admin/users/'.$user->public_id, '/admin/activities', '/admin/activities/'.$activity->public_id] as $path) {
         $response = $this->get($path);
         $allowed ? $response->assertOk() : $response->assertForbidden();
     }
@@ -40,7 +40,7 @@ it('only allows the verified freek@spatie.be account into every admin page', fun
 
 it('redirects guests to admin login and rejects non-admin credentials there', function () {
     $user = socialUser('collector');
-    foreach (['/admin', '/admin/users', '/admin/users/'.$user->id, '/admin/activities'] as $path) {
+    foreach (['/admin', '/admin/users', '/admin/users/'.$user->public_id, '/admin/activities'] as $path) {
         $this->get($path)->assertRedirect('/admin/login');
     }
 
@@ -64,7 +64,7 @@ it('shows a read-only searchable and filterable activity log with details', func
         ->searchTable('Collector')->assertCanSeeTableRecords([$login])->assertCanNotSeeTableRecords([$import])
         ->searchTable('')->filterTable('log_name', 'discogs')->assertCanSeeTableRecords([$import])->assertCanNotSeeTableRecords([$login])
         ->resetTableFilters()->filterTable('event', 'login')->assertCanSeeTableRecords([$login])->assertCanNotSeeTableRecords([$import]);
-    $this->get('/admin/activities/'.$import->id)->assertOk()->assertSee('records_count')->assertSee('42');
+    $this->get('/admin/activities/'.$import->public_id)->assertOk()->assertSee('records_count')->assertSee('42');
     expect(ActivityResource::canCreate())->toBeFalse()
         ->and(ActivityResource::canEdit($import))->toBeFalse()
         ->and(ActivityResource::canDelete($import))->toBeFalse()
@@ -86,10 +86,10 @@ it('lists searchable collectors and shows accepted friends from either side of a
     Livewire::test(ListUsers::class)->assertCanSeeTableRecords([$first, $collector, $last, $pending])
         ->searchTable('collector@example.test')->assertCanSeeTableRecords([$collector])
         ->assertCanNotSeeTableRecords([$first, $last, $pending]);
-    $this->get('/admin/users/'.$collector->id)->assertOk()
+    $this->get('/admin/users/'.$collector->public_id)->assertOk()
         ->assertSee($first->name)->assertSee($last->name)->assertDontSee($pending->name)
-        ->assertSee('/admin/users/'.$first->id)->assertSee('/admin/users/'.$last->id);
-    $this->get('/admin/users/'.$pending->id)->assertSee('No accepted friendships yet.');
+        ->assertSee('/admin/users/'.$first->public_id)->assertSee('/admin/users/'.$last->public_id);
+    $this->get('/admin/users/'.$pending->public_id)->assertSee('No accepted friendships yet.');
 });
 
 it('shows community totals and distinguishes accepted friendships from requests', function () {
@@ -115,7 +115,7 @@ it('impersonates a collector and restores Freek without granting the collector a
     $collector->update(['email_verified_at' => $verified ? now() : null]);
     $this->actingAs($freek)->withSession(['password_hash_web' => $freek->password]);
 
-    Livewire::test(ViewUser::class, ['record' => $collector->id])
+    Livewire::test(ViewUser::class, ['record' => $collector->public_id])
         ->callAction('impersonate')->assertRedirect('/');
     $this->assertAuthenticatedAs($collector);
     $this->get('/admin')->assertForbidden();
@@ -141,7 +141,7 @@ it('rejects impersonation from a stale admin page after the signed-in user chang
     $freek->update(['email_verified_at' => now()]);
     $collector = socialUser('collector');
     $this->actingAs($freek);
-    $page = Livewire::test(ViewUser::class, ['record' => socialUser('other')->id]);
+    $page = Livewire::test(ViewUser::class, ['record' => socialUser('other')->public_id]);
 
     $this->actingAs($collector);
     $page->callAction('impersonate')->assertForbidden();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\CollectionRecord;
 use App\Models\User;
 use App\Support\RecordCollection;
 use GuzzleHttp\Promise\PromiseInterface;
@@ -52,13 +53,13 @@ it('imports additions and preserves existing records on repeated runs', function
     $this->assertDatabaseCount('collection_records', 2);
     $this->disk->assertExists("records/{$this->existing['id']}.jpg");
     $this->disk->assertExists('records/999999992.jpg');
-    $this->getJson(route('recordDetails', 999999991))
+    $this->getJson(route('recordDetails', CollectionRecord::legacy()->where('instance_id', 999999991)->firstOrFail()->public_id))
         ->assertJsonPath('cover', $this->disk->url('records/999999992.jpg'))
         ->assertJsonPath('originalYear', 1981)
         ->assertJsonPath('pressingReleaseDate', '2026-09-24')
         ->assertJsonCount(1, 'tracks')
         ->assertJsonPath('tracks.0.title', 'First Song');
-    $this->getJson(route('recordDetails', $this->existing['instanceId']))->assertJsonPath('appleMusicSearch', false);
+    $this->getJson(route('recordDetails', CollectionRecord::legacy()->where('instance_id', $this->existing['instanceId'])->firstOrFail()->public_id))->assertJsonPath('appleMusicSearch', false);
 });
 
 it('strips Discogs disambiguation suffixes from record and track artists', function () {
@@ -78,7 +79,7 @@ it('strips Discogs disambiguation suffixes from record and track artists', funct
 
     $this->artisan('records:sync-discogs')->assertSuccessful();
 
-    $this->getJson(route('recordDetails', 999999991))
+    $this->getJson(route('recordDetails', CollectionRecord::legacy()->where('instance_id', 999999991)->firstOrFail()->public_id))
         ->assertJsonPath('artist', 'Cardinals')
         ->assertJsonPath('tracks.0.artist', 'Cardinals, Guest')
         ->assertJsonPath('tracks.0.spotifyUrl', 'https://open.spotify.com/search/Cardinals%2C%20Guest%20Guest%20Song');
@@ -234,6 +235,8 @@ it('backfills release information for every copy and resumes without replacing p
     $trackCredit = ['id' => 5049, 'name' => 'Robert Wyatt', 'role' => 'Piano'];
     Http::fake([
         "api.discogs.com/releases/{$releaseId}" => Http::response([
+            'master_id' => 5899,
+            'labels' => [['id' => 151, 'name' => 'Polydor', 'catno' => 'AMBIENT-1']],
             'artists' => [['id' => 634, 'name' => 'Brian Eno'], ['id' => 5049, 'name' => 'Robert Wyatt']],
             'notes' => "Original pressing.\nPrinted inner sleeve.",
             'extraartists' => [$releaseCredit],
@@ -259,7 +262,10 @@ it('backfills release information for every copy and resumes without replacing p
             'release' => [$releaseCredit],
             'tracks' => [['position' => 'A1.1', 'title' => 'Movement', 'artists' => [$trackCredit]]],
         ])
-        ->and($second->fresh()->payload)->toEqual([...$originalPayload, ...array_intersect_key($first->fresh()->payload, array_flip(['artistBios', 'releaseNotes', 'credits']))])
+        ->and($first->fresh()->release->discogs_master_id)->toBe(5899)
+        ->and($first->fresh()->release->discogs_label_id)->toBe(151)
+        ->and($first->fresh()->payload['labels'])->toBe([['id' => 151, 'name' => 'Polydor', 'catno' => 'AMBIENT-1']])
+        ->and($second->fresh()->payload)->toEqual([...$originalPayload, ...array_intersect_key($first->fresh()->payload, array_flip(['artistBios', 'releaseNotes', 'credits', 'labels', 'discogsMasterId', 'discogsLabelId']))])
         ->and($second->fresh()->shared_note)->toBe('A gift')
         ->and($second->fresh()->private_note)->toBe('Cost €20')
         ->and($second->fresh()->added_at->equalTo($second->added_at))->toBeTrue()

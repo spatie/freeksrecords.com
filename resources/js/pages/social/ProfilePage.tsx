@@ -57,7 +57,7 @@ export function ProfilePage({
                                 </p>
                             )}
                             <FriendActions
-                                personId={person.id}
+                                personId={person.publicId}
                                 actions={
                                     !friendship
                                         ? [

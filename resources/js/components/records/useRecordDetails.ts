@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import RecordDetailsController from '@/actions/App/Http/Controllers/RecordDetailsController';
 import type { CollectionRecord } from '@/components/records/types';
 
-const cachedDetails = new Map<number, CollectionRecord>();
+const cachedDetails = new Map<string | undefined, CollectionRecord>();
 
 type DetailsState = {
-    instanceId: number;
+    instanceId: string | undefined;
     details: CollectionRecord | null;
     error: boolean;
     attempt: number;
@@ -17,7 +17,7 @@ type DetailsState = {
  * to, so switching records never shows the previous record's details.
  */
 export function useRecordDetails(
-    instanceId: number,
+    instanceId: string | undefined,
     supplied?: CollectionRecord,
 ) {
     const [state, setState] = useState<DetailsState>(() => ({
@@ -35,6 +35,7 @@ export function useRecordDetails(
 
     useEffect(() => {
         if (supplied) return;
+        if (!instanceId) return;
         if (cachedDetails.has(instanceId)) return;
         const controller = new AbortController();
         void fetch(RecordDetailsController.url(instanceId), {

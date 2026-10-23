@@ -20,8 +20,8 @@ class GenerateRecordCoverPreviewsCommand extends Command
         $limit = max(0, (int) $this->option('limit'));
 
         $records = CollectionRecord::query()->without('release')->selectRaw('MIN(id) as id')
-            ->whereHas('release', fn ($query) => $query->whereNull('data->coverPreview')
-                ->whereNotNull('data->cover')->whereNotIn('data->cover', ['', '/images/record-placeholder.svg']))
+            ->whereHas('release', fn ($query) => $query->whereNull('cover_preview')
+                ->whereNotNull('cover')->whereNotIn('cover', ['', '/images/record-placeholder.svg']))
             ->groupBy('discogs_release_id')->havingRaw('MIN(id) > ?', [max(0, (int) $this->option('after-id'))])
             ->orderBy('id')->cursor();
 

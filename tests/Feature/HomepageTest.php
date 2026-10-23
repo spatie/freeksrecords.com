@@ -54,7 +54,7 @@ it('uses only live public records for linked artwork and never falls back to the
     $link = $artwork->first()['url'];
     $this->get($link)->assertOk();
     $selected = $records->first(fn ($record) => $record->url(false) === $link);
-    $this->get($path.'?record='.$selected->id)->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->get($path.'?record='.$selected->public_id)->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('recordOverlay.record.id', $selected->id)
         ->where('recordOverlay.record.payload.displayTitle', $selected->payload['displayTitle'])
         ->missing('recordOverlay.record.privateNote'));
@@ -63,7 +63,7 @@ it('uses only live public records for linked artwork and never falls back to the
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page->has('artwork', 0));
         $destination = $path === '/verify-email' ? '/openowner' : '/login';
         $this->get($link)->assertRedirect($destination);
-        $this->get($path.'?record='.$selected->id)->assertRedirect($destination);
+        $this->get($path.'?record='.$selected->public_id)->assertRedirect($destination);
     }
 })->with(['/', '/login', '/register', '/forgot-password', '/reset-password/test-token', '/verify-email']);
 
@@ -84,7 +84,7 @@ it('previews nonempty public collections with their latest additions first', fun
     foreach ($collectors as $collector) {
         expect($collector['recordCount'])->toBe(8)
             ->and(array_column($collector['records'], 'url'))->toBe($expected[$collector['handle']])
-            ->and(array_keys($collector))->toBe(['id', 'name', 'handle', 'profileUrl', 'avatarUrl', 'recordCount', 'records']);
+            ->and(array_keys($collector))->toBe(['id', 'publicId', 'name', 'handle', 'profileUrl', 'avatarUrl', 'recordCount', 'records']);
     }
 });
 
@@ -189,7 +189,7 @@ it('offers a safe way back from missing pages without revealing private collecti
             ->assertDontSee('private_error_owner');
     }
 
-    $this->get("/shelves/{$record->id}")->assertRedirect('/login')
+    $this->get("/shelves/{$record->public_id}")->assertRedirect('/login')
         ->assertDontSee('Never disclose this album')->assertDontSee('private_error_owner');
 
     $this->getJson('/missing/page')->assertNotFound()->assertJsonStructure(['message'])

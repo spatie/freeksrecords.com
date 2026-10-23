@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $user_low
  * @property int $user_high
  * @property int $requested_by
@@ -13,5 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Friendship extends Model
 {
+    use HasPublicId;
+
     protected $guarded = ['id'];
 }

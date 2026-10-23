@@ -57,8 +57,8 @@ it('deletes only the confirmed signed-in account and its social data without cha
     $this->assertDatabaseCount('social_notifications', 0);
     $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
     $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
-    $this->get('/shelves/'.$mine->id)->assertNotFound();
-    $this->get('/shelves/'.$theirs->id)->assertOk();
+    $this->get('/shelves/'.$mine->public_id)->assertNotFound();
+    $this->get('/shelves/'.$theirs->public_id)->assertOk();
 
     (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect(User::query()->find($user->id))->toBeNull();
@@ -94,7 +94,7 @@ it('revokes warmed legacy collection pages and stored previews when the legacy o
 
     $this->actingAs($owner)->delete('/settings/account', ['confirmation' => $owner->handle])->assertRedirect('/');
 
-    $this->get('/record/'.$record->instance_id)->assertNotFound();
+    $this->get('/record/'.$record->public_id)->assertNotFound();
     $this->get('/collection')->assertNotFound();
     Storage::disk('public')->assertMissing(['share/collection-old.jpg', 'share/records/old.jpg']);
     Http::assertSent(fn ($request) => $request->method() === 'POST' && $request->url() === 'https://cloud.laravel.com/api/environments/test-environment/purge-edge-cache');

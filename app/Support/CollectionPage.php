@@ -40,7 +40,7 @@ class CollectionPage
             'url' => url($record['shareUrl']),
             'image' => $this->shareImageUrl(
                 fn (): string => $this->shareImages->recordUrl($record),
-                route('recordShareImage', ['instanceId' => $record['instanceId'], 'v' => 5]),
+                route('recordShareImage', ['instanceId' => $record['publicId'], 'v' => 5]),
             ),
         ];
     }

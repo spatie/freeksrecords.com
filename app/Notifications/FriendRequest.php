@@ -40,7 +40,7 @@ class FriendRequest extends Notification implements ShouldQueue
         $links = [];
         foreach (['accept', 'decline'] as $action) {
             $links[$action] = URL::temporarySignedRoute('friendRequest.respond', $expires, [
-                'friendship' => $friendship->id, 'recipient' => $notifiable->id, 'action' => $action,
+                'friendship' => $friendship->public_id, 'recipient' => $notifiable->public_id, 'action' => $action,
             ]);
         }
 

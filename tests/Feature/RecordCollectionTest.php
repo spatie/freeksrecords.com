@@ -33,7 +33,7 @@ it('lets guests browse the whole collection without downloading every track link
 });
 
 it('provides track positions when opening a record', function () {
-    $this->getJson(route('recordDetails', ['instanceId' => 2189134863]))
+    $this->getJson(route('recordDetails', ['instanceId' => legacyRecordPublicId(2189134863)]))
         ->assertOk()
         ->assertJsonPath('title', 'Shebang')
         ->assertJsonPath('tracks.0.position', 'A1')
@@ -41,7 +41,7 @@ it('provides track positions when opening a record', function () {
 });
 
 it('provides direct and search listening links when opening a record', function () {
-    $this->getJson(route('recordDetails', ['instanceId' => 2189134981]))
+    $this->getJson(route('recordDetails', ['instanceId' => legacyRecordPublicId(2189134981)]))
         ->assertOk()
         ->assertJsonPath('tracks.1.appleMusicSearch', false)
         ->assertJsonPath('tracks.1.appleMusicUrl', fn (string $url) => str_contains($url, '?i='))
@@ -58,7 +58,7 @@ it('does not route invalid collection copy ids', function () {
 });
 
 it('renders social metadata for a shared record', function () {
-    $this->get(route('recordShare', ['instanceId' => 2189134863, 'slug' => 'oren-ambarchi-shebang']))
+    $this->get(route('recordShare', ['instanceId' => legacyRecordPublicId(2189134863), 'slug' => 'oren-ambarchi-shebang']))
         ->assertOk()
         ->assertSee('property="og:site_name" content="Plaat Club"', false)
         ->assertSee('property="og:title" content="Shebang by Oren Ambarchi"', false)
@@ -74,7 +74,7 @@ it('renders social metadata for a shared record', function () {
 });
 
 it('passes the shared record to the page so it opens immediately', function () {
-    $path = '/record/2189134863/oren-ambarchi-shebang';
+    $path = '/record/'.legacyRecordPublicId(2189134863).'/oren-ambarchi-shebang';
 
     $this->get($path)
         ->assertSee('property="og:url" content="'.url($path).'"', false)
@@ -86,11 +86,12 @@ it('passes the shared record to the page so it opens immediately', function () {
             ->where('collection.records.1.shareUrl', $path));
 });
 
-it('redirects outdated or missing record slugs to the canonical url', function (string $path) {
-    $this->get($path)->assertRedirect('/record/2189134863/oren-ambarchi-shebang')->assertStatus(301);
+it('redirects outdated or missing record slugs to the canonical url', function (string $slug) {
+    $path = '/record/'.legacyRecordPublicId(2189134863);
+    $this->get($path.$slug)->assertRedirect($path.'/oren-ambarchi-shebang')->assertStatus(301);
 })->with([
-    'outdated slug' => ['/record/2189134863/old-album-title'],
-    'missing slug' => ['/record/2189134863'],
+    'outdated slug' => ['/old-album-title'],
+    'missing slug' => [''],
 ]);
 
 it('returns 404 for unknown shared records', function () {
@@ -98,7 +99,7 @@ it('returns 404 for unknown shared records', function () {
 });
 
 it('stores a small preview image for a shared record and redirects to it', function () {
-    $response = $this->get(route('recordShareImage', 2189134863));
+    $response = $this->get(route('recordShareImage', legacyRecordPublicId(2189134863)));
 
     $response->assertRedirect()->assertHeaderMissing('Set-Cookie');
     expect($response->headers->get('Cache-Control'))->toContain('public', 's-maxage=3600')
@@ -247,7 +248,7 @@ it('describes the collection with structured data', function () {
 });
 
 it('describes a shared album with structured data', function () {
-    $html = $this->get('/record/2189134863/oren-ambarchi-shebang')->assertOk()->getContent();
+    $html = $this->get('/record/'.legacyRecordPublicId(2189134863).'/oren-ambarchi-shebang')->assertOk()->getContent();
 
     $schema = structuredData($html);
 

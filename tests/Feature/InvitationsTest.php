@@ -88,7 +88,7 @@ it('fulfills only matching verified emails once and retains the landing until ex
     expect(Invitation::query()->first()->fulfilled_at)->not->toBeNull();
     $this->flushSession();
     $this->actingAs($recipient)->get('/invitations/'.$token)->assertInertia(fn (Assert $page) => $page->where('matches', true)->where('friendship.requested_by', $sender->id)->where('friendship.accepted_at', null));
-    $this->from('/invitations/'.$token)->post('/friends/'.$sender->id, ['action' => 'accept'])->assertRedirect('/invitations/'.$token)->assertSessionHasNoErrors();
+    $this->from('/invitations/'.$token)->post('/friends/'.$sender->public_id, ['action' => 'accept'])->assertRedirect('/invitations/'.$token)->assertSessionHasNoErrors();
     expect(Friendship::query()->first()->accepted_at)->not->toBeNull();
     $this->actingAs($recipient);
     $this->get('/invitations/'.$token)->assertInertia(fn (Assert $page) => $page->where('friendship.accepted_at', fn ($value) => $value !== null));

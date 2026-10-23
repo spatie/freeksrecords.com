@@ -316,6 +316,30 @@ listening links alone, and checkpoints each release: if interrupted or rate-limi
 to resume. Empty biographies and notes are stored as empty rather than repeatedly fetched.
 These fields are stored for future display; the UI currently only displays the attribution.
 
+The follow-up metadata migration moves scalar release metadata out of `data` into typed
+columns: titles, artist display name, years, partial release dates, label/catalogue,
+formats, cover/source/preview, external links, release notes and Discogs master/primary-label
+IDs. `releases.id` and `artists.id` remain the official Discogs IDs. Genre and style names
+have no Discogs numeric IDs. Arrays (including all label objects with their Discogs IDs),
+tracklists and credits remain JSON; collection browsing keeps its SQL projections.
+Years, master/label IDs, MusicBrainz IDs and the main text lookup fields are indexed.
+Partial dates stay strings so a known year or year/month is not turned into an invented day.
+For example, `Release::where('year', 1981)->where('discogs_label_id', 26126)->get()`
+uses ordinary columns, without extracting JSON.
+
+Own record, cover, friend-action, comment and admin URLs use random UUIDv4 public IDs.
+Numeric primary/foreign keys stay internal; profile handles and official Discogs links
+are unchanged. Old numeric URLs and previously emailed numeric signed links return 404
+rather than disclosing their replacement. Existing access policies still apply.
+
+Before running this migration, stop the old Discogs metadata command as well as imports
+and workers, then run `php artisan down --render="errors::503" --retry=60`. The migration
+preserves enrichment and timestamps but resets the information-import checkpoint so the
+resumable import also fills the newly stored master/label IDs. Restart that command with
+the new code after the deployment; already cached public responses and stored biographies
+are reused. Laravel Cloud replaces the app container on deployment, so reapply maintenance
+mode to the new container if verification must finish before reopening the site.
+
 After deploying inline cover previews, run `php artisan records:generate-cover-previews`
 once, with the queue worker running. It is safe to rerun (or use `--limit=100`): only
 missing previews are queued, and identical artwork reuses an existing preview.

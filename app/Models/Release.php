@@ -14,17 +14,26 @@ use Illuminate\Support\Facades\DB;
 /**
  * @property int $id
  * @property array<string, mixed> $data
+ * @property ?string $cover
+ * @property ?string $cover_preview
  * @property ?CarbonImmutable $info_imported_at
  */
 class Release extends Model
 {
-    public const DATA_FIELDS = [
-        'artist', 'artists', 'title', 'displayTitle', 'year', 'originalYear',
-        'originalReleaseDate', 'pressingReleaseDate', 'originalDateSource', 'musicbrainzId',
-        'label', 'catalogNumber', 'format', 'edition', 'mediaFormats', 'genres', 'styles',
-        'cover', 'coverSource', 'coverPreview', 'discogsUrl', 'appleMusicUrl', 'appleMusicSearch',
-        'spotifyUrl', 'spotifySearch', 'trackSource', 'tracks', 'releaseNotes', 'credits',
+    public const PAYLOAD_COLUMNS = [
+        'artist' => 'artist', 'title' => 'title', 'displayTitle' => 'display_title',
+        'year' => 'year', 'originalYear' => 'original_year',
+        'originalReleaseDate' => 'original_release_date', 'pressingReleaseDate' => 'pressing_release_date',
+        'originalDateSource' => 'original_date_source', 'musicbrainzId' => 'musicbrainz_id',
+        'discogsMasterId' => 'discogs_master_id', 'discogsLabelId' => 'discogs_label_id',
+        'label' => 'label', 'catalogNumber' => 'catalog_number', 'format' => 'format', 'edition' => 'edition',
+        'cover' => 'cover', 'coverSource' => 'cover_source', 'coverPreview' => 'cover_preview',
+        'discogsUrl' => 'discogs_url', 'appleMusicUrl' => 'apple_music_url', 'appleMusicSearch' => 'apple_music_search',
+        'spotifyUrl' => 'spotify_url', 'spotifySearch' => 'spotify_search',
+        'trackSource' => 'track_source', 'releaseNotes' => 'release_notes',
     ];
+
+    public const JSON_FIELDS = ['artists', 'labels', 'mediaFormats', 'genres', 'styles', 'tracks', 'credits'];
 
     public $incrementing = false;
 
@@ -40,16 +49,17 @@ class Release extends Model
     protected static function booted(): void
     {
         static::saved(function (self $release): void {
-            if (! $release->wasChanged('data')) {
+            if (! $release->wasChanged(['data', ...array_values(self::PAYLOAD_COLUMNS)])) {
                 return;
             }
 
-            $before = $release->getOriginal('data') ?? [];
-            $attributes = Arr::except(CollectionBrowseIndex::attributes($release->data, CarbonImmutable::now()), ['browse_added_day']);
+            $before = $release->metadata(original: true);
+            $after = $release->metadata();
+            $attributes = Arr::except(CollectionBrowseIndex::attributes($after, CarbonImmutable::now()), ['browse_added_day']);
             if ($attributes !== Arr::except(CollectionBrowseIndex::attributes($before, CarbonImmutable::now()), ['browse_added_day'])) {
                 $release->records()->toBase()->update($attributes);
             }
-            if (($before['artists'] ?? []) !== ($release->data['artists'] ?? []) || ($before['genres'] ?? []) !== ($release->data['genres'] ?? [])) {
+            if (($before['artists'] ?? []) !== ($after['artists'] ?? []) || ($before['genres'] ?? []) !== ($after['genres'] ?? [])) {
                 $release->records()->chunkById(200, fn ($copies) => CollectionBrowseIndex::sync($copies));
             }
 
@@ -75,10 +85,22 @@ class Release extends Model
     public static function storePayload(int $id, array $payload, bool $replace = false): self
     {
         return DB::transaction(function () use ($id, $payload, $replace): self {
-            $data = Arr::only($payload, self::DATA_FIELDS);
-            $release = self::query()->firstOrCreate(['id' => $id], ['data' => $data]);
+            $attributes = ['data' => Arr::only($payload, self::JSON_FIELDS)];
+            foreach (self::PAYLOAD_COLUMNS as $field => $column) {
+                if (array_key_exists($field, $payload)) {
+                    $attributes[$column] = $payload[$field];
+                }
+            }
+            $release = self::query()->firstOrCreate(['id' => $id], $attributes);
             $release = self::query()->lockForUpdate()->findOrFail($id);
-            $release->data = $replace ? [...$release->data, ...$data] : [...$data, ...$release->data];
+            $release->data = $replace
+                ? [...$release->data, ...$attributes['data']]
+                : [...$attributes['data'], ...$release->data];
+            foreach (Arr::except($attributes, ['data']) as $column => $value) {
+                if ($replace || $release->getAttribute($column) === null) {
+                    $release->setAttribute($column, $value);
+                }
+            }
 
             if (array_key_exists('artistBios', $payload)) {
                 $release->storeArtistBios($payload['artistBios']);
@@ -115,7 +137,7 @@ class Release extends Model
     /** @return array<string, mixed> */
     public function recordData(): array
     {
-        $data = $this->data;
+        $data = $this->metadata();
         if ($this->info_imported_at !== null || $this->artists->isNotEmpty()) {
             $data['artistBios'] = $this->artists->map(fn (Artist $artist): array => [
                 'id' => $artist->id, 'name' => $artist->name, 'profile' => $artist->profile ?? '',
@@ -126,8 +148,27 @@ class Release extends Model
         return $data;
     }
 
+    /** @return array<string, mixed> */
+    protected function metadata(bool $original = false): array
+    {
+        $data = ($original ? $this->getOriginal('data') : $this->data) ?? [];
+        foreach (self::PAYLOAD_COLUMNS as $field => $column) {
+            $value = $original ? $this->getOriginal($column) : $this->getAttribute($column);
+            if ($value !== null || in_array($field, ['originalYear', 'originalReleaseDate', 'pressingReleaseDate', 'originalDateSource', 'musicbrainzId'], true)) {
+                $data[$field] = $value;
+            }
+        }
+
+        return $data;
+    }
+
     protected function casts(): array
     {
-        return ['data' => 'array', 'info_imported_at' => 'immutable_datetime'];
+        return [
+            'data' => 'array', 'info_imported_at' => 'immutable_datetime',
+            'year' => 'integer', 'original_year' => 'integer',
+            'discogs_master_id' => 'integer', 'discogs_label_id' => 'integer',
+            'apple_music_search' => 'boolean', 'spotify_search' => 'boolean',
+        ];
     }
 }

@@ -97,7 +97,7 @@ it('enforces the saved choice immediately on profiles and records for every audi
         $this->flushSession();
     }
     $profile = $this->get(route('profile', $owner->handle));
-    $release = $this->get("/shelves/{$record->id}");
+    $release = $this->get("/shelves/{$record->public_id}");
     if (! $visible && $audience === 'guest') {
         $profile->assertRedirect('/login')->assertDontSee('Visibility contract album');
         $release->assertRedirect('/login');

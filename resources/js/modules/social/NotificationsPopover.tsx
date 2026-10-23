@@ -202,7 +202,9 @@ export function NotificationsPopover() {
                                     {notification.canRespond && (
                                         <div className="notification-actions">
                                             <FriendActions
-                                                personId={notification.actor.id}
+                                                personId={
+                                                    notification.actor.publicId
+                                                }
                                                 actions={[
                                                     {
                                                         value: 'accept',

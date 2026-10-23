@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Listeners\FulfillInvitationsListener;
 use App\Listeners\LogAuthenticationActivityListener;
 use App\Listeners\SendNewUserMailListener;
+use App\Models\Activity;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Date::use(CarbonImmutable::class);
+        config(['activitylog.activity_model' => Activity::class]);
+
+        VerifyEmail::createUrlUsing(fn (User $user): string => URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(config('auth.verification.expire', 60)),
+            ['id' => $user->public_id, 'hash' => sha1($user->getEmailForVerification())],
+        ));
 
         Event::listen(Registered::class, [FulfillInvitationsListener::class, 'fulfill']);
         Event::listen(Registered::class, [SendNewUserMailListener::class, 'send']);

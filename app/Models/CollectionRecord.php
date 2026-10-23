@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use App\Support\CollectionBrowseIndex;
 use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * @property int $instance_id
  * @property int $id
+ * @property string $public_id
  * @property int $user_id
  * @property bool $is_activity
  * @property User $user
@@ -27,6 +29,8 @@ use Illuminate\Support\Facades\DB;
  */
 class CollectionRecord extends Model
 {
+    use HasPublicId;
+
     public const CREATED_AT = null;
 
     protected $guarded = [];
@@ -95,7 +99,7 @@ class CollectionRecord extends Model
     {
         return route('profile.record', [
             'user' => $this->user->handle,
-            'record' => $this->id,
+            'record' => $this->public_id,
             'slug' => app(RecordCollection::class)->slug($this->payload),
         ], $absolute);
     }
@@ -119,7 +123,8 @@ class CollectionRecord extends Model
         }
         $release = $this->release;
         $metadata = $mapper->formatMetadata($basic);
-        if (array_replace($release->data, $metadata) === $release->data) {
+        $current = $release->recordData();
+        if (array_replace($current, $metadata) === $current) {
             return false;
         }
         $this->setRelation('release', Release::storePayload($release->id, $metadata, replace: true));

@@ -18,6 +18,7 @@ it('reloads an open Inertia tab after assets change even when the asset origin s
 });
 
 it('lets the edge cache pages without starting a session', function (string $url) {
+    $url = str_replace('{publicId}', legacyRecordPublicId(2189134863), $url);
     $response = $this->get($url);
 
     $response->assertOk()->assertHeaderMissing('Set-Cookie');
@@ -25,8 +26,8 @@ it('lets the edge cache pages without starting a session', function (string $url
     expect($response->headers->get('Cache-Control'))->toBe('max-age=60, public, s-maxage=86400');
 })->with([
     'collection' => ['/collection'],
-    'shared record' => ['/record/2189134863/oren-ambarchi-shebang'],
-    'record details' => ['/api/records/2189134863'],
+    'shared record' => ['/record/{publicId}/oren-ambarchi-shebang'],
+    'record details' => ['/api/records/{publicId}'],
 ]);
 
 it('does not cache inertia visits at the edge', function () {
@@ -43,7 +44,7 @@ it('does not cache missing pages at the edge', function () {
 });
 
 it('does not cache slug redirects at the edge', function () {
-    $response = $this->get('/record/2189134863/old-album-title');
+    $response = $this->get('/record/'.legacyRecordPublicId(2189134863).'/old-album-title');
 
     $response->assertStatus(301);
     expect((string) $response->headers->get('Cache-Control'))->not->toContain('s-maxage');

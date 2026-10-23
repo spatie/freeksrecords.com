@@ -33,6 +33,11 @@ function socialFriends(User $a, User $b): Friendship
     return Friendship::query()->create(['user_low' => min($a->id, $b->id), 'user_high' => max($a->id, $b->id), 'requested_by' => $a->id, 'accepted_at' => now()]);
 }
 
+function legacyRecordPublicId(int $instanceId): string
+{
+    return collect(app(RecordCollection::class)->records())->firstWhere('instanceId', $instanceId)['publicId'];
+}
+
 /** @return array<string, mixed> */
 function discogsCollectionEntry(int $instanceId, int $releaseId): array
 {

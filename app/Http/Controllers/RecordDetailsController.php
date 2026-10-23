@@ -8,9 +8,9 @@ use Illuminate\Http\JsonResponse;
 
 class RecordDetailsController extends Controller
 {
-    public function __invoke(int $instanceId, RecordCollection $collection, RecordReleaseDates $dates): JsonResponse
+    public function __invoke(string $instanceId, RecordCollection $collection, RecordReleaseDates $dates): JsonResponse
     {
-        $record = $collection->find($instanceId);
+        $record = $collection->findByPublicId($instanceId);
 
         abort_if($record === null, 404);
 

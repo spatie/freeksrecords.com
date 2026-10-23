@@ -15,7 +15,7 @@ use RuntimeException;
 
 class RecordCollection
 {
-    protected string $summariesCacheKey = 'record-collection-summaries-v2';
+    protected string $summariesCacheKey = 'record-collection-summaries-v3';
 
     public function __construct(
         protected RecordReleaseDates $dates,
@@ -25,13 +25,16 @@ class RecordCollection
     public function records(): array
     {
         if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
-            return $this->snapshot();
+            return Cache::rememberForever('record-collection-snapshot-public-ids-v1', fn (): array => array_map(
+                fn (array $record): array => [...$record, 'publicId' => (string) Str::uuid()],
+                $this->snapshot(),
+            ));
         }
 
         return CollectionRecord::legacy()
             ->orderByDesc('added_at')
             ->orderByDesc('instance_id')
-            ->get()->map(fn (CollectionRecord $record): array => $record->payload)
+            ->get()->map(fn (CollectionRecord $record): array => [...$record->payload, 'publicId' => $record->public_id])
             ->all();
     }
 
@@ -43,6 +46,18 @@ class RecordCollection
         }
 
         return CollectionRecord::legacy()->where('instance_id', $instanceId)->first()?->payload;
+    }
+
+    /** @return array<string, mixed>|null */
+    public function findByPublicId(string $publicId): ?array
+    {
+        if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
+            return collect($this->records())->firstWhere('publicId', $publicId);
+        }
+
+        $record = CollectionRecord::legacy()->where('public_id', $publicId)->first();
+
+        return $record ? [...$record->payload, 'publicId' => $record->public_id] : null;
     }
 
     /**
@@ -86,6 +101,7 @@ class RecordCollection
                 'appleMusicUrl', 'appleMusicSearch', 'spotifyUrl', 'spotifySearch',
             ]),
             'id' => $copy->discogs_release_id, 'instanceId' => $copy->instance_id,
+            'publicId' => $copy->public_id,
             'addedAt' => $copy->added_at->toIso8601String(),
             'mediaFormats' => $copy->formats(),
             'cover' => filled($copy->payload['cover'] ?? null) && $copy->payload['cover'] !== '/images/record-placeholder.svg'
@@ -197,7 +213,7 @@ class RecordCollection
 
         $record['trackTitles'] = array_column($record['tracks'], 'title');
         $record['shareUrl'] = $profileUrl ?? route('recordShare', [
-            'instanceId' => $record['instanceId'],
+            'instanceId' => $record['publicId'],
             'slug' => $this->slug($record),
         ], false);
         if ($profileUrl === null) {
