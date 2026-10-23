@@ -2,12 +2,16 @@
 
 namespace App\Support;
 
+use App\Models\CollectionRecord;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class ProfileCollection
 {
@@ -79,7 +83,7 @@ class ProfileCollection
     protected function query(bool $withDates = false): Builder
     {
         $state = $this->state();
-        $query = DB::table('collection_records as records')->where('records.user_id', $this->user->id);
+        $query = CollectionRecord::query()->from('collection_records as records')->where('records.user_id', $this->user->id);
         if (in_array($state['mode'], ['artist', 'genre'], true)) {
             $query->join('collection_browse_entries as entries', 'entries.collection_record_id', '=', 'records.id')
                 ->where('entries.user_id', $this->user->id)->where('entries.kind', $state['mode']);
@@ -88,15 +92,23 @@ class ProfileCollection
             $query->leftJoin('record_release_dates as dates', 'dates.discogs_release_id', '=', 'records.discogs_release_id');
         }
 
-        $terms = preg_split('/\s+/', Str::lower(Str::ascii(trim($state['query']))), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        // Keep q as free text instead of parsing commas and booleans as filter values.
+        return QueryBuilder::for($query, new Request)
+            ->allowedFilters(AllowedFilter::callback('search', $this->applySearch(...))
+                ->default($state['query'])->delimiter(''))
+            ->toBase();
+    }
+
+    /** @param EloquentBuilder<CollectionRecord> $query */
+    protected function applySearch(EloquentBuilder $query, string $search): void
+    {
+        $terms = preg_split('/\s+/', Str::lower(Str::ascii(trim($search))), -1, PREG_SPLIT_NO_EMPTY) ?: [];
         foreach ($terms as $term) {
             $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term).'%';
-            $query->where(fn (Builder $query) => $query
+            $query->where(fn (EloquentBuilder $query) => $query
                 ->whereRaw("records.browse_search LIKE ? ESCAPE '!'", [$pattern])
                 ->orWhereRaw('CAST('.$this->yearExpression()." AS CHAR) LIKE ? ESCAPE '!'", [$pattern]));
         }
-
-        return $query;
     }
 
     /** @return literal-string */

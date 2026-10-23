@@ -20,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class SocialController extends Controller
 {
@@ -92,13 +94,11 @@ class SocialController extends Controller
         $connections = Friendship::query()->where('user_low', $user->id)->orWhere('user_high', $user->id)->get();
         $friendIds = $connections->whereNotNull('accepted_at')
             ->map(fn (Friendship $friendship) => $friendship->user_low === $user->id ? $friendship->user_high : $friendship->user_low);
-        $people = User::query()->whereKeyNot($user->id)->where(function ($builder) use ($query, $connections, $user): void {
-            if ($query !== '') {
-                $builder->where('handle', $query);
-            } else {
-                $builder->whereIn('id', $connections->map(fn (Friendship $friendship) => $friendship->user_low === $user->id ? $friendship->user_high : $friendship->user_low));
-            }
-        })->withCount('records')->orderBy('handle')->paginate(30)->withQueryString();
+        $people = QueryBuilder::for(User::query()->whereKeyNot($user->id), new Request)
+            ->allowedFilters(AllowedFilter::exact('handle')->default($query)->ignore('')->delimiter(''))
+            ->when($query === '', fn ($builder) => $builder->whereIn('id', $connections
+                ->map(fn (Friendship $friendship) => $friendship->user_low === $user->id ? $friendship->user_high : $friendship->user_low)))
+            ->withCount('records')->orderBy('handle')->paginate(30)->withQueryString();
 
         return Inertia::render('social/FriendsPage', [
             'query' => $query,
