@@ -200,9 +200,16 @@ it('keeps error status codes and hides internal messages on branded error pages'
     config(['app.debug' => false]);
     Route::get('/test-playback-error', fn () => abort($status, 'Do not expose internal details'));
 
-    $this->get('/test-playback-error')->assertStatus($status)
+    $response = $this->get('/test-playback-error')->assertStatus($status)
         ->assertSee('Plaat Club')
-        ->assertSee("{$status} / Playback interrupted")
-        ->assertSee('Back to the club')
         ->assertDontSee('Do not expose internal details');
+
+    if ($status === 503) {
+        $response->assertSee('Changing the record.')->assertSee('Your collection is safe.')
+            ->assertDontSee('Back to the club')->assertDontSee('Browse public collections');
+
+        return;
+    }
+
+    $response->assertSee("{$status} / Playback interrupted")->assertSee('Back to the club');
 })->with([401, 403, 419, 429, 500, 503]);
