@@ -3,11 +3,11 @@
 namespace App\Support;
 
 use App\Models\Artist;
+use App\Models\DiscogsResponse;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
 
@@ -28,21 +28,34 @@ class Discogs
             return $this->fetch($path, $query);
         }
 
-        if (! preg_match('#^(releases|masters|artists)/[0-9]+$#', $path)) {
+        if (! preg_match('#^(releases|masters|artists)/([0-9]+)$#', $path, $matches)) {
             return $this->fetch($path, $query);
         }
 
-        return Cache::remember('discogs-public-v1:'.$path, now()->addWeek(), function () use ($path): array {
-            try {
-                return $this->fetch($path, []);
-            } catch (RequestException $exception) {
-                if ($exception->response->status() !== 404 || ! str_starts_with($path, 'artists/')) {
-                    throw $exception;
-                }
+        $resource = ['resource_type' => $matches[1], 'discogs_id' => (int) $matches[2]];
+        $stored = DiscogsResponse::query()->where($resource)->first();
 
-                return [];
+        if ($stored?->expires_at->isFuture()) {
+            return $stored->response;
+        }
+
+        try {
+            $response = $this->fetch($path, []);
+        } catch (RequestException $exception) {
+            if ($exception->response->status() !== 404 || $resource['resource_type'] !== 'artists') {
+                throw $exception;
             }
-        });
+
+            $response = [];
+        }
+
+        DiscogsResponse::query()->updateOrCreate($resource, [
+            'response' => $response,
+            'fetched_at' => now(),
+            'expires_at' => now()->addWeek(),
+        ]);
+
+        return $response;
     }
 
     /**

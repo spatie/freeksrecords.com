@@ -86,6 +86,7 @@ it('serves Discogs artwork from the same origin for detail and overlay palettes'
     $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/jpeg')->assertContent($bytes);
     $cached = $this->get($url)->assertOk()->assertContent($bytes);
     expect($cached->headers->get('Cache-Control'))->toContain('private', 'no-store');
+    Http::assertSentCount(1);
 
     $owner->update(['visibility' => 'only_me']);
     $this->get($url)->assertNotFound();

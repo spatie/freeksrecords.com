@@ -73,7 +73,6 @@ class SyncDiscogsCollectionCommand extends Command
                         $known = CollectionRecord::legacy()->where('instance_id', $entry['instance_id'])->first();
                         if ($known?->refreshFormats($entry['basic_information'], $mapper)) {
                             $refreshed++;
-                            $collection->flush();
                         }
 
                         continue;

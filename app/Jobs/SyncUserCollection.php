@@ -269,11 +269,8 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
             }
             throw new RuntimeException('Discogs sync failed for user '.$this->userId.': '.$reason.'. Retry or reconnect.');
         } finally {
-            if ($user->legacy_owner) {
-                $legacy->flush();
-                if ($changed) {
-                    app(EdgeCache::class)->purge();
-                }
+            if ($user->legacy_owner && $changed) {
+                app(EdgeCache::class)->purge();
             }
             $lock->release();
         }

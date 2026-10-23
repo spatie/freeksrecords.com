@@ -35,6 +35,7 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
 
     try {
         $this->artisan('migrate', ['--database' => 'social_migration'])->assertSuccessful();
+        (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
         foreach (['collection_browse_entries', 'social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'artist_release', 'artists', 'releases', 'invitations', 'users', 'password_reset_tokens'] as $table) {
             Schema::drop($table);
         }

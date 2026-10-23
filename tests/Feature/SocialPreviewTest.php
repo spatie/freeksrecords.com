@@ -112,7 +112,7 @@ it('serves real jpeg previews without permanently publishing collection membersh
     $owner = socialUser('imagepreview', 'everyone');
     $record = socialRecord($owner, 'Visible preview');
 
-    foreach (['/share/site.jpg', '/share/collections/imagepreview.jpg', '/share/shelves/'.$record->public_id.'.jpg'] as $url) {
+    foreach (['/share/collections/imagepreview.jpg', '/share/shelves/'.$record->public_id.'.jpg'] as $url) {
         $response = $this->get($url)->assertOk()->assertHeader('Content-Type', 'image/jpeg');
         $dimensions = getimagesizefromstring($response->getContent());
         expect([$dimensions[0], $dimensions[1]])->toBe([1200, 630])

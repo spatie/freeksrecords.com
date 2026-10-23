@@ -175,17 +175,13 @@ it('keeps browsing current after individual and bulk collection changes', functi
         ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
 });
 
-it('keeps collection browsing available when the metadata cache cannot be written', function () {
+it('keeps collection browsing available without a database metadata cache', function () {
     config(['cache.default' => 'database']);
     $owner = socialUser('cache_failure', 'everyone');
     foreach ([1974, 1981] as $instance => $year) {
         $copy = socialRecord($owner, "Album {$year}", instance: $instance + 1);
         $copy->update(['payload' => [...$copy->payload, 'originalYear' => $year, 'artists' => [$instance === 0 ? 'Cro Magnon' : 'Cromagnon']]]);
     }
-    DB::unprepared("CREATE TRIGGER reject_profile_metadata BEFORE INSERT ON cache
-        WHEN NEW.key LIKE '%profile-metadata:v1:%'
-        BEGIN SELECT RAISE(FAIL, 'Simulated cache write failure'); END");
-
     $this->get('/cache_failure?mode=decade')->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->where('records.total', 2)
@@ -730,7 +726,6 @@ it('isolates legacy collection copies, snapshot fallback, and all legacy URLs fr
     socialRecord($owner, 'Unknown legacy copy', instance: 999999);
     $this->getJson('/api/records/999999')->assertNotFound();
     User::freek()->update(['collection_imported_at' => now()]);
-    app(RecordCollection::class)->flush();
     $this->getJson('/api/records/'.$publicId)->assertNotFound();
     expect($record->fresh())->not->toBeNull();
 });

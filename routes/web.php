@@ -6,6 +6,7 @@ use App\Http\Controllers\RecordDetailsController;
 use App\Http\Controllers\RecordShareImageController;
 use App\Http\Controllers\ShowCollectionController;
 use App\Http\Controllers\ShowRecordController;
+use App\Http\Controllers\SocialPreviewController;
 use App\Http\Controllers\StopImpersonationController;
 use App\Http\Middleware\CacheAtEdge;
 use App\Http\Middleware\EnsureCollectionAccess;
@@ -20,10 +21,13 @@ Route::post('admin/impersonation/stop', StopImpersonationController::class)
 
 Route::get('/', HomeController::class)->middleware([PrivateResponse::class, EnsureCollectionAccess::class])->name('home');
 
-// Freek's immutable-public legacy routes stay anonymous and edge-cacheable.
+// Public artwork and Freek's immutable-public legacy routes need no session.
 Route::withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])->group(function () {
 
     Route::middleware('throttle:shareImages')->group(function () {
+        Route::get('share/site.jpg', [SocialPreviewController::class, 'home'])
+            ->middleware(CacheAtEdge::class)->name('socialPreview.home');
+
         Route::get('share/image.png', CollectionShareImageController::class)
             ->name('collectionShareImage');
 

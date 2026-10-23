@@ -15,8 +15,8 @@ class RecordCoverController extends Controller
         abort_unless($record->user->canViewCollection($request->user()), 404);
 
         $source = $record->payload['cover'];
-        $encoded = Cache::remember('record-cover:'.hash('sha256', $source), now()->addDay(), fn () => base64_encode($images->read($source)));
+        $bytes = Cache::store('images')->remember('record-cover:'.hash('sha256', $source), now()->addDay(), fn () => $images->read($source));
 
-        return response(base64_decode($encoded))->header('Content-Type', 'image/jpeg');
+        return response($bytes)->header('Content-Type', 'image/jpeg');
     }
 }

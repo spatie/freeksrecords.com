@@ -20,6 +20,11 @@ abstract class TestCase extends BaseTestCase
         File::ensureDirectoryExists($this->temporaryStoragePath);
 
         $this->app->useStoragePath($this->temporaryStoragePath);
+        config([
+            'cache.stores.images.path' => $this->temporaryStoragePath.'/framework/cache/images',
+            'cache.stores.file.path' => $this->temporaryStoragePath.'/framework/cache/data',
+            'cache.stores.file.lock_path' => $this->temporaryStoragePath.'/framework/cache/data',
+        ]);
     }
 
     protected function tearDown(): void

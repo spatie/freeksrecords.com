@@ -42,6 +42,7 @@ it('imports mixed bundles and unknown media without losing descriptions', functi
 
 it('backfills legacy descriptions without changing dates or activity and recognizes snapshots stored later', function () {
     $user = socialUser('legacyformats');
+    (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
     Schema::table('collection_records', function (Blueprint $table) {
         $table->dropForeign(['discogs_release_id']);
         $table->json('payload');

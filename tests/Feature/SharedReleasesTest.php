@@ -26,7 +26,8 @@ it('migrates duplicate releases without losing copies, enrichment, artwork or pe
         $browsing = [database_path('migrations/2026_10_23_100000_index_collection_browsing.php'), database_path('migrations/2026_10_23_110000_cover_decade_browse_queries.php')];
         $this->artisan('migrate', [
             '--database' => 'release_migration', '--realpath' => true,
-            '--path' => array_values(array_diff(glob(database_path('migrations/*.php')), [$normalization, $metadata, $publicIds, ...$browsing])),
+            '--path' => array_values(array_filter(glob(database_path('migrations/*.php')),
+                fn (string $path) => $path < $normalization && ! in_array($path, $browsing, true))),
         ])->assertSuccessful();
         foreach (['first', 'second'] as $handle) {
             DB::table('users')->insert(['name' => $handle, 'handle' => $handle, 'email' => "{$handle}@example.test", 'password' => 'unused']);

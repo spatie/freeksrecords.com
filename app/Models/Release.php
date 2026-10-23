@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Support\CollectionBrowseIndex;
-use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -62,8 +61,6 @@ class Release extends Model
             if (($before['artists'] ?? []) !== ($after['artists'] ?? []) || ($before['genres'] ?? []) !== ($after['genres'] ?? [])) {
                 $release->records()->chunkById(200, fn ($copies) => CollectionBrowseIndex::sync($copies));
             }
-
-            app(RecordCollection::class)->flush();
         });
     }
 

@@ -25,6 +25,7 @@ it('lets the edge cache pages without starting a session', function (string $url
 
     expect($response->headers->get('Cache-Control'))->toBe('max-age=60, public, s-maxage=86400');
 })->with([
+    'homepage artwork' => ['/share/site.jpg'],
     'collection' => ['/collection'],
     'shared record' => ['/record/{publicId}/oren-ambarchi-shebang'],
     'record details' => ['/api/records/{publicId}'],

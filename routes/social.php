@@ -39,7 +39,6 @@ Route::middleware([PrivateResponse::class, RequireVerifiedAccount::class, Ensure
     Route::get('/shelves/{record}', [SocialController::class, 'record'])->whereUuid('record')->name('shelf.record');
     Route::get('/shelves/{record}/cover', RecordCoverController::class)->whereUuid('record')->name('shelf.cover');
     Route::middleware('throttle:shareImages')->group(function () {
-        Route::get('share/site.jpg', [SocialPreviewController::class, 'home'])->name('socialPreview.home');
         Route::get('share/collections/{user:handle}.jpg', [SocialPreviewController::class, 'collection'])->name('socialPreview.collection');
         Route::get('share/shelves/{record}.jpg', [SocialPreviewController::class, 'record'])->whereUuid('record')->name('socialPreview.record');
     });

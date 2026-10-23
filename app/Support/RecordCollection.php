@@ -7,16 +7,14 @@ use App\Models\Release;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 class RecordCollection
 {
-    protected string $summariesCacheKey = 'record-collection-summaries-v3';
-
     public function __construct(
         protected RecordReleaseDates $dates,
     ) {}
@@ -25,10 +23,13 @@ class RecordCollection
     public function records(): array
     {
         if (! CollectionRecord::legacy()->exists() && User::freek()->collection_imported_at === null) {
-            return Cache::rememberForever('record-collection-snapshot-public-ids-v1', fn (): array => array_map(
-                fn (array $record): array => [...$record, 'publicId' => (string) Str::uuid()],
+            return array_map(
+                fn (array $record): array => [...$record, 'publicId' => Uuid::uuid5(
+                    Uuid::NAMESPACE_URL,
+                    hash_hmac('sha256', 'snapshot-record:'.$record['instanceId'], config('app.key')),
+                )->toString()],
                 $this->snapshot(),
-            ));
+            );
         }
 
         return CollectionRecord::legacy()
@@ -62,17 +63,13 @@ class RecordCollection
 
     /**
      * The records without their tracklists and the fields the shelf never
-     * shows, enriched with release dates and share metadata. Cached until
-     * the collection changes.
+     * shows, enriched with release dates and share metadata.
      *
      * @return array<int, array<string, mixed>>
      */
     public function summaries(): array
     {
-        return Cache::rememberForever(
-            $this->summariesCacheKey,
-            fn (): array => array_map($this->summary(...), $this->dates->enrich($this->records())),
-        );
+        return array_map($this->summary(...), $this->dates->enrich($this->records()));
     }
 
     /** @return array<string, mixed>|null */
@@ -134,8 +131,6 @@ class RecordCollection
             ['user_id' => User::freek()->id, 'instance_id' => $record['instanceId']],
             [...$this->attributes($record), 'payload' => $record],
         );
-
-        $this->flush();
     }
 
     /** @param array<int, array<string, mixed>> $records */
@@ -164,29 +159,18 @@ class RecordCollection
                     ->get(['id', 'user_id', 'discogs_release_id', 'instance_id', 'added_at']));
             }
         });
-
-        $this->flush();
     }
 
     /** @param array<int, int> $instanceIds */
     public function removeAllExcept(array $instanceIds): int
     {
-        $removed = CollectionRecord::legacy()->whereNotIn('instance_id', $instanceIds)->delete();
-
-        $this->flush();
-
-        return $removed;
+        return CollectionRecord::legacy()->whereNotIn('instance_id', $instanceIds)->delete();
     }
 
     /** @param array<string, mixed> $record */
     public function slug(array $record): string
     {
         return Str::slug("{$record['artist']} {$record['displayTitle']}");
-    }
-
-    public function flush(): void
-    {
-        Cache::forget($this->summariesCacheKey);
     }
 
     /**

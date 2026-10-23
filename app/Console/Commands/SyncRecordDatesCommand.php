@@ -79,8 +79,6 @@ class SyncRecordDatesCommand extends Command
             }
         });
 
-        $collection->flush();
-
         $this->comment("Stored dates for {$records->count()} releases. {$matched} MusicBrainz matches.");
 
         return self::SUCCESS;

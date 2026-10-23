@@ -14,7 +14,7 @@ beforeEach(function () {
     Sleep::fake();
     Sleep::syncWithCarbon();
     $this->freezeTime();
-    config(['cache.default' => 'database', 'services.discogs.consumer_key' => 'test', 'services.discogs.consumer_secret' => 'secret']);
+    config(['cache.default' => 'file', 'services.discogs.consumer_key' => 'test', 'services.discogs.consumer_secret' => 'secret']);
 });
 
 it('paces separate collectors and OAuth through the same budget without throttling cached public data', function () {

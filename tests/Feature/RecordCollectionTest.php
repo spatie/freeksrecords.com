@@ -4,6 +4,7 @@ use App\Support\RecordCollection;
 use App\Support\RecordShareImage;
 use App\Support\StoredShareImages;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -38,6 +39,15 @@ it('provides track positions when opening a record', function () {
         ->assertJsonPath('title', 'Shebang')
         ->assertJsonPath('tracks.0.position', 'A1')
         ->assertJsonPath('tracks.2.position', 'B1');
+});
+
+it('keeps bundled snapshot links stable without persistent collection caching', function () {
+    $publicId = legacyRecordPublicId(2189134863);
+    Cache::flush();
+
+    expect(legacyRecordPublicId(2189134863))->toBe($publicId)
+        ->not->toBe(legacyRecordPublicId(2189134981));
+    $this->getJson('/api/records/'.$publicId)->assertOk()->assertJsonPath('title', 'Shebang');
 });
 
 it('provides direct and search listening links when opening a record', function () {
@@ -271,7 +281,7 @@ it('reads the persisted collection once records are stored', function () {
         ->missing('collection.records.0.tracks'));
 });
 
-it('refreshes the cached collection when a record is stored', function () {
+it('shows collection changes immediately when a record is stored', function () {
     $collection = app(RecordCollection::class);
     [$first, $second] = $collection->snapshot();
 

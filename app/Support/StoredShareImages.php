@@ -4,7 +4,6 @@ namespace App\Support;
 
 use Closure;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
@@ -54,11 +53,7 @@ class StoredShareImages
     {
         $disk = Storage::disk('public');
 
-        Cache::rememberForever("stored-share-image:{$path}", function () use ($disk, $path, $render): bool {
-            if ($disk->exists($path)) {
-                return true;
-            }
-
+        if (! $disk->exists($path)) {
             $stored = $disk->put($path, $render(), [
                 'ContentType' => 'image/jpeg',
                 'CacheControl' => 'public, max-age=31536000, immutable',
@@ -67,9 +62,7 @@ class StoredShareImages
             if (! $stored) {
                 throw new RuntimeException("The share image [{$path}] could not be stored.");
             }
-
-            return true;
-        });
+        }
 
         return $disk->url($path);
     }

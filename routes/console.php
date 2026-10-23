@@ -1,10 +1,14 @@
 <?php
 
+use App\Models\DiscogsResponse;
 use App\Models\SocialNotification;
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('model:prune', ['--model' => [SocialNotification::class]])
+Schedule::command('model:prune', ['--model' => [SocialNotification::class, DiscogsResponse::class]])
     ->hourly()->withoutOverlapping()->onOneServer();
+
+// Clears this scheduler's local files, not other web instances' image stores.
+Schedule::command('cache:clear images')->dailyAt('03:30')->withoutOverlapping();
 
 Schedule::command('records:sync-discogs')
     ->dailyAt('04:00')

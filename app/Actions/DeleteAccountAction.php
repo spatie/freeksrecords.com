@@ -4,7 +4,6 @@ namespace App\Actions;
 
 use App\Models\User;
 use App\Support\EdgeCache;
-use App\Support\RecordCollection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -30,7 +29,6 @@ class DeleteAccountAction
             }
 
             if ($user->legacy_owner) {
-                app(RecordCollection::class)->flush();
                 Storage::disk('public')->deleteDirectory('share');
                 app(EdgeCache::class)->purge();
             }

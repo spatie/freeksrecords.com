@@ -167,8 +167,9 @@ time. Discogs' limit/used/remaining headers can lower the rate or pause requests
 when the budget is exhausted. HTTP 429 pauses all callers for at least 60 seconds; longer
 `Retry-After` values (seconds or HTTP dates, also on 503) are respected. Long waits release import
 jobs until the cooldown expires, retaining checkpoints without consuming exception retries.
-Use a shared cache store such as database or Redis across all web and queue instances; local
-file or array stores cannot coordinate separate servers. Connection errors and 5xx responses
+Use Redis/Valkey across all production web and queue instances for these small runtime keys;
+local file or array stores cannot coordinate separate servers. The generic database cache is
+being removed. Connection errors and 5xx responses
 receive up to three request attempts with backoff before queue-level retries.
 Normal yields and deploy interruptions do not consume the three-exception retry budget; imports have a
 seven-day retry deadline. The per-collector unique job lock lasts eight days, covering that
@@ -361,13 +362,51 @@ once, with the queue worker running. It is safe to rerun (or use `--limit=100`):
 missing previews are queued, and identical artwork reuses an existing preview.
 For command runtimes with short execution limits, process bounded batches with
 `--limit=500 --after-id=<last logged record ID>` to resume the scan.
-The artwork-only cache holds one tiny preview per source, never collection metadata.
+Preview reuse reads the indexed cover reference on shared releases, not a second cache entry.
 New Discogs imports queue previews automatically. The GD pipeline stores a 16×16 JPEG
 data URI once in shared release data, exposed through each copy's virtual record payload;
 collection rendering only serializes that value and
 never downloads or generates artwork. Failed jobs can be retried without losing records.
 No separate preview migration is needed. Social collection responses retain their existing
 visibility checks and private/no-store headers; previews do not publish private artwork.
+
+### Storage ownership and removing the database cache
+
+Shared metadata belongs to `releases`, `artists` and their pivot. Personal copy identity,
+notes and acquisition dates belong to `collection_records`. The `browse_*` columns and
+`collection_browse_entries` are deliberate SQL projections: removing them would bring back
+slow collection scans. Release-date overlays retain independently enriched precision/provenance.
+Social, authentication, session, queue and migration tables remain authoritative for their
+own features; they must not be treated as disposable cache.
+
+Public Discogs release/master/artist responses live in `discogs_responses`, uniquely keyed
+by resource type and Discogs ID. They expire after one week and are pruned hourly using the
+expiry index. The migration transfers unexpired responses from old cache prefixes in bounded
+batches; personal API responses are never stored there. This is a short-lived import buffer,
+not a second permanent catalogue. Saved release metadata and artist biographies survive pruning.
+
+Full covers and immutable-public legacy share images stay on the public object-storage disk.
+The same-origin cover proxy and private social image endpoints use a separate, rebuildable
+local-file image cache, without base64 copies in MySQL or large blobs in Redis. Authorization
+still runs before every private image response. The scheduler clears its local image store
+daily; instance replacement also discards ephemeral files. Additional web instances need their
+own local cleanup if the scheduler runs on a different instance. The generic homepage artwork
+is anonymous, session-free and edge-cacheable. Collection/record share images remain private,
+no-store: public CDN caching would prevent immediate privacy revocation.
+
+Before deploying the cache-removal migrations:
+
+1. Attach a dedicated Redis/Valkey instance to production and configure `CACHE_STORE=redis`
+   consistently for web, queue and scheduler processes. Never silently fall back to local files
+   for multi-instance locks, request budgets or throttling. Local single-host development uses
+   `CACHE_STORE=file`; tests use `array`.
+2. Take a snapshot, pause old imports and workers, and run
+   `php artisan down --render="errors::503" --retry=60` before migration.
+3. Run the response-transfer migration before the cache-removal migration. The latter refuses
+   production removal without a reachable Redis cache. Both `cache` and `cache_locks` are dropped;
+   obsolete browse caches, cached full covers and redundant preview entries are not migrated.
+4. Restart all processes with the new configuration, verify imports, locks, collection browsing
+   and privacy, and bring the app online. Follow the Cloud container-replacement warning above.
 
 ### Outgoing email
 
