@@ -26,7 +26,7 @@ services:
         portal:
             title: Plaat Club social preview
     queue:
-        command: php artisan queue:work --sleep=2 --tries=3 --timeout=7200
+        command: php artisan queue:work --queue=default,release-enrichment --sleep=2 --tries=3 --timeout=7200
         env:
             APP_NAME: Plaat Club
             MAIL_FROM_NAME: Plaat Club

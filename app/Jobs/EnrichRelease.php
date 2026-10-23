@@ -21,7 +21,10 @@ class EnrichRelease implements ShouldBeUnique, ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public int $releaseId, public bool $refresh = false) {}
+    public function __construct(public int $releaseId, public bool $refresh = false)
+    {
+        $this->onQueue('release-enrichment');
+    }
 
     public function uniqueId(): string
     {

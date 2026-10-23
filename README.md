@@ -345,6 +345,17 @@ After migrating, start the one-time pass across all shared releases with the que
 php artisan records:enrich-releases
 ```
 
+Enrichment jobs use the `release-enrichment` queue. Run the worker against the same
+connection as `QUEUE_CONNECTION` and listen on `default,release-enrichment`, in that order,
+so ordinary collection imports and mail take priority between enrichment jobs:
+
+```sh
+php artisan queue:work redis --queue=default,release-enrichment --timeout=7200
+```
+
+Set `REDIS_QUEUE_RETRY_AFTER=7500` (also the default) so a reserved job cannot be picked up
+again while the worker is still allowed to run it. The database queue uses the same interval.
+
 Each unique job checks one Discogs release, shared by every collector who owns it. It first
 fills missing Discogs artist biographies, release notes and credits through
 `ImportReleaseInfoAction`, then resolves listening links through

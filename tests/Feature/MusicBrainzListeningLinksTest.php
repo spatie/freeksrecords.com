@@ -222,7 +222,7 @@ it('queues releases missing either source or explicitly refreshes all releases',
     $this->artisan('records:enrich-releases', ['--refresh' => $refresh])->assertSuccessful();
 
     Bus::assertDispatchedTimes(EnrichRelease::class, $refresh ? 3 : 2);
-    Bus::assertDispatched(EnrichRelease::class, fn ($job) => $job->releaseId === $release->id && $job->refresh === $refresh);
+    Bus::assertDispatched(EnrichRelease::class, fn ($job) => $job->releaseId === $release->id && $job->refresh === $refresh && $job->queue === 'release-enrichment');
     Bus::assertDispatched(EnrichRelease::class, fn ($job) => $job->releaseId === 203);
 })->with([false, true]);
 
@@ -271,7 +271,7 @@ it('enriches newly imported releases in the background and reuses the result for
         ->and($copy->fresh()->payload['credits']['release'][0]['role'])->toBe('Producer')
         ->and($copy->fresh()->release->info_imported_at)->not->toBeNull()
         ->and($copy->fresh()->release->musicbrainz_checked_at)->toBeNull();
-    Bus::assertDispatched(EnrichRelease::class, fn ($job) => $job->releaseId === 201 && $job->afterCommit);
+    Bus::assertDispatched(EnrichRelease::class, fn ($job) => $job->releaseId === 201 && $job->afterCommit && $job->queue === 'release-enrichment');
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'musicbrainz.org'));
 
     app()->call([new EnrichRelease(201), 'handle']);
