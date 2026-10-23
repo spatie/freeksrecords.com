@@ -7,10 +7,10 @@ export function WeeklyEmailPage({ emailHtml }: { emailHtml: string }) {
 
     return (
         <>
-            <Head title="A little good company in your inbox" />
+            <Head title="Sunday Morning" />
             <div className="digest-preview">
                 <div className="digest-preview-copy">
-                    <p className="page-eyebrow">The weekly email · A preview</p>
+                    <p className="page-eyebrow">Sunday Morning · A preview</p>
                     <h1>
                         Good finds.
                         <br />
@@ -22,7 +22,7 @@ export function WeeklyEmailPage({ emailHtml }: { emailHtml: string }) {
                     </p>
                     <dl>
                         <div>
-                            <dt>Once a week.</dt>
+                            <dt>Sunday at 09:00, Belgian time.</dt>
                             <dd>
                                 New additions, newest first. An initial
                                 collection import doesn’t fill your inbox.
@@ -59,7 +59,7 @@ export function WeeklyEmailPage({ emailHtml }: { emailHtml: string }) {
                         <span>Example · fictional people & records</span>
                     </figcaption>
                     <iframe
-                        title="Example weekly email: three new records from Alex and Robin"
+                        title="Example Sunday Morning email: three new records from Alex and Robin"
                         srcDoc={emailHtml}
                         sandbox=""
                     />

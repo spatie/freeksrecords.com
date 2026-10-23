@@ -117,8 +117,8 @@ provided by Google. Anonymous visitors can still browse public collections.
   collection privacy; private notes are owner-only and excluded from other viewers,
   feeds, notifications, digests and legacy APIs. Notes survive syncs; editing them sends
   no notifications and does not create feed activity.
-- The weekly digest is enabled by default, can be disabled in Settings, and runs Monday
-  at 09:00 **Europe/Brussels**. It covers the preceding local seven-day interval,
+- The **Sunday Morning** digest is enabled by default, can be disabled in Settings, and runs Sunday
+  at 09:00 **Europe/Brussels**. It covers the preceding Sunday 09:00 to Sunday 09:00 interval,
   including DST changes. No visible friend additions means no email. Sends are synchronous
   to avoid retaining stale private record payloads in an email queue. A completed week is
   recorded per recipient to prevent ordinary reruns from sending duplicates. As with

@@ -1,12 +1,11 @@
 @props(['records', 'covers', 'webPreview' => false, 'mailMessage'])
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td class="digest-masthead" bgcolor="#d84435"><a href="{{ config('app.url') }}">Plaat Club.</a><span class="digest-edition">THE WEEKLY FLIP SIDE ↗</span></td>
+<td class="digest-masthead" bgcolor="#d84435"><a href="{{ config('app.url') }}">Plaat Club.</a></td>
 </tr>
 <tr>
 <td class="digest-poster" bgcolor="#d84435">
-<h1 class="digest-heading">Fresh on<br />their shelves.</h1>
-<p>A few new records from your listening circle.<br />Newest first. Good taste all round.</p>
+<h1 class="digest-heading">Sunday<br />Morning.</h1>
 </td>
 </tr>
 @foreach($records as $record)
@@ -34,13 +33,11 @@
 @endforeach
 <tr>
 <td class="digest-signoff" bgcolor="#292a22">
-<p>GOOD RECORDS.<br />EVEN BETTER COMPANY.</p>
 <a class="digest-button" href="{{ route('feed') }}">See friends’ additions ↗</a>
 </td>
 </tr>
 <tr>
 <td class="digest-footer" bgcolor="#fff9e8">
-<p>Only records shared with you at send time are included. Collection access can change later.</p>
 <a href="{{ route('settings') }}">Turn off the weekly digest in Settings</a>
 </td>
 </tr>

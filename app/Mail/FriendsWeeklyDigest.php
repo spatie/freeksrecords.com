@@ -64,7 +64,7 @@ class FriendsWeeklyDigest extends Mailable
             $this->prepareCovers();
         }
 
-        return $this->subject('This week on your friends’ shelves')
+        return $this->subject('Sunday Morning · Plaat Club')
             ->markdown('mail.friends-digest')
             ->text('mail.friends-digest-text')
             ->with('covers', $this->covers);

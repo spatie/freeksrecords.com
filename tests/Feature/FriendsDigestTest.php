@@ -2,6 +2,7 @@
 
 use App\Actions\SendFriendsDigestAction;
 use App\Mail\FriendsWeeklyDigest;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -13,7 +14,7 @@ it('shows a public email example using the real template and only unsaved fictio
     socialRecord($owner, 'Never show this private record');
     $this->get('/about/weekly-email')->assertOk()->assertInertia(fn (Assert $page) => $page
         ->component('social/WeeklyEmailPage')
-        ->where('emailHtml', fn (string $html) => str_contains($html, 'their shelves.')
+        ->where('emailHtml', fn (string $html) => str_contains(strip_tags($html), 'SundayMorning.')
             && str_contains($html, 'Midnight Windows') && str_contains($html, 'Sunday Static')
             && substr_count($html, 'src="data:image/jpeg;base64,') === 3 && ! str_contains($html, 'cid:')
             && ! str_contains($html, 'Never show this private record') && ! str_contains($html, 'preview_private')));
@@ -21,17 +22,17 @@ it('shows a public email example using the real template and only unsaved fictio
     Mail::assertNothingSent();
 });
 
-it('sends exactly the previous seven days in original addition order and never repeats a completed week', function () {
+it('sends the latest completed Sunday morning week in original addition order without duplicates', function (string $runAt) {
     Mail::fake();
-    $this->travelTo(now()->setDate(2026, 10, 19)->setTime(7, 0)); // Monday 09:00 Brussels (CEST).
+    $this->travelTo(CarbonImmutable::parse($runAt));
     $viewer = socialUser('viewer');
     $owner = socialUser('owner', 'friends');
     socialFriends($viewer, $owner);
-    socialRecord($owner, 'Before window', true, '2026-10-12 06:59:59', 1);
-    socialRecord($owner, 'Window start', true, '2026-10-12 07:00:00', 2)->update(['shared_note' => 'Owner shared note', 'private_note' => 'Owner private note']);
-    socialRecord($owner, 'Window end minus one', true, '2026-10-19 06:59:59', 3);
-    socialRecord($owner, 'Next week', true, '2026-10-19 07:00:00', 4);
-    socialRecord($owner, 'Initial import', false, '2026-10-18 12:00:00', 5);
+    socialRecord($owner, 'Before window', true, '2026-10-11 06:59:59', 1);
+    socialRecord($owner, 'Window start', true, '2026-10-11 07:00:00', 2)->update(['shared_note' => 'Owner shared note', 'private_note' => 'Owner private note']);
+    socialRecord($owner, 'Window end minus one', true, '2026-10-18 06:59:59', 3);
+    socialRecord($owner, 'Next week', true, '2026-10-18 07:00:00', 4);
+    socialRecord($owner, 'Initial import', false, '2026-10-17 12:00:00', 5);
     $this->artisan('social:send-digests')->assertSuccessful();
     Mail::assertSent(FriendsWeeklyDigest::class, function (FriendsWeeklyDigest $mail) use ($viewer) {
         expect($mail->records->pluck('payload.displayTitle')->all())->toBe(['Window end minus one', 'Window start']);
@@ -44,7 +45,13 @@ it('sends exactly the previous seven days in original addition order and never r
     Mail::assertSentCount(1);
     $this->artisan('social:send-digests')->assertSuccessful();
     Mail::assertSentCount(1);
-});
+})->with([
+    'Sunday at nine' => '2026-10-18T09:00:00+02:00',
+    'Sunday afternoon' => '2026-10-18T15:30:00+02:00',
+    'Monday rerun' => '2026-10-19T09:00:00+02:00',
+    'Saturday rerun' => '2026-10-24T12:00:00+02:00',
+    'before the next Sunday cutoff' => '2026-10-25T08:59:59+01:00',
+]);
 
 it('delivers styled and plain text digests without interpreting collector metadata as markup', function () {
     $owner = socialUser('emailmetadata', 'everyone');
@@ -54,10 +61,11 @@ it('delivers styled and plain text digests without interpreting collector metada
     $sent = Mail::mailer('array')->send((new FriendsWeeklyDigest($owner->records()->get()))->to('digest@example.test'));
     $message = $sent->getSymfonySentMessage()->getOriginalMessage();
 
+    expect($message->getSubject())->toBe('Sunday Morning · Plaat Club');
     expect(html_entity_decode(strip_tags($message->getHtmlBody())))->toContain($owner->name, $record->payload['displayTitle']);
     expect($message->getHtmlBody())->toContain('class="inner-body"', '#d84435', '#d9ed92', 'src="cid:', 'Album cover:')
         ->not->toContain('<script>', '<b>Collector</b>', 'href="https://untrusted.example"', 'Never include this private note');
-    expect($message->getTextBody())->toContain('This week on your friends’ shelves · Plaat Club', $owner->name, $record->payload['displayTitle'], $record->url(), '/settings')
+    expect($message->getTextBody())->toContain('Sunday Morning · Plaat Club', $owner->name, $record->payload['displayTitle'], $record->url(), '/settings')
         ->not->toContain('<p', '<table', 'Never include this private note');
     $covers = $message->getAttachments();
     expect($covers)->toHaveCount(1);
@@ -172,20 +180,24 @@ it('rechecks privacy, friendship, preferences and verification at send time and 
     Mail::assertNothingSent();
 });
 
-it('uses Brussels local week boundaries across daylight saving changes', function () {
+it('uses Sunday at nine in Brussels across both daylight saving changes', function (string $runAt, string $start, string $end) {
     Mail::fake();
-    $this->travelTo(now()->setDate(2026, 10, 26)->setTime(8, 0)); // Monday 09:00 CET after DST ends.
+    $this->travelTo(CarbonImmutable::parse($runAt));
     $viewer = socialUser('viewer');
     $owner = socialUser('owner', 'everyone');
     socialFriends($viewer, $owner);
-    socialRecord($owner, 'CEST start included', true, '2026-10-19 07:00:00', 1);
-    socialRecord($owner, 'CET end included', true, '2026-10-26 07:59:59', 2);
-    socialRecord($owner, 'CET next week', true, '2026-10-26 08:00:00', 3);
+    socialRecord($owner, 'Before window', true, CarbonImmutable::parse($start)->subSecond()->toDateTimeString(), 1);
+    socialRecord($owner, 'Window start', true, $start, 2);
+    socialRecord($owner, 'Window end minus one', true, CarbonImmutable::parse($end)->subSecond()->toDateTimeString(), 3);
+    socialRecord($owner, 'Next week', true, $end, 4);
     $this->artisan('social:send-digests')->assertSuccessful();
-    Mail::assertSent(FriendsWeeklyDigest::class, fn (FriendsWeeklyDigest $mail) => $mail->records->pluck('payload.displayTitle')->all() === ['CET end included', 'CEST start included']);
+    Mail::assertSent(FriendsWeeklyDigest::class, fn (FriendsWeeklyDigest $mail) => $mail->records->pluck('payload.displayTitle')->all() === ['Window end minus one', 'Window start']);
     $event = collect(app(Schedule::class)->events())->first(fn ($event) => str_contains($event->command, 'social:send-digests'));
-    expect($event->expression)->toBe('0 9 * * 1')->and($event->timezone)->toBe('Europe/Brussels');
-});
+    expect($event->expression)->toBe('0 9 * * 0')->and($event->timezone)->toBe('Europe/Brussels');
+})->with([
+    'spring forward' => ['2026-03-29T09:00:00+02:00', '2026-03-22 08:00:00', '2026-03-29 07:00:00'],
+    'fall back' => ['2026-10-25T09:00:00+01:00', '2026-10-18 07:00:00', '2026-10-25 08:00:00'],
+]);
 
 it('previews only the requested local recipient without advancing checkpoints and rechecks privacy', function () {
     Mail::fake();

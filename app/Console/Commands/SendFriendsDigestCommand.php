@@ -4,13 +4,14 @@ namespace App\Console\Commands;
 
 use App\Actions\SendFriendsDigestAction;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 
 class SendFriendsDigestCommand extends Command
 {
     protected $signature = 'social:send-digests {--preview-for= : Local preview for one recipient, without advancing their weekly checkpoint}';
 
-    protected $description = 'Send the latest completed Monday-to-Monday friends digest, checking current access';
+    protected $description = 'Send the latest completed Sunday Morning friends digest, checking current access';
 
     public function handle(SendFriendsDigestAction $sendDigest): int
     {
@@ -20,7 +21,7 @@ class SendFriendsDigestCommand extends Command
 
             return self::FAILURE;
         }
-        $end = now()->timezone('Europe/Brussels')->startOfWeek()->setTime(9, 0);
+        $end = now()->timezone('Europe/Brussels')->startOfWeek(CarbonInterface::SUNDAY)->setTime(9, 0);
         if ($end->isFuture()) {
             $end = $end->subWeek();
         }

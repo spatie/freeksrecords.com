@@ -19,4 +19,4 @@ Schedule::command('social:sync-collections --quick')
     ->hourlyAt(30)->timezone('Europe/Brussels')->withoutOverlapping()->onOneServer();
 
 Schedule::command('social:send-digests')
-    ->weeklyOn(1, '09:00')->timezone('Europe/Brussels')->withoutOverlapping()->onOneServer();
+    ->weeklyOn(0, '09:00')->timezone('Europe/Brussels')->withoutOverlapping()->onOneServer();
