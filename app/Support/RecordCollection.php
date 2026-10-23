@@ -138,12 +138,13 @@ class RecordCollection
                 CollectionRecord::query()->upsert(
                     $chunk,
                     ['user_id', 'instance_id'],
-                    ['discogs_release_id', 'added_at', 'payload', 'updated_at'],
+                    ['discogs_release_id', 'added_at', 'payload', 'updated_at', 'browse_title', 'browse_original_year', 'browse_added_day', 'browse_search'],
                 );
+                CollectionBrowseIndex::sync(CollectionRecord::legacy()->whereIn('instance_id', array_column($chunk, 'instance_id'))
+                    ->get(['id', 'user_id', 'payload']));
             }
         });
 
-        DB::afterCommit(fn () => ProfileCollection::flush(User::freek()->id));
         $this->flush();
     }
 
@@ -152,7 +153,6 @@ class RecordCollection
     {
         $removed = CollectionRecord::legacy()->whereNotIn('instance_id', $instanceIds)->delete();
 
-        DB::afterCommit(fn () => ProfileCollection::flush(User::freek()->id));
         $this->flush();
 
         return $removed;
@@ -180,6 +180,7 @@ class RecordCollection
             'discogs_release_id' => $record['id'],
             'added_at' => CarbonImmutable::parse($record['addedAt'])->utc()->toDateTimeString(),
             'payload' => $record,
+            ...CollectionBrowseIndex::attributes($record, CarbonImmutable::parse($record['addedAt'])),
         ];
     }
 

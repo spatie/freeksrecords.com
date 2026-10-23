@@ -6,6 +6,8 @@ use App\Models\RecordReleaseDate;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 use Spatie\Activitylog\Models\Activity;
 
@@ -122,7 +124,7 @@ it('pages a large collection and jumps across sections without filtering other a
         ->assertRedirect('/login')->assertDontSee('Album');
 });
 
-it('refreshes cached browsing metadata after individual and bulk collection changes', function () {
+it('keeps browsing current after individual and bulk collection changes', function () {
     $owner = User::freek();
     $owner->update(['handle' => 'cached_shelf']);
     $copy = socialRecord($owner, 'First album', instance: 1);
@@ -148,9 +150,38 @@ it('refreshes cached browsing metadata after individual and bulk collection chan
     $collection->storeMany([[...$copy->payload, 'artists' => ['Bulk edited artist']]]);
     $this->get('/cached_shelf?mode=artist')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Bulk edited artist'));
+    DB::unprepared("CREATE TRIGGER reject_browse_update BEFORE INSERT ON collection_browse_entries
+        WHEN NEW.name = 'Rejected artist'
+        BEGIN SELECT RAISE(FAIL, 'Simulated index write failure'); END");
+    $copy->refresh();
+    expect(fn () => $copy->update(['payload' => [...$copy->payload, 'title' => 'Rejected title', 'artists' => ['Rejected artist']]]))
+        ->toThrow(QueryException::class);
+    $this->get('/cached_shelf?mode=artist&q=searchable')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Bulk edited artist')->where('records.data.0.displayTitle', 'First album'));
     $collection->removeAllExcept([]);
     $this->get('/cached_shelf?mode=artist')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
+});
+
+it('keeps collection browsing available when the metadata cache cannot be written', function () {
+    config(['cache.default' => 'database']);
+    $owner = socialUser('cache_failure', 'everyone');
+    foreach ([1974, 1981] as $instance => $year) {
+        $copy = socialRecord($owner, "Album {$year}", instance: $instance + 1);
+        $copy->update(['payload' => [...$copy->payload, 'originalYear' => $year, 'artists' => [$instance === 0 ? 'Cro Magnon' : 'Cromagnon']]]);
+    }
+    DB::unprepared("CREATE TRIGGER reject_profile_metadata BEFORE INSERT ON cache
+        WHEN NEW.key LIKE '%profile-metadata:v1:%'
+        BEGIN SELECT RAISE(FAIL, 'Simulated cache write failure'); END");
+
+    $this->get('/cache_failure?mode=decade')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('records.total', 2)
+            ->where('groups.0.name', '1980s')
+            ->where('groups.1.name', '1970s')
+            ->where('records.data.0.displayTitle', 'Album 1981'));
+    $this->get('/cache_failure?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Cromagnon')->where('groups.1.name', 'Cro Magnon'));
 });
 
 it('groups latest additions by Brussels calendar day across pages, with newest records first', function () {
@@ -191,6 +222,41 @@ it('preserves collection search and multi-genre grouping across server pages', f
     $copy->update(['payload' => [...$copy->payload, 'artist' => '808', 'artists' => ['808']]]);
     $this->get('/search_shelf?mode=artist&q=blue')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', '808')->where('records.data.0.section', '808'));
+    $copy->update(['payload' => [...$copy->payload, 'tracks' => [['title' => '100%_live!']]]]);
+    $this->get('/search_shelf?'.http_build_query(['q' => '100%_live!']))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
+    $this->get('/search_shelf?'.http_build_query(['q' => '100%_live?']))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 0));
+    $this->get('/search_shelf?'.http_build_query(['q' => '%']))->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
+});
+
+it('keeps natural title ordering and current effective dates when browsing artists and decades', function () {
+    $owner = socialUser('release_order', 'everyone');
+    foreach ([
+        ['Album 10', 1974, '1974-06'],
+        ['Album 2', 1974, '1974-06'],
+        ['Stored date', null, '1981-02'],
+        ['Conflicting date', 1979, '1965'],
+        ['Unknown date', null, null],
+    ] as $instance => [$title, $year, $date]) {
+        $copy = socialRecord($owner, $title, instance: $instance + 1);
+        $releaseId = 900000 + $instance;
+        $copy->update(['discogs_release_id' => $releaseId, 'payload' => [...$copy->payload, 'id' => $releaseId, 'originalYear' => $year]]);
+        RecordReleaseDate::query()->create(['discogs_release_id' => $releaseId, 'original_release_date' => $date]);
+    }
+
+    $artists = $this->get('/release_order?mode=artist')->assertOk();
+    expect(array_column($artists->inertiaProps('records.data'), 'displayTitle'))
+        ->toBe(['Stored date', 'Conflicting date', 'Album 2', 'Album 10', 'Unknown date']);
+    $decades = $this->get('/release_order?mode=decade')->assertOk();
+    expect(array_column($decades->inertiaProps('groups'), 'name'))->toBe(['1980s', '1970s', 'Unknown year'])
+        ->and(array_column($decades->inertiaProps('records.data'), 'displayTitle'))
+        ->toBe(['Stored date', 'Album 2', 'Album 10', 'Conflicting date', 'Unknown date']);
+
+    RecordReleaseDate::query()->whereKey(900002)->update(['original_release_date' => '1963']);
+    $this->get('/release_order?mode=decade&q=1963')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', '1960s')->where('records.data.0.displayTitle', 'Stored date')->has('records.data', 1));
 });
 
 it('uses root profile URLs while retaining the old profile alias without redirects', function () {

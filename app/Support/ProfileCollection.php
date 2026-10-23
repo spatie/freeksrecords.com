@@ -3,27 +3,18 @@
 namespace App\Support;
 
 use App\Models\User;
-use Carbon\CarbonImmutable;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProfileCollection
 {
-    /** @var list<array{name: string, count: int, offset: int}> */
-    protected array $groups = [];
-
-    /** @var list<array{copyId: int, section: string, key: string}>|null */
-    protected ?array $entries = null;
+    /** @var list<array{name: string, count: int, offset: int}>|null */
+    protected ?array $groups = null;
 
     public function __construct(protected User $user, protected Request $request) {}
-
-    public static function flush(int $userId): void
-    {
-        Cache::forever("profile-metadata-version:{$userId}", (string) Str::uuid());
-    }
 
     /** @return array{mode: string, group: ?string, query: string} */
     public function state(): array
@@ -38,7 +29,28 @@ class ProfileCollection
     /** @return list<array{name: string, count: int, offset: int}> */
     public function groups(): array
     {
-        $this->index();
+        if ($this->groups !== null) {
+            return $this->groups;
+        }
+
+        $mode = $this->state()['mode'];
+        $latest = DB::getDriverName() === 'mysql'
+            ? "MAX(CONCAT(records.added_at, LPAD(records.id, 20, '0')))"
+            : "MAX(records.added_at || printf('%020d', records.id))";
+        $counts = $this->query()->selectRaw($this->sectionExpression()." AS section, COUNT(*) AS total, {$latest} AS latest")
+            ->groupBy('section')->get()->all();
+        usort($counts, fn ($first, $second) => match ($mode) {
+            'recent' => strcmp($second->section, $first->section),
+            'decade' => (int) $second->section <=> (int) $first->section,
+            default => strnatcasecmp(Str::ascii($first->section), Str::ascii($second->section)) ?: strcmp($second->latest, $first->latest),
+        });
+
+        $this->groups = [];
+        $offset = 0;
+        foreach ($counts as $count) {
+            $this->groups[] = ['name' => $this->sectionName($count->section), 'count' => (int) $count->total, 'offset' => $offset];
+            $offset += (int) $count->total;
+        }
 
         return $this->groups;
     }
@@ -46,100 +58,122 @@ class ProfileCollection
     /** @return LengthAwarePaginator<int, non-empty-array<string, mixed>> */
     public function records(): LengthAwarePaginator
     {
-        $this->index();
+        $groups = $this->groups();
+        $total = array_sum(array_column($groups, 'count'));
         $perPage = 36;
-        $offset = collect($this->groups)->firstWhere('name', $this->state()['group'])['offset'] ?? 0;
+        $offset = collect($groups)->firstWhere('name', $this->state()['group'])['offset'] ?? 0;
         $page = $this->request->has('recordsPage') ? max(1, $this->request->integer('recordsPage')) : intdiv($offset, $perPage) + 1;
-        $page = min($page, max(1, (int) ceil(count($this->entries ?? []) / $perPage)));
-        $slice = array_slice($this->entries ?? [], ($page - 1) * $perPage, $perPage);
+        $page = min($page, max(1, (int) ceil($total / $perPage)));
+        $slice = $this->entries(($page - 1) * $perPage, $perPage);
         $copies = $this->user->records()->whereIn('id', array_column($slice, 'copyId'))
             ->with('user')->get(['id', 'user_id', 'instance_id', 'discogs_release_id', 'added_at', 'payload'])->keyBy('id');
         $summaries = app(RecordCollection::class)->profileSummaries(array_map(fn (array $entry) => $copies->get($entry['copyId']), $slice));
         $items = array_map(fn (array $summary, array $entry) => [...$summary, 'section' => $entry['section'], 'key' => $entry['key']], $summaries, $slice);
 
-        return new LengthAwarePaginator($items, count($this->entries ?? []), $perPage, $page, [
+        return new LengthAwarePaginator($items, $total, $perPage, $page, [
             'path' => $this->request->url(), 'pageName' => 'recordsPage',
             'query' => $this->request->only(['mode', 'q', 'group']),
         ]);
     }
 
-    protected function index(): void
+    protected function query(bool $withDates = false): Builder
     {
-        if ($this->entries !== null) {
-            return;
-        }
-
         $state = $this->state();
-        $needsMetadata = $state['mode'] !== 'recent' || $state['query'] !== '';
-        $fields = $needsMetadata ? ['artist', 'artists', 'title', 'year', 'originalYear', 'genres', 'label', 'styles', 'tracks'] : [];
-        // Read only small indexing fields; hydrate full payloads for the requested page only.
-        $readMetadata = fn () => DB::table('collection_records')->where('user_id', $this->user->id)
-            ->select(['id as copyId', 'discogs_release_id as id', 'added_at', ...array_map(fn ($field) => "payload->{$field} as {$field}", $fields)])
-            ->get()->map(function (object $row): array {
-                $record = (array) $row;
-                foreach (['artists', 'genres', 'styles', 'tracks'] as $field) {
-                    $record[$field] = json_decode($record[$field] ?? '[]', true) ?? [];
-                }
-                $record['tracks'] = array_map(fn (array $track) => ['title' => $track['title'] ?? ''], $record['tracks']);
-                $record['originalYear'] = ($record['originalYear'] ?? null) ? (int) $record['originalYear'] : null;
-                $record['year'] = (int) ($record['year'] ?? 0);
-
-                return $record;
-            })->sortBy([['added_at', 'desc'], ['copyId', 'desc']])->values()->all();
-        $metadata = $needsMetadata
-            ? json_decode(Cache::remember(
-                'profile-metadata:v1:'.$this->user->id.':'.Cache::get("profile-metadata-version:{$this->user->id}", 'initial'),
-                now()->addMinutes(5),
-                fn () => json_encode($readMetadata(), JSON_THROW_ON_ERROR),
-            ), true, flags: JSON_THROW_ON_ERROR)
-            : $readMetadata();
-        if ($needsMetadata) {
-            $metadata = app(RecordReleaseDates::class)->enrich($metadata);
+        $query = DB::table('collection_records as records')->where('records.user_id', $this->user->id);
+        if (in_array($state['mode'], ['artist', 'genre'], true)) {
+            $query->join('collection_browse_entries as entries', 'entries.collection_record_id', '=', 'records.id')
+                ->where('entries.user_id', $this->user->id)->where('entries.kind', $state['mode']);
         }
+        if ($withDates || $state['mode'] === 'decade' || $state['query'] !== '') {
+            $query->leftJoin('record_release_dates as dates', 'dates.discogs_release_id', '=', 'records.discogs_release_id');
+        }
+
         $terms = preg_split('/\s+/', Str::lower(Str::ascii(trim($state['query']))), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $sections = [];
-        foreach ($metadata as $record) {
-            if ($terms !== []) {
-                $text = Str::lower(Str::ascii(implode(' ', [
-                    $record['artist'], $record['title'], $record['label'], $record['originalYear'] ?? '', $record['year'],
-                    ...$record['genres'], ...$record['styles'], ...array_column($record['tracks'], 'title'),
-                ])));
-                foreach ($terms as $term) {
-                    if (! str_contains($text, $term)) {
-                        continue 2;
-                    }
-                }
-            }
-            $names = match ($state['mode']) {
-                'artist' => $record['artists'],
-                'genre' => $record['genres'] ?: ['Unclassified'],
-                'decade' => [$record['originalYear'] ? (intdiv((int) $record['originalYear'], 10) * 10).'s' : 'Unknown year'],
-                default => [CarbonImmutable::parse($record['added_at'], 'UTC')->setTimezone('Europe/Brussels')->toDateString()],
-            };
-            foreach (array_unique($names) as $name) {
-                $sections[$name][] = $record;
-            }
+        foreach ($terms as $term) {
+            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term).'%';
+            $query->where(fn (Builder $query) => $query
+                ->whereRaw("records.browse_search LIKE ? ESCAPE '!'", [$pattern])
+                ->orWhereRaw('CAST('.$this->yearExpression()." AS CHAR) LIKE ? ESCAPE '!'", [$pattern]));
         }
-        uksort($sections, fn ($a, $b) => match ($state['mode']) {
-            'recent' => strcmp($b, $a),
-            'decade' => (int) $b <=> (int) $a,
-            default => strnatcasecmp(Str::ascii($a), Str::ascii($b)),
-        });
-        $this->entries = [];
-        foreach ($sections as $name => $records) {
-            $name = (string) $name;
-            if (in_array($state['mode'], ['artist', 'decade'], true)) {
-                usort($records, function ($a, $b) use ($state): int {
-                    $dates = ($a['originalReleaseDate'] ?? ($state['mode'] === 'artist' ? '' : '9999')) <=> ($b['originalReleaseDate'] ?? ($state['mode'] === 'artist' ? '' : '9999'));
 
-                    return ($state['mode'] === 'artist' ? -$dates : $dates)
-                        ?: strnatcasecmp($a['title'], $b['title']) ?: $a['copyId'] <=> $b['copyId'];
-                });
-            }
-            $this->groups[] = ['name' => $name, 'count' => count($records), 'offset' => count($this->entries)];
-            foreach ($records as $record) {
-                $this->entries[] = ['copyId' => $record['copyId'], 'section' => $name, 'key' => $name.':'.$record['copyId']];
-            }
+        return $query;
+    }
+
+    /** @return literal-string */
+    protected function yearExpression(): string
+    {
+        return 'COALESCE(records.browse_original_year, CAST(SUBSTR(dates.original_release_date, 1, 4) AS DECIMAL))';
+    }
+
+    /** @return literal-string */
+    protected function sectionExpression(): string
+    {
+        return match ($this->state()['mode']) {
+            'artist', 'genre' => 'entries.name',
+            'decade' => 'FLOOR('.$this->yearExpression().'/10)*10',
+            default => 'records.browse_added_day',
+        };
+    }
+
+    protected function sectionName(string|int|float|null $section): string
+    {
+        if ($this->state()['mode'] === 'decade') {
+            return $section === null ? 'Unknown year' : (int) $section.'s';
         }
+
+        return (string) $section;
+    }
+
+    /** @return list<array{copyId: int, section: string, key: string}> */
+    protected function entries(int $offset, int $limit): array
+    {
+        $groups = array_values(array_filter($this->groups(), fn (array $group) => $group['offset'] < $offset + $limit && $offset < $group['offset'] + $group['count']));
+        if ($groups === []) {
+            return [];
+        }
+
+        $mode = $this->state()['mode'];
+        $section = $this->sectionExpression();
+        $values = array_map(fn (array $group) => $mode === 'decade' ? ($group['name'] === 'Unknown year' ? null : (int) $group['name']) : $group['name'], $groups);
+        $query = $this->query(withDates: $mode === 'artist')->where(function (Builder $query) use ($section, $values): void {
+            foreach ($values as $value) {
+                $value === null ? $query->orWhereNull(DB::raw($section)) : $query->orWhereRaw("{$section} = ?", [$value]);
+            }
+        })->select(['records.id as copyId'])->selectRaw("{$section} AS section");
+        $relativeOffset = $offset - $groups[0]['offset'];
+
+        if (in_array($mode, ['recent', 'genre'], true)) {
+            if ($mode === 'recent') {
+                $query->orderByDesc('records.browse_added_day');
+            }
+            if ($mode === 'genre' && count($values) > 1) {
+                $ordering = 'CASE';
+                $bindings = [];
+                foreach ($values as $position => $value) {
+                    $ordering .= " WHEN {$section} = ? THEN ?";
+                    array_push($bindings, $value, $position);
+                }
+                $query->orderByRaw("{$ordering} END", $bindings);
+            }
+            $rows = $query->orderByDesc('records.added_at')->orderByDesc('records.id')
+                ->offset($relativeOffset)->limit($limit)->get()->all();
+
+            return array_map(fn (object $row) => ['copyId' => (int) $row->copyId, 'section' => $this->sectionName($row->section), 'key' => $this->sectionName($row->section).':'.$row->copyId], array_values($rows));
+        }
+
+        // Keep PHP's natural title ordering, but read only narrow rows in the sections on this page.
+        $date = 'CASE WHEN records.browse_original_year IS NOT NULL AND records.browse_original_year <> CAST(SUBSTR(dates.original_release_date, 1, 4) AS DECIMAL)
+            THEN CAST(records.browse_original_year AS CHAR) ELSE COALESCE(dates.original_release_date, CAST(records.browse_original_year AS CHAR)) END';
+        $rows = $query->addSelect('records.browse_title as title')->selectRaw("{$date} AS originalDate")->get()->all();
+        $positions = array_flip(array_column($groups, 'name'));
+        usort($rows, function ($first, $second) use ($positions, $mode): int {
+            $groups = $positions[$this->sectionName($first->section)] <=> $positions[$this->sectionName($second->section)];
+            $dates = ($first->originalDate ?? ($mode === 'artist' ? '' : '9999')) <=> ($second->originalDate ?? ($mode === 'artist' ? '' : '9999'));
+
+            return $groups ?: ($mode === 'artist' ? -$dates : $dates)
+                ?: strnatcasecmp($first->title, $second->title) ?: $first->copyId <=> $second->copyId;
+        });
+
+        return array_map(fn (object $row) => ['copyId' => (int) $row->copyId, 'section' => $this->sectionName($row->section), 'key' => $this->sectionName($row->section).':'.$row->copyId], array_slice($rows, $relativeOffset, $limit));
     }
 }

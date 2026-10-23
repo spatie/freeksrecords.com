@@ -8,7 +8,6 @@ use App\Support\Discogs;
 use App\Support\DiscogsRateLimitException;
 use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
-use App\Support\ProfileCollection;
 use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\Interruptible;
@@ -191,9 +190,6 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
             }
             DB::transaction(function () use ($user, $seen, $initial, &$changed): void {
                 $removed = $user->records()->whereNotIn('instance_id', $seen)->delete();
-                if ($removed > 0) {
-                    DB::afterCommit(fn () => ProfileCollection::flush($user->id));
-                }
                 $changed = $changed || $removed > 0;
                 $user->update(['collection_imported_at' => $user->collection_imported_at ?? now(), 'last_synced_at' => now(), 'sync_status' => 'Up to date', 'discogs_sync_state' => null]);
                 if ($initial) {

@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Schema;
+use Inertia\Testing\AssertableInertia as Assert;
 
 it('verifies existing emails silently without overwriting verification dates or verifying future signups', function () {
     Notification::fake();
@@ -28,7 +29,7 @@ it('verifies existing emails silently without overwriting verification dates or 
 });
 
 it('migrates the existing collection losslessly and silently to Freek’s reserved account', function () {
-    foreach (['social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'users', 'password_reset_tokens'] as $table) {
+    foreach (['collection_browse_entries', 'social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'users', 'password_reset_tokens'] as $table) {
         Schema::drop($table);
     }
     Schema::create('collection_records', function (Blueprint $table) {
@@ -53,4 +54,11 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
     }
     $this->assertDatabaseCount('social_notifications', 0);
     $this->getJson('/api/records/'.$records[0]['instanceId'])->assertOk()->assertJsonPath('title', $records[0]['title']);
+
+    $browseMigration = require database_path('migrations/2026_10_23_100000_index_collection_browsing.php');
+    $browseMigration->up();
+    $this->get('/freek?mode=artist')->assertOk()->assertInertia(fn (Assert $page) => $page->where('records.total', 3));
+    foreach ($records as $record) {
+        expect(CollectionRecord::legacy()->where('instance_id', $record['instanceId'])->firstOrFail()->payload)->toBe($record);
+    }
 });

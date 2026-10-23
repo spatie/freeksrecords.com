@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Support\CollectionBrowseIndex;
 use App\Support\DiscogsRecordMapper;
-use App\Support\ProfileCollection;
 use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,11 +32,26 @@ class CollectionRecord extends Model
 
     protected $hidden = ['private_note'];
 
+    public function save(array $options = []): bool
+    {
+        return DB::transaction(fn () => parent::save($options));
+    }
+
     protected static function booted(): void
     {
-        $invalidate = fn (self $record) => DB::afterCommit(fn () => ProfileCollection::flush($record->user_id));
-        static::saved($invalidate);
-        static::deleted($invalidate);
+        static::saving(function (self $record): void {
+            if (! $record->exists || $record->isDirty(['payload', 'added_at'])) {
+                $record->forceFill(CollectionBrowseIndex::attributes($record->payload, $record->added_at));
+            }
+        });
+        static::saved(function (self $record): void {
+            $before = $record->getOriginal('payload') ?? [];
+            if ($record->wasRecentlyCreated || $record->wasChanged('user_id')
+                || ($before['artists'] ?? []) !== ($record->payload['artists'] ?? [])
+                || ($before['genres'] ?? []) !== ($record->payload['genres'] ?? [])) {
+                CollectionBrowseIndex::sync([$record]);
+            }
+        });
     }
 
     public function url(bool $absolute = true): string
