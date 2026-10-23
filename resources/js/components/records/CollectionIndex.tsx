@@ -14,6 +14,7 @@ type IndexMode = Exclude<CollectionMode, 'recent'>;
 type CollectionIndexProps = {
     browseBasePath?: string;
     groupHref?: (group: string) => string;
+    onPrefetchGroup?: (group: string) => void;
     mode: IndexMode;
     query: string;
     groups: CollectionGroup[];
@@ -34,12 +35,14 @@ const labels: Record<IndexMode, { heading: string; plural: string }> = {
 export function CollectionIndex({
     browseBasePath = collection.url(),
     groupHref,
+    onPrefetchGroup,
     mode,
     query,
     groups,
     activeGroup,
     onGroup,
 }: CollectionIndexProps) {
+    const prefetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const indexGroups = useRef<HTMLDivElement>(null);
     const [groupQuery, setGroupQuery] = useState('');
     const [indexScroll, setIndexScroll] = useState({
@@ -50,6 +53,12 @@ export function CollectionIndex({
     const displayedGroups = groups.filter((group) =>
         group.name.toLocaleLowerCase().includes(groupQuery.toLocaleLowerCase()),
     );
+
+    function cancelPrefetch() {
+        if (prefetchTimer.current) clearTimeout(prefetchTimer.current);
+    }
+
+    useEffect(() => cancelPrefetch, []);
 
     useEffect(() => {
         const index = indexGroups.current;
@@ -167,6 +176,17 @@ export function CollectionIndex({
                             `${browseBasePath}${browseHash({ mode, group: group.name, query, visibleCount: 25 })}`
                         }
                         key={group.name}
+                        onMouseEnter={() => {
+                            cancelPrefetch();
+                            if (onPrefetchGroup) {
+                                prefetchTimer.current = setTimeout(
+                                    () => onPrefetchGroup(group.name),
+                                    100,
+                                );
+                            }
+                        }}
+                        onMouseLeave={cancelPrefetch}
+                        onFocus={() => onPrefetchGroup?.(group.name)}
                         onClick={(event) => {
                             if (
                                 event.metaKey ||
@@ -176,6 +196,7 @@ export function CollectionIndex({
                             )
                                 return;
                             event.preventDefault();
+                            cancelPrefetch();
                             onGroup(group.name);
                         }}
                     >

@@ -143,6 +143,7 @@ class RecordCollection
             }
         });
 
+        DB::afterCommit(fn () => ProfileCollection::flush(User::freek()->id));
         $this->flush();
     }
 
@@ -151,6 +152,7 @@ class RecordCollection
     {
         $removed = CollectionRecord::legacy()->whereNotIn('instance_id', $instanceIds)->delete();
 
+        DB::afterCommit(fn () => ProfileCollection::flush(User::freek()->id));
         $this->flush();
 
         return $removed;

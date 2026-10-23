@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Friendship;
+use App\Models\RecordReleaseDate;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\RecordCollection;
@@ -101,6 +102,14 @@ it('pages a large collection and jumps across sections without filtering other a
     $jump = $this->get('/large_shelf?mode=artist&group=Zulu')->assertOk();
     expect($jump->inertiaProps('records.current_page'))->toBe(2)
         ->and(array_unique(array_column($jump->inertiaProps('records.data'), 'section')))->toBe([0 => 'Alpha', 4 => 'Zulu']);
+    $this->get('/large_shelf?mode=artist&group=Zulu', [
+        'X-Inertia' => 'true', 'X-Inertia-Version' => app(HandleInertiaRequests::class)->version(request()),
+        'X-Inertia-Partial-Component' => 'social/ProfilePage', 'X-Inertia-Partial-Data' => 'records,browse',
+        'X-Inertia-Reset' => 'records', 'Purpose' => 'prefetch',
+    ])->assertOk()->assertJsonPath('props.records.current_page', 2)
+        ->assertJsonPath('props.browse.group', 'Zulu')->assertJsonMissingPath('props.groups')
+        ->assertJsonMissingPath('props.auth')->assertJsonMissingPath('mergeProps')
+        ->assertJsonPath('scrollProps.records.reset', true);
     $last = $this->get('/large_shelf?mode=artist&group=&recordsPage=3')->assertOk();
     $all = [...$first->inertiaProps('records.data'), ...$jump->inertiaProps('records.data'), ...$last->inertiaProps('records.data')];
     expect(array_unique(array_column($all, 'key')))->toHaveCount(80)
@@ -111,6 +120,37 @@ it('pages a large collection and jumps across sections without filtering other a
         'X-Inertia-Partial-Component' => 'social/ProfilePage', 'X-Inertia-Partial-Data' => 'records,groups',
     ])
         ->assertRedirect('/login')->assertDontSee('Album');
+});
+
+it('refreshes cached browsing metadata after individual and bulk collection changes', function () {
+    $owner = User::freek();
+    $owner->update(['handle' => 'cached_shelf']);
+    $copy = socialRecord($owner, 'First album', instance: 1);
+    $this->get('/cached_shelf?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
+
+    RecordReleaseDate::query()->create(['discogs_release_id' => $copy->discogs_release_id, 'original_release_date' => '1970-11-27']);
+    $this->get('/cached_shelf?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('records.data.0.originalReleaseDate', '1970-11-27'));
+
+    $copy->update(['payload' => [...$copy->payload, 'artists' => ['Renamed artist'], 'tracks' => [['title' => 'Searchable song']]]]);
+    $this->get('/cached_shelf?mode=artist&q=searchable')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Renamed artist')->has('records.data', 1));
+
+    $added = socialRecord($owner, 'Second album', instance: 2);
+    $this->get('/cached_shelf?mode=decade')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('records.total', 2));
+    $added->delete();
+    $this->get('/cached_shelf?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('records.total', 1));
+
+    $collection = app(RecordCollection::class);
+    $collection->storeMany([[...$copy->payload, 'artists' => ['Bulk edited artist']]]);
+    $this->get('/cached_shelf?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Bulk edited artist'));
+    $collection->removeAllExcept([]);
+    $this->get('/cached_shelf?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
 });
 
 it('groups latest additions by Brussels calendar day across pages, with newest records first', function () {

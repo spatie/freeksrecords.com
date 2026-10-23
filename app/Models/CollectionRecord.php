@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Support\DiscogsRecordMapper;
+use App\Support\ProfileCollection;
 use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $instance_id
@@ -29,6 +31,13 @@ class CollectionRecord extends Model
     protected $guarded = [];
 
     protected $hidden = ['private_note'];
+
+    protected static function booted(): void
+    {
+        $invalidate = fn (self $record) => DB::afterCommit(fn () => ProfileCollection::flush($record->user_id));
+        static::saved($invalidate);
+        static::deleted($invalidate);
+    }
 
     public function url(bool $absolute = true): string
     {

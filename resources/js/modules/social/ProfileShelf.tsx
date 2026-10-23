@@ -89,26 +89,33 @@ export function ProfileShelf({
         return true;
     }
 
+    function browseUrl(next: ProfileProps['browse']) {
+        return `${basePath}?${new URLSearchParams({ mode: next.mode, q: next.query, group: next.group ?? '' })}`;
+    }
+
+    function visitOptions(next: ProfileProps['browse']) {
+        return {
+            only:
+                next.mode === browse.mode && next.query === browse.query
+                    ? ['records', 'browse']
+                    : ['records', 'groups', 'browse'],
+            reset: ['records'],
+            preserveState: true,
+            preserveScroll: true,
+        };
+    }
+
     function visit(next: ProfileProps['browse']) {
         if (searchTimer.current) clearTimeout(searchTimer.current);
         cancelSearch.current?.();
-        router.get(
-            basePath,
-            { mode: next.mode, q: next.query, group: next.group ?? '' },
-            {
-                only: ['records', 'groups', 'browse'],
-                reset: ['records'],
-                preserveState: true,
-                preserveScroll: true,
-                onCancelToken: (token) => {
-                    cancelSearch.current = token.cancel;
-                },
-                onSuccess: () =>
-                    requestAnimationFrame(() =>
-                        scrollToGroup(next.group, false),
-                    ),
+        router.visit(browseUrl(next), {
+            ...visitOptions(next),
+            onCancelToken: (token) => {
+                cancelSearch.current = token.cancel;
             },
-        );
+            onSuccess: () =>
+                requestAnimationFrame(() => scrollToGroup(next.group, false)),
+        });
     }
 
     const restoreSection = useEffectEvent(() => {
@@ -146,12 +153,32 @@ export function ProfileShelf({
                         activeGroup={activeGroup}
                         browseBasePath={basePath}
                         groupHref={(group) =>
-                            `${basePath}?${new URLSearchParams({ mode: browse.mode, q: query, group })}`
+                            browseUrl({ ...browse, query, group })
                         }
+                        onPrefetchGroup={(group) => {
+                            if (
+                                query === browse.query &&
+                                records?.data.some(
+                                    (record) => record.section === group,
+                                )
+                            )
+                                return;
+                            const next = { ...browse, query, group };
+                            router.prefetch(
+                                browseUrl(next),
+                                visitOptions(next),
+                                {
+                                    cacheFor: '15s',
+                                },
+                            );
+                        }}
                         onGroup={(group) => {
-                            if (scrollToGroup(group, true)) {
+                            if (
+                                query === browse.query &&
+                                scrollToGroup(group, true)
+                            ) {
                                 router.replace({
-                                    url: `${basePath}?${new URLSearchParams({ mode: browse.mode, q: query, group })}`,
+                                    url: browseUrl({ ...browse, query, group }),
                                     props: {
                                         ...page.props,
                                         browse: { ...browse, group },

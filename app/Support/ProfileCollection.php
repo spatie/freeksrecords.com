@@ -6,6 +6,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -18,6 +19,11 @@ class ProfileCollection
     protected ?array $entries = null;
 
     public function __construct(protected User $user, protected Request $request) {}
+
+    public static function flush(int $userId): void
+    {
+        Cache::forever("profile-metadata-version:{$userId}", (string) Str::uuid());
+    }
 
     /** @return array{mode: string, group: ?string, query: string} */
     public function state(): array
@@ -65,24 +71,28 @@ class ProfileCollection
 
         $state = $this->state();
         $needsMetadata = $state['mode'] !== 'recent' || $state['query'] !== '';
-        $fields = $needsMetadata ? ['artist', 'artists', 'title', 'year', 'originalYear', 'genres'] : [];
-        if ($state['query'] !== '') {
-            $fields = [...$fields, 'label', 'styles', 'tracks'];
-        }
+        $fields = $needsMetadata ? ['artist', 'artists', 'title', 'year', 'originalYear', 'genres', 'label', 'styles', 'tracks'] : [];
         // Read only small indexing fields; hydrate full payloads for the requested page only.
-        $rows = DB::table('collection_records')->where('user_id', $this->user->id)
+        $readMetadata = fn () => DB::table('collection_records')->where('user_id', $this->user->id)
             ->select(['id as copyId', 'discogs_release_id as id', 'added_at', ...array_map(fn ($field) => "payload->{$field} as {$field}", $fields)])
-            ->get();
-        $metadata = $rows->map(function (object $row): array {
-            $record = (array) $row;
-            foreach (['artists', 'genres', 'styles', 'tracks'] as $field) {
-                $record[$field] = json_decode($record[$field] ?? '[]', true) ?? [];
-            }
-            $record['originalYear'] = ($record['originalYear'] ?? null) ? (int) $record['originalYear'] : null;
-            $record['year'] = (int) ($record['year'] ?? 0);
+            ->get()->map(function (object $row): array {
+                $record = (array) $row;
+                foreach (['artists', 'genres', 'styles', 'tracks'] as $field) {
+                    $record[$field] = json_decode($record[$field] ?? '[]', true) ?? [];
+                }
+                $record['tracks'] = array_map(fn (array $track) => ['title' => $track['title'] ?? ''], $record['tracks']);
+                $record['originalYear'] = ($record['originalYear'] ?? null) ? (int) $record['originalYear'] : null;
+                $record['year'] = (int) ($record['year'] ?? 0);
 
-            return $record;
-        })->sortBy([['added_at', 'desc'], ['copyId', 'desc']])->values()->all();
+                return $record;
+            })->sortBy([['added_at', 'desc'], ['copyId', 'desc']])->values()->all();
+        $metadata = $needsMetadata
+            ? json_decode(Cache::remember(
+                'profile-metadata:v1:'.$this->user->id.':'.Cache::get("profile-metadata-version:{$this->user->id}", 'initial'),
+                now()->addMinutes(5),
+                fn () => json_encode($readMetadata(), JSON_THROW_ON_ERROR),
+            ), true, flags: JSON_THROW_ON_ERROR)
+            : $readMetadata();
         if ($needsMetadata) {
             $metadata = app(RecordReleaseDates::class)->enrich($metadata);
         }

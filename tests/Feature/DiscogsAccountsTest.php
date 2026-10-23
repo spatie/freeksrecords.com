@@ -133,8 +133,12 @@ it('imports paginated collections silently, isolates duplicate copy ids, then mi
         ->and($user->records()->where('is_activity', true)->pluck('instance_id')->all())->toBe([103]);
     expect($user->records()->where('instance_id', 103)->first()->added_at->format('Y-m-d H:i:s'))->toBe('2026-10-18 07:30:00');
     expect($other->records()->first()->payload['title'])->toBe('Other copy');
+    $this->actingAs($user)->get('/sync?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('records.total', 2));
     $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
     expect($user->records()->count())->toBe(0)->and($other->records()->count())->toBe(1)->and($user->fresh()->sync_total)->toBe(0);
+    $this->get('/sync?mode=artist')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
     $activities = Activity::query()->where('log_name', 'discogs')->orderBy('id')->get();
     expect($activities->pluck('event')->all())->toBe(['initial_import_started', 'initial_import_completed'])
         ->and($activities->last()->getProperty('records_count'))->toBe(2)
