@@ -61,8 +61,8 @@ return [
             'X-XSRF-TOKEN',
         ],
         'client_ips' => false,
-        'cookies' => false,
-        'session' => false,
+        'cookies' => true,
+        'session' => true,
     ],
 
     /*
