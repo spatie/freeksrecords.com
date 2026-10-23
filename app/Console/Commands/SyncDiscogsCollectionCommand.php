@@ -2,10 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Discogs\FetchDiscogsRecordAction;
+use App\Actions\Discogs\RefreshRecordFormatsAction;
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
-use App\Models\Release;
 use App\Models\User;
 use App\Support\Discogs;
 use App\Support\DiscogsRateLimitException;
@@ -16,7 +17,6 @@ use App\Support\RecordCoverImages;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\File;
 use Throwable;
 
 class SyncDiscogsCollectionCommand extends Command
@@ -31,6 +31,8 @@ class SyncDiscogsCollectionCommand extends Command
         RecordCollection $collection,
         RecordCoverImages $images,
         EdgeCache $edgeCache,
+        FetchDiscogsRecordAction $fetchRecord,
+        RefreshRecordFormatsAction $refreshFormats,
     ): int {
         $owner = User::query()->where('legacy_owner', true)->first();
         if (! $owner) {
@@ -71,8 +73,10 @@ class SyncDiscogsCollectionCommand extends Command
 
                     if (isset($knownInstanceIds[$entry['instance_id']])) {
                         $known = CollectionRecord::legacy()->where('instance_id', $entry['instance_id'])->first();
-                        if ($known?->refreshFormats($entry['basic_information'], $mapper)) {
-                            $refreshed++;
+                        if ($known) {
+                            if ($refreshFormats->execute($known, $entry['basic_information'])) {
+                                $refreshed++;
+                            }
                         }
 
                         continue;
@@ -81,7 +85,7 @@ class SyncDiscogsCollectionCommand extends Command
                     $this->line("Importing {$entry['basic_information']['title']}...");
 
                     try {
-                        $record = $this->fetchRecord($entry, $discogs, $mapper);
+                        $record = $fetchRecord->execute($entry, $discogs, storeResponse: true);
                     } catch (RequestException $exception) {
                         $failed++;
 
@@ -122,33 +126,6 @@ class SyncDiscogsCollectionCommand extends Command
         $this->purgeEdgeCacheWhenChanged($edgeCache, $imported + $removed + $refreshed);
 
         return $failed ? self::FAILURE : self::SUCCESS;
-    }
-
-    /**
-     * @param  array<string, mixed>  $entry
-     * @return array<string, mixed>
-     */
-    protected function fetchRecord(array $entry, Discogs $discogs, DiscogsRecordMapper $mapper): array
-    {
-        $basic = $entry['basic_information'];
-
-        if ($shared = Release::query()->where('id', $basic['id'])->first()) {
-            return [
-                'id' => $shared->id, 'instanceId' => $entry['instance_id'],
-                ...$shared->recordData(), 'addedAt' => $entry['date_added'],
-            ];
-        }
-
-        $release = $discogs->get("releases/{$basic['id']}");
-
-        $master = empty($basic['master_id'])
-            ? []
-            : $discogs->get("masters/{$basic['master_id']}");
-
-        File::ensureDirectoryExists(storage_path('app/discogs'));
-        File::put(storage_path("app/discogs/releases-{$basic['id']}.json"), json_encode($release, JSON_THROW_ON_ERROR));
-
-        return $mapper->record($entry, $release, $master, $discogs->artistBios($release['artists'] ?? $basic['artists']));
     }
 
     /** @param array<string, mixed> $record */

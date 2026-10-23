@@ -2,10 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Discogs\ImportReleaseInfoAction;
 use App\Models\Release;
-use App\Support\Discogs;
 use App\Support\DiscogsRateLimitException;
-use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
 use Illuminate\Console\Command;
 use Illuminate\Http\Client\ConnectionException;
@@ -17,7 +16,7 @@ class ImportDiscogsInfoCommand extends Command
 
     protected $description = 'Import missing artist biographies, release notes and credits without changing collection data';
 
-    public function handle(Discogs $discogs, DiscogsRecordMapper $mapper): int
+    public function handle(ImportReleaseInfoAction $importReleaseInfo): int
     {
         $releaseIds = Release::query()->whereHas('records')
             ->whereNull('info_imported_at')->orderBy('id')->pluck('id');
@@ -30,8 +29,7 @@ class ImportDiscogsInfoCommand extends Command
                 $this->info("Importing Discogs information for release {$releaseId}...");
 
                 try {
-                    $release = $discogs->get("releases/{$releaseId}");
-                    $info = $mapper->releaseInfo($release, $discogs->artistBios($release['artists'] ?? []));
+                    $importReleaseInfo->execute($releaseId);
                 } catch (ConnectionException|RequestException|DiscogsRateLimitException $exception) {
                     $reason = $exception instanceof RequestException ? 'HTTP '.$exception->response->status() : class_basename($exception);
                     $this->error("Import stopped: {$reason}. Saved information was kept; rerun this command to resume.");
@@ -39,7 +37,6 @@ class ImportDiscogsInfoCommand extends Command
                     return self::FAILURE;
                 }
 
-                Release::storePayload($releaseId, $info, replace: true);
                 $legacyChanged = $legacyChanged || isset($legacyIds[$releaseId]);
                 $imported++;
             }

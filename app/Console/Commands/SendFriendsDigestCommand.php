@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Actions\SendFriendsDigestAction;
+use App\Actions\Social\SendFriendsDigestAction;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;

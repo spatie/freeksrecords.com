@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\CollectionRecord;
 use App\Support\CollectionBrowseIndex;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Migrations\Migration;
@@ -143,7 +142,7 @@ return new class extends Migration
                         $projections[] = [...$row, ...$attributes];
                     }
                     if (($payload['artists'] ?? []) !== ($data['artists'] ?? []) || ($payload['genres'] ?? []) !== ($data['genres'] ?? [])) {
-                        $memberships[] = new CollectionRecord([...$row, 'payload' => $data]);
+                        $memberships[] = (object) [...$row, 'payload' => $data];
                     }
                 }
                 if ($projections !== []) {

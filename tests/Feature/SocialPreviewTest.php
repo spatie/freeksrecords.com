@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Collections\StoreCollectionRecordAction;
 use App\Support\RecordShareImage;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -140,6 +141,6 @@ it('keeps mixed-owner copies distinct and refreshes previews when public metadat
     $secondImage = $this->get('/share/shelves/'.$second->public_id.'.jpg')->assertOk()->getContent();
     expect($firstImage)->not->toBe($secondImage);
 
-    $first->update(['payload' => [...$first->payload, 'displayTitle' => 'Renamed public album']]);
+    app(StoreCollectionRecordAction::class)->execute($first, ['payload' => [...$first->payload, 'displayTitle' => 'Renamed public album']]);
     expect($this->get('/share/shelves/'.$first->public_id.'.jpg')->assertOk()->getContent())->not->toBe($firstImage);
 });

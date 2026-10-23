@@ -1,9 +1,9 @@
 <?php
 
+use App\Actions\Discogs\CompleteCollectionSyncAction;
+use App\Actions\Discogs\ImportDiscogsRecordAction;
 use App\Jobs\SyncUserCollection;
 use App\Notifications\CollectionImported;
-use App\Support\DiscogsRecordMapper;
-use App\Support\RecordCollection;
 use Illuminate\Http\Client\Request;
 use Illuminate\Mail\Markdown;
 use Illuminate\Support\Facades\Bus;
@@ -134,18 +134,18 @@ it('imports paginated collections silently, isolates duplicate copy ids, then mi
         'api.discogs.com/releases/*' => Http::response(['year' => 1987, 'tracklist' => [['title' => 'Song', 'position' => 'A1']]]),
     ]);
     $job = new SyncUserCollection($user->id);
-    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->count())->toBe(2)->and($user->records()->where('is_activity', true)->count())->toBe(0)
         ->and($user->fresh()->collection_imported_at)->not->toBeNull()->and($user->fresh()->sync_total)->toBe(2);
-    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
-    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
+    $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->pluck('instance_id')->all())->toBe([102, 103])
         ->and($user->records()->where('is_activity', true)->pluck('instance_id')->all())->toBe([103]);
     expect($user->records()->where('instance_id', 103)->first()->added_at->format('Y-m-d H:i:s'))->toBe('2026-10-18 07:30:00');
     expect($other->records()->first()->payload['title'])->toBe('Other copy');
     $this->actingAs($user)->get('/sync?mode=artist')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('records.total', 2));
-    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->count())->toBe(0)->and($other->records()->count())->toBe(1)->and($user->fresh()->sync_total)->toBe(0);
     $this->get('/sync?mode=artist')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
@@ -172,7 +172,7 @@ it('resumes a deployment-interrupted import without removing records or announci
             return Http::response(['tracklist' => []]);
         },
     ]);
-    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->pluck('instance_id')->all())->toBe([301, 303])
         ->and($user->fresh()->collection_imported_at)->toBeNull()
         ->and($user->fresh()->sync_status)->toBe('Syncing');
@@ -182,7 +182,7 @@ it('resumes a deployment-interrupted import without removing records or announci
         'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 2], 'releases' => [$first, $second]]),
         'api.discogs.com/releases/402' => Http::response(['tracklist' => []]),
     ]);
-    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->pluck('instance_id')->all())->toBe([301, 302])
         ->and($user->records()->where('is_activity', true)->count())->toBe(0)
         ->and($user->fresh()->sync_status)->toBe('Up to date')
@@ -208,12 +208,12 @@ it('preserves collections and initial-import suppression through partial respons
         'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
     ]);
     $job = new SyncUserCollection($user->id);
-    expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
+    expect(fn () => $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class)))->toThrow(RuntimeException::class);
     expect($user->records()->count())->toBe(2)->and($user->fresh()->collection_imported_at)->toBeNull()->and($user->fresh()->sync_total)->toBe(2)
         ->and($user->fresh()->sync_status)->toBe('Retrying automatically. Existing records were kept.');
-    $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->count())->toBe(2)->and($user->records()->where('is_activity', true)->count())->toBe(0);
-    expect(fn () => $job->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class, 'HTTP 503');
+    expect(fn () => $job->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class)))->toThrow(RuntimeException::class, 'HTTP 503');
     expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_total)->toBeNull();
     $job->failed(new RuntimeException('Retries exhausted'));
     expect($user->fresh()->sync_status)->toStartWith('Sync failed');
@@ -273,7 +273,7 @@ it('emails only completed initial imports above 50 records, including resumed im
             'releases' => $entries->slice(($request['page'] - 1) * 10, 10)->values()->all(),
         ]),
     ]);
-    $sync = fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $sync = fn () => (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     $sync();
 
     if ($total > 50) {
@@ -305,7 +305,7 @@ it('does not email an incomplete large import', function () {
         'api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 1, 'items' => 51], 'releases' => []]),
     ]);
 
-    expect(fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))
+    expect(fn () => (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class)))
         ->toThrow(RuntimeException::class);
     expect($user->fresh()->collection_imported_at)->toBeNull();
     Notification::assertNothingSent();
@@ -361,7 +361,7 @@ it('checks additions across timestamp ties without scanning old pages or applyin
         'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
     ]);
 
-    (new SyncUserCollection($user->id, full: false))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id, full: false))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
 
     expect($user->records()->orderBy('instance_id')->pluck('instance_id')->all())->toBe([101, 102, 103, 104, 999])
         ->and($user->records()->where('is_activity', true)->where('instance_id', '!=', 999)->pluck('instance_id')->all())->toBe([102, 103, 104])
@@ -382,7 +382,7 @@ it('does not advance the additions checkpoint on an incomplete response', functi
     socialRecord($user, instance: 999);
     Http::fake(['api.discogs.com/users/*' => Http::response(['pagination' => ['pages' => 2, 'items' => 200], 'releases' => []])]);
 
-    expect(fn () => (new SyncUserCollection($user->id, full: false))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))
+    expect(fn () => (new SyncUserCollection($user->id, full: false))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class)))
         ->toThrow(RuntimeException::class);
     expect($user->fresh()->discogs_additions_checked_at->equalTo($checkedAt))->toBeTrue()
         ->and($user->records()->pluck('instance_id')->all())->toBe([999]);
@@ -403,7 +403,7 @@ it('uses a full scan for first imports and overdue reconciliation even when a qu
         'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
     ]);
 
-    (new SyncUserCollection($user->id, full: false))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id, full: false))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
 
     expect($user->records()->pluck('instance_id')->all())->toBe([101])
         ->and($user->records()->sole()->is_activity)->toBe(! $initial)
@@ -431,7 +431,7 @@ it('resumes the unfinished page after exhausted connection retries and reuses al
             ->pushResponse(Http::failedConnection('cURL error 28: OAuth private-secret must not be logged'))
             ->push(['year' => 1968]),
     ]);
-    expect(fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))
+    expect(fn () => (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class)))
         ->toThrow(RuntimeException::class, 'ConnectionException (cURL error 28)');
     expect($user->records()->pluck('instance_id')->all())->toBe([301])
         ->and($user->fresh()->collection_imported_at)->toBeNull();
@@ -439,7 +439,7 @@ it('resumes the unfinished page after exhausted connection retries and reuses al
     $this->assertDatabaseHas('activity_log', ['event' => 'initial_import_failed', 'causer_id' => $user->id]);
     $this->assertDatabaseMissing('activity_log', ['event' => 'initial_import_completed']);
     expect(Activity::all()->toJson())->not->toContain('private-secret');
-    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     $record = $user->records()->where('instance_id', 302)->firstOrFail();
     expect($user->records()->count())->toBe(2)->and($user->fresh()->sync_status)->toBe('Up to date')
         ->and($record->payload['originalYear'])->toBe(1968)
@@ -459,7 +459,7 @@ it('recovers transient Discogs request errors without restarting the collection'
             ->pushResponse($failure === 'connection' ? Http::failedConnection() : Http::response([], (int) $failure))
             ->push($release),
     ]);
-    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->fresh()->sync_status)->toBe('Up to date')
         ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Recovered');
 })->with(['connection', '503']);
@@ -485,7 +485,7 @@ it('shares only public release details between collectors while fetching each pr
         'api.discogs.com/artists/634' => Http::sequence()->push(['name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.']),
     ]);
     foreach ([$first, $second] as $user) {
-        (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+        (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
         expect($user->fresh()->sync_status)->toBe('Up to date')
             ->and($user->records()->sole()->payload['originalYear'])->toBe(1971)
             ->and($user->records()->sole()->payload['tracks'][0]['title'])->toBe('Shared public song')
@@ -516,7 +516,7 @@ it('imports records without missing artist profiles but does not hide other arti
         'api.discogs.com/artists/194' => Http::response(['message' => 'Artist not found.'], $status),
         'api.discogs.com/artists/634' => Http::response(['name' => 'Brian Eno', 'profile' => 'Electronic musician and producer.']),
     ]);
-    $import = fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    $import = fn () => (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
 
     if ($status !== 404) {
         expect($import)->toThrow(RuntimeException::class, 'HTTP '.$status);
@@ -551,10 +551,10 @@ it('restarts a changed paginated snapshot without applying incomplete removals',
         'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
         'api.discogs.com/masters/*' => Http::response(['year' => 1973]),
     ]);
-    expect(fn () => (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class)))->toThrow(RuntimeException::class);
+    expect(fn () => (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class)))->toThrow(RuntimeException::class);
     expect($user->records()->pluck('instance_id')->all())->toBe([101, 999])
         ->and($user->fresh()->collection_imported_at)->toBeNull();
-    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect($user->records()->pluck('instance_id')->all())->toBe([102])
         ->and($user->fresh()->sync_status)->toBe('Up to date')
         ->and($user->records()->where('is_activity', true)->count())->toBe(0);

@@ -2,15 +2,13 @@
 
 namespace App\Jobs;
 
-use App\Models\Release;
+use App\Actions\Discogs\CompleteCollectionSyncAction;
+use App\Actions\Discogs\ImportDiscogsRecordAction;
 use App\Models\User;
-use App\Notifications\CollectionImported;
 use App\Support\Discogs;
 use App\Support\DiscogsRateLimiter;
 use App\Support\DiscogsRateLimitException;
-use App\Support\DiscogsRecordMapper;
 use App\Support\EdgeCache;
-use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\Interruptible;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -86,7 +84,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
         }
     }
 
-    public function handle(DiscogsRecordMapper $mapper, RecordCollection $legacy): void
+    public function handle(ImportDiscogsRecordAction $importRecord, CompleteCollectionSyncAction $completeSync): void
     {
         $lock = Cache::lock('discogs-sync-'.$this->userId, 7500);
         if (! $lock->get()) {
@@ -171,49 +169,18 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                     }
                     $instance = $entry['instance_id'];
                     $seen[] = $instance;
-                    if ($known = $knownRecords->get($instance)) {
-                        $changed = $known->refreshFormats($entry['basic_information'], $mapper) || $changed;
-                        if (empty($known->payload['coverPreview'])) {
-                            if (filled($known->payload['cover'] ?? null) && $known->payload['cover'] !== $mapper->placeholderCover) {
-                                GenerateRecordCoverPreview::dispatch($known->id)->afterCommit();
-                            }
-                        }
-
-                        continue;
-                    }
-                    if ($shared = Release::query()->where('id', $entry['basic_information']['id'])->first()) {
-                        $record = $user->records()->create([
-                            'instance_id' => $instance, 'discogs_release_id' => $shared->id,
-                            'added_at' => CarbonImmutable::parse($entry['date_added'])->utc()->toDateTimeString(),
-                            'is_activity' => ! $initial,
-                        ]);
-                        if (empty($shared->cover_preview) && filled($shared->cover) && $shared->cover !== $mapper->placeholderCover) {
-                            GenerateRecordCoverPreview::dispatch($record->id)->afterCommit();
-                        }
-                        $changed = true;
-                        $imported++;
-
-                        continue;
-                    }
-                    $release = $discogs->get('releases/'.$entry['basic_information']['id']);
-                    if ($this->releaseIfNeeded($imported, $startedAt)) {
+                    $result = $importRecord->execute(
+                        $knownRecords->get($instance) ?? $user->records()->make(),
+                        $entry,
+                        $discogs,
+                        $initial,
+                        fn (): bool => $this->releaseIfNeeded($imported, $startedAt),
+                    );
+                    if ($result === null) {
                         return;
                     }
-                    $master = empty($entry['basic_information']['master_id']) ? [] : $discogs->get('masters/'.$entry['basic_information']['master_id']);
-                    $artistBios = $discogs->artistBios($release['artists'] ?? $entry['basic_information']['artists']);
-                    $payload = $mapper->record($entry, $release, $master, $artistBios);
-                    // Artwork is public release data, but private collection membership is never published as a share image.
-                    $payload['cover'] = $payload['coverSource'];
-                    $record = $user->records()->create([
-                        'instance_id' => $instance, 'discogs_release_id' => $payload['id'],
-                        'added_at' => CarbonImmutable::parse($payload['addedAt'])->utc()->toDateTimeString(),
-                        'payload' => $payload, 'is_activity' => ! $initial,
-                    ]);
-                    if ($payload['cover'] !== $mapper->placeholderCover) {
-                        GenerateRecordCoverPreview::dispatch($record->id)->afterCommit();
-                    }
-                    $changed = true;
-                    $imported++;
+                    $changed = $result['changed'] || $changed;
+                    $imported += (int) $result['imported'];
                 }
                 if ($boundaryReached) {
                     break;
@@ -236,28 +203,7 @@ class SyncUserCollection implements Interruptible, ShouldBeUnique, ShouldQueue
                 $user->update(['discogs_sync_state' => null]);
                 throw new RuntimeException('Incomplete collection response');
             }
-            DB::transaction(function () use ($user, $seen, $full, $state, $initial, &$changed): void {
-                if ($full) {
-                    $removed = $user->records()->whereNotIn('instance_id', $seen)->delete();
-                    $changed = $changed || $removed > 0;
-                    $user->last_synced_at = now();
-                }
-                $user->update([
-                    'collection_imported_at' => $user->collection_imported_at ?? now(),
-                    'discogs_additions_checked_at' => CarbonImmutable::createFromTimestamp($state['startedAt']),
-                    'sync_status' => $full ? 'Up to date' : 'Additions checked', 'discogs_sync_state' => null,
-                ]);
-                if ($initial) {
-                    activity('discogs')->causedBy($user)->performedOn($user)->withProperties(['records_count' => count($seen)])
-                        ->event('initial_import_completed')->log('Initial collection import completed');
-
-                    $recordCount = $user->records()->count();
-
-                    if ($recordCount > 50) {
-                        $user->notify(new CollectionImported($recordCount));
-                    }
-                }
-            });
+            $changed = $completeSync->execute($user, $seen, $full, CarbonImmutable::createFromTimestamp($state['startedAt'])) || $changed;
         } catch (DiscogsRateLimitException $exception) {
             $this->release($exception->retryAfter);
         } catch (Throwable $exception) {

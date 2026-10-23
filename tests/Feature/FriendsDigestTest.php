@@ -1,6 +1,7 @@
 <?php
 
-use App\Actions\SendFriendsDigestAction;
+use App\Actions\Collections\StoreCollectionRecordAction;
+use App\Actions\Social\SendFriendsDigestAction;
 use App\Mail\FriendsWeeklyDigest;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Schedule;
@@ -79,7 +80,7 @@ it('keeps a readable digest when artwork is absent, unavailable or untrusted', f
     Http::fake(['*' => Http::response('', 404)]);
     $owner = socialUser('missingart', 'everyone');
     $record = socialRecord($owner, 'The music still matters');
-    $record->update(['payload' => [...$record->payload, 'cover' => $source]]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => $source]]);
     $sent = Mail::mailer('array')->send((new FriendsWeeklyDigest($owner->records()->get()))->to('digest@example.test'));
     $message = $sent->getSymfonySentMessage()->getOriginalMessage();
 
@@ -101,7 +102,7 @@ it('rechecks access and email preferences after downloading artwork', function (
     socialFriends($viewer, $other);
     $hidden = socialRecord($owner, 'Withdrawn while fetching');
     $visible = socialRecord($other, 'Still shared');
-    $hidden->update(['payload' => [...$hidden->payload, 'cover' => '/images/record-placeholder.svg', 'coverSource' => 'https://i.discogs.com/digest.jpg']]);
+    app(StoreCollectionRecordAction::class)->execute($hidden, ['payload' => [...$hidden->payload, 'cover' => '/images/record-placeholder.svg', 'coverSource' => 'https://i.discogs.com/digest.jpg']]);
     Http::fake(['https://i.discogs.com/digest.jpg' => function () use ($change, $owner, $viewer, $friendship) {
         match ($change) {
             'visibility' => $owner->update(['visibility' => 'only_me']),
@@ -134,7 +135,7 @@ it('sends only once when another run completes during artwork preparation', func
     $owner = socialUser('owner', 'friends');
     socialFriends($viewer, $owner);
     $record = socialRecord($owner, 'One delivery');
-    $record->update(['payload' => [...$record->payload, 'cover' => 'https://i.discogs.com/slow.jpg']]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => 'https://i.discogs.com/slow.jpg']]);
     $otherRunCompleted = false;
     Http::fake(['https://i.discogs.com/slow.jpg' => function () use ($viewer, &$otherRunCompleted) {
         if (! $otherRunCompleted) {

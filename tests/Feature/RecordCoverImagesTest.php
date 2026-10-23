@@ -1,9 +1,11 @@
 <?php
 
+use App\Actions\Collections\StoreCollectionRecordAction;
+use App\Actions\Discogs\CompleteCollectionSyncAction;
+use App\Actions\Discogs\ImportDiscogsRecordAction;
 use App\Jobs\GenerateRecordCoverPreview;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
-use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
 use App\Support\RecordCoverImages;
 use Illuminate\Http\Client\RequestException;
@@ -76,7 +78,7 @@ it('rejects covers from unexpected hosts without fetching them', function () {
 it('serves Discogs artwork from the same origin for detail and overlay palettes', function () {
     $owner = socialUser('coverowner', 'everyone');
     $record = socialRecord($owner);
-    $record->update(['payload' => [...$record->payload, 'cover' => 'https://i.discogs.com/palette.jpg']]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => 'https://i.discogs.com/palette.jpg']]);
     $bytes = file_get_contents(public_path(ltrim($this->record['cover'], '/')));
     Http::fake(['https://i.discogs.com/palette.jpg' => Http::response($bytes)]);
 
@@ -111,7 +113,7 @@ it('reads stored artwork locally instead of making a cross-origin storage reques
     $record = socialRecord($owner);
     $bytes = file_get_contents(public_path(ltrim($this->record['cover'], '/')));
     $this->disk->put('records/123.jpg', $bytes);
-    $record->update(['payload' => [...$record->payload, 'cover' => $this->disk->url('records/123.jpg')]]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => $this->disk->url('records/123.jpg')]]);
 
     $this->get(route('shelf.cover', $record))->assertOk()->assertHeader('Content-Type', 'image/jpeg')->assertContent($bytes);
     Http::assertNothingSent();
@@ -159,7 +161,7 @@ it('queues preview generation during import without downloading artwork in the i
         'api.discogs.com/releases/*' => Http::response(['tracklist' => []]),
     ]);
 
-    (new SyncUserCollection($owner->id))->handle(app(DiscogsRecordMapper::class), $this->collection);
+    (new SyncUserCollection($owner->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
 
     $record = $owner->records()->firstOrFail();
     expect($record->payload['cover'])->toBe('https://i.discogs.com/deferred-preview.jpg')
@@ -172,18 +174,18 @@ it('preserves concurrent metadata edits and reuses previews for identical artwor
     $owner = socialUser('previewcopies');
     $record = socialRecord($owner);
     $source = 'https://i.discogs.com/preview.jpg';
-    $record->update(['payload' => [...$record->payload, 'cover' => $source]]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => $source]]);
     $bytes = file_get_contents(public_path(ltrim($this->record['cover'], '/')));
     Http::fake([$source => function () use ($record, $bytes) {
         $record->update(['private_note' => 'Changed during download', 'shared_note' => 'Still my copy']);
-        $record->update(['payload' => [...$record->payload, 'releaseNotes' => 'Updated during download']]);
+        app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'releaseNotes' => 'Updated during download']]);
 
         return Http::response($bytes);
     }]);
 
     (new GenerateRecordCoverPreview($record->id))->handle(app(RecordCoverImages::class));
     $second = socialRecord($owner, instance: 456, releaseId: 202);
-    $second->update(['payload' => [...$second->payload, 'cover' => $source]]);
+    app(StoreCollectionRecordAction::class)->execute($second, ['payload' => [...$second->payload, 'cover' => $source]]);
     (new GenerateRecordCoverPreview($second->id))->handle(app(RecordCoverImages::class));
 
     expect($record->fresh()->payload['releaseNotes'])->toBe('Updated during download')
@@ -196,7 +198,7 @@ it('preserves concurrent metadata edits and reuses previews for identical artwor
 it('does not attach stale previews when the cover changes during generation and allows failed downloads to retry', function () {
     $record = socialRecord(socialUser('previewretry'));
     $source = 'https://i.discogs.com/retry-preview.jpg';
-    $record->update(['payload' => [...$record->payload, 'cover' => $source]]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => $source]]);
     $bytes = file_get_contents(public_path(ltrim($this->record['cover'], '/')));
     $attempt = 0;
     Http::fake([$source => function () use ($record, $bytes, &$attempt) {
@@ -204,7 +206,7 @@ it('does not attach stale previews when the cover changes during generation and 
             return Http::response('', 503);
         }
 
-        $record->update(['payload' => [...$record->payload, 'cover' => '/images/records/123.jpg']]);
+        app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => '/images/records/123.jpg']]);
 
         return Http::response($bytes);
     }]);

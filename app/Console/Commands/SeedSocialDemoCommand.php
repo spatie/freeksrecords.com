@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Collections\StoreCollectionRecordAction;
 use App\Models\Friendship;
 use App\Models\SocialNotification;
 use App\Models\User;
@@ -17,7 +18,7 @@ class SeedSocialDemoCommand extends Command
 
     protected $description = 'Seed local-only demo profiles with real catalog shelves without contacting Discogs';
 
-    public function handle(DiscogsRecordMapper $mapper): int
+    public function handle(DiscogsRecordMapper $mapper, StoreCollectionRecordAction $storeRecord): int
     {
         if (! app()->environment('local')) {
             $this->error('Demo seeding is restricted to APP_ENV=local.');
@@ -67,19 +68,22 @@ class SeedSocialDemoCommand extends Command
                     $payload['addedAt'] = $added;
                     $payload['mediaFormats'] = $mapper->mediaFormats($payload['format']);
                 }
-                $record = $users[$handle]->records()->firstOrCreate(['instance_id' => $instance], [
-                    'discogs_release_id' => $payload['id'], 'added_at' => $date->utc()->toDateTimeString(),
-                    'payload' => $payload, 'is_activity' => $number < 12 && $number !== 2,
-                    'shared_note' => $handle === 'alex' && $number === 0 ? 'A favourite for a quiet evening. Play it all the way through.' : null,
-                    'private_note' => $handle === 'alex' && $number === 0 ? 'Synthetic demo note: a birthday gift. Keep this copy.' : null,
-                ]);
+                $record = $users[$handle]->records()->firstOrNew(['instance_id' => $instance]);
+                if (! $record->exists) {
+                    $storeRecord->execute($record, [
+                        'discogs_release_id' => $payload['id'], 'added_at' => $date->utc()->toDateTimeString(),
+                        'payload' => $payload, 'is_activity' => $number < 12 && $number !== 2,
+                        'shared_note' => $handle === 'alex' && $number === 0 ? 'A favourite for a quiet evening. Play it all the way through.' : null,
+                        'private_note' => $handle === 'alex' && $number === 0 ? 'Synthetic demo note: a birthday gift. Keep this copy.' : null,
+                    ]);
+                }
                 // Match the entire original payload (including its stored date) before upgrading.
                 // Notes, dates, activity and social interactions are never replaced.
                 if (! $record->wasRecentlyCreated && $number < 3 && $record->discogs_release_id === $instance) {
                     $legacy['addedAt'] = $record->payload['addedAt'] ?? '';
                     if (Arr::whereNotNull($record->payload) == Arr::whereNotNull($legacy)) {
                         $payload['addedAt'] = $legacy['addedAt'];
-                        $record->update(['discogs_release_id' => $payload['id'], 'payload' => $payload]);
+                        $storeRecord->execute($record, ['discogs_release_id' => $payload['id'], 'payload' => $payload]);
                     }
                 }
                 if ($handle === 'alex' && $number === 0) {

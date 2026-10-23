@@ -1,10 +1,14 @@
 <?php
 
+use App\Actions\Collections\StoreCollectionRecordAction;
+use App\Actions\Collections\StoreReleaseAction;
+use App\Actions\Discogs\CompleteCollectionSyncAction;
+use App\Actions\Discogs\ImportDiscogsRecordAction;
+use App\Actions\Discogs\RefreshRecordFormatsAction;
 use App\Jobs\SyncUserCollection;
 use App\Models\CollectionRecord;
 use App\Models\Release;
 use App\Models\User;
-use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
 use App\Support\RecordCoverImages;
 use Illuminate\Support\Facades\DB;
@@ -110,8 +114,8 @@ it('shares release updates and artwork across owners while keeping copies indepe
     $first = socialRecord(socialUser('first'), releaseId: 201);
     $second = socialRecord(socialUser('second'), date: '2026-10-20 10:00:00', instance: 456, releaseId: 201);
     $second->update(['shared_note' => 'A gift', 'private_note' => '€20']);
-    $first->update(['payload' => [...$first->payload, 'cover' => '/storage/records/201.jpg', 'releaseNotes' => 'Shared notes.']]);
-    expect($second->refreshFormats(['formats' => [['name' => 'CD', 'qty' => '1']]], app(DiscogsRecordMapper::class)))->toBeTrue();
+    app(StoreCollectionRecordAction::class)->execute($first, ['payload' => [...$first->payload, 'cover' => '/storage/records/201.jpg', 'releaseNotes' => 'Shared notes.']]);
+    expect(app(RefreshRecordFormatsAction::class)->execute($second, ['formats' => [['name' => 'CD', 'qty' => '1']]]))->toBeTrue();
 
     $this->assertDatabaseCount('releases', 1);
     expect($second->fresh()->payload['cover'])->toBe('/storage/records/201.jpg')
@@ -135,7 +139,7 @@ it('reuses stored releases and artist biographies when another owner imports the
     Sleep::syncWithCarbon();
     config(['services.discogs.consumer_key' => 'test', 'services.discogs.consumer_secret' => 'secret']);
     $existing = socialRecord(socialUser('first'), releaseId: 201);
-    $existing->update(['payload' => [...$existing->payload,
+    app(StoreCollectionRecordAction::class)->execute($existing, ['payload' => [...$existing->payload,
         'cover' => '/storage/records/201.jpg', 'artistBios' => [['id' => 634, 'name' => 'Brian Eno', 'profile' => 'Composer.']],
         'coverPreview' => app(RecordCoverImages::class)->preview($existing->payload['cover']),
         'releaseNotes' => '', 'credits' => ['release' => [], 'tracks' => []],
@@ -151,7 +155,7 @@ it('reuses stored releases and artist biographies when another owner imports the
         'api.discogs.com/releases/202' => Http::response(['artists' => [['id' => 634, 'name' => 'Brian Eno']], 'tracklist' => []]),
     ]);
 
-    (new SyncUserCollection($owner->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($owner->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
 
     $this->assertDatabaseCount('releases', 2);
     $this->assertDatabaseCount('artists', 1);
@@ -169,11 +173,11 @@ it('keeps every owners SQL browsing current when shared metadata changes or a bu
     $first = socialRecord($firstOwner, date: '2026-10-01 20:30:00', releaseId: 201);
     $second = socialRecord($secondOwner, date: '2026-10-01 22:30:00', releaseId: 201);
     $unrelated = socialRecord($secondOwner, 'Unrelated pressing', instance: 456, releaseId: 202);
-    $unrelated->update(['payload' => [...$unrelated->payload, 'artists' => ['Other artist'], 'genres' => ['Rock']]]);
+    app(StoreCollectionRecordAction::class)->execute($unrelated, ['payload' => [...$unrelated->payload, 'artists' => ['Other artist'], 'genres' => ['Rock']]]);
     $this->travel(5)->minutes();
 
-    Release::query()->findOrFail(201)->update(['title' => 'Lucid Music', 'display_title' => 'Lucid Music', 'original_year' => 1957]);
-    Release::storePayload(201, [
+    app(StoreReleaseAction::class)->execute(201, ['title' => 'Lucid Music', 'displayTitle' => 'Lucid Music', 'originalYear' => 1957], replace: true);
+    app(StoreReleaseAction::class)->execute(201, [
         'artists' => ['Brian Eno'], 'genres' => ['Ambient'], 'tracks' => [['title' => 'Needle Song']],
     ], replace: true);
 
@@ -203,13 +207,13 @@ it('keeps every owners SQL browsing current when shared metadata changes or a bu
 
 it('queries shared metadata and Discogs identifiers through typed columns without reading JSON', function () {
     $first = socialRecord(socialUser('column_owner'), releaseId: 201);
-    Release::storePayload(201, [
+    app(StoreReleaseAction::class)->execute(201, [
         'title' => 'Computer World', 'year' => 1981, 'originalYear' => 1981,
         'label' => 'EMI', 'catalogNumber' => 'EMC 3370', 'discogsMasterId' => 2893, 'discogsLabelId' => 26126,
         'spotifySearch' => false, 'originalReleaseDate' => '1981-05',
     ], replace: true);
     socialRecord($first->user, instance: 202, releaseId: 202);
-    Release::storePayload(202, ['title' => 'Other pressing', 'year' => 2009, 'discogsMasterId' => 2893], replace: true);
+    app(StoreReleaseAction::class)->execute(202, ['title' => 'Other pressing', 'year' => 2009, 'discogsMasterId' => 2893], replace: true);
 
     expect(Release::query()->where('title', 'Computer World')->where('year', 1981)
         ->where('discogs_label_id', 26126)->where('spotify_search', false)->pluck('id')->all())->toBe([201])

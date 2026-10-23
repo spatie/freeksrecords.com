@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Collections\StoreCollectionRecordAction;
 use App\Models\Friendship;
 use App\Models\User;
 use App\Support\RecordCollection;
@@ -37,7 +38,7 @@ it('uses only live public records for linked artwork and never falls back to the
     $records = collect(app(RecordCollection::class)->snapshot())->unique('cover')->take(28)
         ->values()->map(function (array $payload, int $index) use ($owner) {
             $record = socialRecord($owner, $payload['displayTitle'], instance: $index + 1);
-            $record->update(['payload' => $payload]);
+            app(StoreCollectionRecordAction::class)->execute($record, ['payload' => $payload]);
 
             return $record;
         });
@@ -108,7 +109,7 @@ it('removes collections and their artwork from discovery immediately when privac
     $viewer = socialUser('discoveryfriend');
     socialFriends($owner, $viewer);
     $record = socialRecord($owner, 'Discoverable record');
-    $record->update(['payload' => [...$record->payload, 'cover' => '/images/discovery-only-cover.jpg']]);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'cover' => '/images/discovery-only-cover.jpg']]);
 
     foreach (['/', '/collections'] as $path) {
         $this->get($path)->assertOk()->assertInertia(fn (Assert $page) => $page

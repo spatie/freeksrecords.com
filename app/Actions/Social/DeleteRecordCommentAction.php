@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Social;
 
 use App\Models\CollectionRecord;
 use App\Models\Comment;

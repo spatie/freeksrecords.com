@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicId;
-use App\Support\CollectionBrowseIndex;
 use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
 use Carbon\CarbonImmutable;
@@ -11,7 +10,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $instance_id
@@ -39,54 +37,15 @@ class CollectionRecord extends Model
 
     protected $with = ['release'];
 
-    /** @var array<string, mixed>|null */
-    protected ?array $pendingPayload = null;
-
-    public function save(array $options = []): bool
-    {
-        return DB::transaction(fn () => parent::save($options));
-    }
-
-    protected static function booted(): void
-    {
-        static::saving(function (self $record): void {
-            $hasPayload = $record->pendingPayload !== null;
-            if ($hasPayload) {
-                $id = (int) ($record->pendingPayload['id'] ?? $record->discogs_release_id);
-                $release = Release::storePayload($id, $record->pendingPayload, $record->exists && $record->getOriginal('discogs_release_id') === $id);
-                $record->discogs_release_id = $release->id;
-                $record->setRelation('release', $release);
-                $record->pendingPayload = null;
-            } elseif ($record->isDirty('discogs_release_id')) {
-                $record->unsetRelation('release');
-            }
-
-            if (! $record->exists || $hasPayload || $record->isDirty(['discogs_release_id', 'added_at'])) {
-                $record->forceFill(CollectionBrowseIndex::attributes($record->payload, $record->added_at));
-            }
-        });
-        static::saved(function (self $record): void {
-            if ($record->wasRecentlyCreated || $record->wasChanged(['user_id', 'discogs_release_id'])) {
-                CollectionBrowseIndex::sync([$record]);
-            }
-        });
-    }
-
     /** @return array<string, mixed> */
     public function getPayloadAttribute(): array
     {
-        return $this->pendingPayload ?? [
+        return [
             'id' => $this->discogs_release_id,
             'instanceId' => $this->instance_id,
             ...$this->release->recordData(),
             'addedAt' => $this->added_at->toIso8601String(),
         ];
-    }
-
-    /** @param array<string, mixed> $payload */
-    public function setPayloadAttribute(array $payload): void
-    {
-        $this->pendingPayload = $payload;
     }
 
     /** @return BelongsTo<Release, $this> */
@@ -108,28 +67,6 @@ class CollectionRecord extends Model
     public function formats(): array
     {
         return $this->payload['mediaFormats'] ?? app(DiscogsRecordMapper::class)->mediaFormats($this->payload['format'] ?? '');
-    }
-
-    /** @param array<string, mixed> $basic */
-    public function refreshFormats(array $basic, DiscogsRecordMapper $mapper): bool
-    {
-        if (! array_key_exists('formats', $basic)) {
-            return false;
-        }
-        foreach ($basic['formats'] as $format) {
-            if (empty($format['name'])) {
-                return false;
-            }
-        }
-        $release = $this->release;
-        $metadata = $mapper->formatMetadata($basic);
-        $current = $release->recordData();
-        if (array_replace($current, $metadata) === $current) {
-            return false;
-        }
-        $this->setRelation('release', Release::storePayload($release->id, $metadata, replace: true));
-
-        return true;
     }
 
     /** @return Builder<CollectionRecord> */

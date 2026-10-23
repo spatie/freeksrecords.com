@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Social;
 
 use App\Mail\FriendsWeeklyDigest;
 use App\Models\CollectionRecord;

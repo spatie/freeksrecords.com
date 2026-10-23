@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\DeleteAccountAction;
+use App\Actions\Accounts\DeleteAccountAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

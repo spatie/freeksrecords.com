@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\UpdateFriendshipAction;
+use App\Actions\Social\UpdateFriendshipAction;
 use App\Models\Friendship;
 use App\Models\Invitation;
 use App\Models\User;

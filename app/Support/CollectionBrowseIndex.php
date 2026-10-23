@@ -6,6 +6,7 @@ use App\Models\CollectionRecord;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use stdClass;
 
 class CollectionBrowseIndex
 {
@@ -26,7 +27,7 @@ class CollectionBrowseIndex
         ];
     }
 
-    /** @param iterable<CollectionRecord> $copies */
+    /** @param iterable<CollectionRecord|stdClass> $copies */
     public static function sync(iterable $copies): void
     {
         $ids = [];

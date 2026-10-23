@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\AddRecordCommentAction;
-use App\Actions\DeleteRecordCommentAction;
-use App\Actions\UpdateFriendshipAction;
-use App\Actions\UpdateRecordAppreciationAction;
+use App\Actions\Social\AddRecordCommentAction;
+use App\Actions\Social\DeleteRecordCommentAction;
+use App\Actions\Social\UpdateFriendshipAction;
+use App\Actions\Social\UpdateRecordAppreciationAction;
 use App\Models\CollectionRecord;
 use App\Models\Comment;
 use App\Models\Friendship;

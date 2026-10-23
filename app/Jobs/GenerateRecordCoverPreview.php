@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Actions\Collections\StoreReleaseAction;
 use App\Models\CollectionRecord;
 use App\Models\Release;
 use App\Support\RecordCoverImages;
@@ -53,7 +54,7 @@ class GenerateRecordCoverPreview implements ShouldBeUnique, ShouldQueue
                 return;
             }
 
-            $release->update(['cover_preview' => $preview]);
+            app(StoreReleaseAction::class)->execute($release->id, ['coverPreview' => $preview], replace: true);
         });
     }
 }

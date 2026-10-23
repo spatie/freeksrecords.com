@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\RespondToFriendRequestAction;
+use App\Actions\Social\RespondToFriendRequestAction;
 use App\Models\Friendship;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;

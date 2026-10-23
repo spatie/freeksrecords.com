@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Discogs;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;

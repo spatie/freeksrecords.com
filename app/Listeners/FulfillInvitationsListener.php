@@ -2,7 +2,7 @@
 
 namespace App\Listeners;
 
-use App\Actions\UpdateFriendshipAction;
+use App\Actions\Social\UpdateFriendshipAction;
 use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;

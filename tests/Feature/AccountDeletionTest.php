@@ -1,10 +1,11 @@
 <?php
 
+use App\Actions\Discogs\CompleteCollectionSyncAction;
+use App\Actions\Discogs\ImportDiscogsRecordAction;
 use App\Jobs\SyncUserCollection;
 use App\Models\Comment;
 use App\Models\SocialNotification;
 use App\Models\User;
-use App\Support\DiscogsRecordMapper;
 use App\Support\RecordCollection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,7 @@ it('deletes only the confirmed signed-in account and its social data without cha
     $this->get('/shelves/'.$mine->public_id)->assertNotFound();
     $this->get('/shelves/'.$theirs->public_id)->assertOk();
 
-    (new SyncUserCollection($user->id))->handle(app(DiscogsRecordMapper::class), app(RecordCollection::class));
+    (new SyncUserCollection($user->id))->handle(app(ImportDiscogsRecordAction::class), app(CompleteCollectionSyncAction::class));
     expect(User::query()->find($user->id))->toBeNull();
     Http::assertNothingSent();
 })->with([false, true]);

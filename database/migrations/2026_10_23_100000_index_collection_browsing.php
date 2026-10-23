@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\CollectionRecord;
 use App\Support\CollectionBrowseIndex;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -36,12 +36,12 @@ return new class extends Migration
                 // Read the historical payload schema without eager-loading newer model relations.
                 $copies = DB::table('collection_records')->whereIn('id', $ids->pluck('id'))->lockForUpdate()
                     ->get(['id', 'user_id', 'payload', 'added_at'])
-                    ->map(fn ($row) => new CollectionRecord([
+                    ->map(fn ($row) => (object) [
                         ...(array) $row, 'payload' => json_decode($row->payload, true, flags: JSON_THROW_ON_ERROR),
-                    ]));
+                    ]);
                 foreach ($copies as $copy) {
                     DB::table('collection_records')->where('id', $copy->id)
-                        ->update(CollectionBrowseIndex::attributes($copy->payload, $copy->added_at));
+                        ->update(CollectionBrowseIndex::attributes($copy->payload, CarbonImmutable::parse($copy->added_at)));
                 }
                 CollectionBrowseIndex::sync($copies);
             });

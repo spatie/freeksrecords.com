@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\ConnectDiscogsAccountAction;
-use App\Actions\DisconnectDiscogsAccountAction;
+use App\Actions\Discogs\ConnectDiscogsAccountAction;
+use App\Actions\Discogs\DisconnectDiscogsAccountAction;
 use App\Jobs\SyncUserCollection;
 use App\Support\DiscogsOAuth;
 use Illuminate\Http\JsonResponse;

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Collections\StoreCollectionRecordAction;
 use App\Models\CollectionRecord;
 use App\Models\Friendship;
 use App\Models\User;
@@ -25,7 +26,7 @@ function socialRecord(User $owner, string $title = 'Private Test Album', bool $a
     $payload['displayTitle'] = $payload['title'] = $title;
     $payload['instanceId'] = $instance;
 
-    return $owner->records()->create(['instance_id' => $instance, 'discogs_release_id' => $payload['id'], 'payload' => $payload, 'added_at' => $date, 'is_activity' => $activity]);
+    return app(StoreCollectionRecordAction::class)->execute($owner->records()->make(), ['instance_id' => $instance, 'discogs_release_id' => $payload['id'], 'payload' => $payload, 'added_at' => $date, 'is_activity' => $activity]);
 }
 
 function socialFriends(User $a, User $b): Friendship

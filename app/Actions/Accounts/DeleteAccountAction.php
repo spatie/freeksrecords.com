@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Actions;
+namespace App\Actions\Accounts;
 
 use App\Models\User;
 use App\Support\EdgeCache;

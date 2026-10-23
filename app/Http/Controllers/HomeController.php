@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\FriendsWeeklyDigest;
 use App\Models\CollectionRecord;
+use App\Models\Release;
 use App\Models\User;
 use App\Support\SocialData;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,8 +63,11 @@ class HomeController
                 'id' => $index + 1,
                 'public_id' => (string) Str::uuid(),
                 'added_at' => now()->subDays($index + 1),
-                'payload' => ['displayTitle' => $title, 'artist' => $artist, 'mediaFormats' => [$format], 'cover' => '/images/demo-sleeve-'.($index + 1).'.jpg'],
             ]);
+            $record->setRelation('release', new Release([
+                'display_title' => $title, 'artist' => $artist,
+                'data' => ['mediaFormats' => [$format]], 'cover' => '/images/demo-sleeve-'.($index + 1).'.jpg',
+            ]));
             $record->setRelation('user', new User(['name' => $name, 'handle' => 'email_example']));
             $records->push($record);
         }

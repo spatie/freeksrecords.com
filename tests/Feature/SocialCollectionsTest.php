@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Collections\StoreCollectionRecordAction;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Friendship;
 use App\Models\RecordReleaseDate;
@@ -23,7 +24,7 @@ it('shows every friend with at most five latest releases and safe attribution', 
     $older = socialRecord($first, 'Older shared copy', date: '2026-10-15 12:00:00', instance: 500);
     $newer = socialRecord($second, 'Newer shared copy', date: '2026-10-16 12:00:00', instance: 500);
     $second->update(['discogs_token' => 'owner-token-secret', 'google_avatar_url' => 'https://example.test/avatar.jpg']);
-    $newer->update([
+    app(StoreCollectionRecordAction::class)->execute($newer, [
         'private_note' => 'Private feed note', 'shared_note' => 'Detail-only feed note',
         'payload' => [...$newer->payload, 'oauth_token' => 'Payload token secret', 'private_note' => 'Payload note secret',
             'title' => '</script><script>alert("feed")</script>'],
@@ -74,7 +75,7 @@ it('loads visible shelf pages with owner-specific social links and only safe sum
     foreach (range(1, 30) as $instance) {
         $record = socialRecord($owner, 'Shelf album '.$instance, instance: $instance);
     }
-    $record->update(['private_note' => 'Secret personal note', 'shared_note' => 'Shared detail only', 'payload' => [
+    app(StoreCollectionRecordAction::class)->execute($record, ['private_note' => 'Secret personal note', 'shared_note' => 'Shared detail only', 'payload' => [
         ...$record->payload,
         'title' => '</script><script>alert("shelf")</script>', 'displayTitle' => 'Trimmed album',
         'artist' => 'Trimmed artist', 'artists' => ['Trimmed artist'],
@@ -104,7 +105,7 @@ it('pages a large collection and jumps across sections without filtering other a
     $owner = socialUser('large_shelf', 'everyone');
     foreach (range(1, 80) as $instance) {
         $copy = socialRecord($owner, "Album {$instance}", instance: $instance);
-        $copy->update(['payload' => [...$copy->payload, 'artist' => $instance <= 40 ? 'Alpha' : 'Zulu', 'artists' => [$instance <= 40 ? 'Alpha' : 'Zulu']]]);
+        app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'artist' => $instance <= 40 ? 'Alpha' : 'Zulu', 'artists' => [$instance <= 40 ? 'Alpha' : 'Zulu']]]);
     }
     $first = $this->get('/large_shelf?mode=artist')->assertOk();
     expect($first->inertiaProps('records.data'))->toHaveCount(36)
@@ -147,7 +148,7 @@ it('keeps browsing current after individual and bulk collection changes', functi
     $this->get('/cached_shelf?mode=artist')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('records.data.0.originalReleaseDate', '1970-11-27'));
 
-    $copy->update(['payload' => [...$copy->payload, 'artists' => ['Renamed artist'], 'tracks' => [['title' => 'Searchable song']]]]);
+    app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'artists' => ['Renamed artist'], 'tracks' => [['title' => 'Searchable song']]]]);
     $this->get('/cached_shelf?mode=artist&q=searchable')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Renamed artist')->has('records.data', 1));
 
@@ -166,7 +167,7 @@ it('keeps browsing current after individual and bulk collection changes', functi
         WHEN NEW.name = 'Rejected artist'
         BEGIN SELECT RAISE(FAIL, 'Simulated index write failure'); END");
     $copy->refresh();
-    expect(fn () => $copy->update(['payload' => [...$copy->payload, 'title' => 'Rejected title', 'artists' => ['Rejected artist']]]))
+    expect(fn () => app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'title' => 'Rejected title', 'artists' => ['Rejected artist']]]))
         ->toThrow(QueryException::class);
     $this->get('/cached_shelf?mode=artist&q=searchable')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', 'Bulk edited artist')->where('records.data.0.displayTitle', 'First album'));
@@ -180,7 +181,7 @@ it('keeps collection browsing available without a database metadata cache', func
     $owner = socialUser('cache_failure', 'everyone');
     foreach ([1974, 1981] as $instance => $year) {
         $copy = socialRecord($owner, "Album {$year}", instance: $instance + 1);
-        $copy->update(['payload' => [...$copy->payload, 'originalYear' => $year, 'artists' => [$instance === 0 ? 'Cro Magnon' : 'Cromagnon']]]);
+        app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'originalYear' => $year, 'artists' => [$instance === 0 ? 'Cro Magnon' : 'Cromagnon']]]);
     }
     $this->get('/cache_failure?mode=decade')->assertOk()
         ->assertInertia(fn (Assert $page) => $page
@@ -215,7 +216,7 @@ it('groups latest additions by Brussels calendar day across pages, with newest r
 it('preserves collection search and multi-genre grouping across server pages', function () {
     $owner = socialUser('search_shelf', 'everyone');
     $copy = socialRecord($owner, 'Blue Room', instance: 1);
-    $copy->update(['payload' => [...$copy->payload, 'artist' => 'Comité Hypnotisé', 'artists' => ['Comité Hypnotisé'],
+    app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'artist' => 'Comité Hypnotisé', 'artists' => ['Comité Hypnotisé'],
         'genres' => ['Jazz', 'Electronic', 'Jazz'], 'originalYear' => 1974, 'year' => 2025,
         'tracks' => [['title' => 'A Strange Morning']]]]);
     socialRecord($owner, 'Unrelated album', instance: 2);
@@ -227,10 +228,10 @@ it('preserves collection search and multi-genre grouping across server pages', f
         ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', '1970s')->has('records.data', 1));
     $this->get('/search_shelf?q=notfound')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->has('records.data', 0)->has('groups', 0));
-    $copy->update(['payload' => [...$copy->payload, 'artist' => '808', 'artists' => ['808']]]);
+    app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'artist' => '808', 'artists' => ['808']]]);
     $this->get('/search_shelf?mode=artist&q=blue')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('groups.0.name', '808')->where('records.data.0.section', '808'));
-    $copy->update(['payload' => [...$copy->payload, 'tracks' => [['title' => '100%_live!']]]]);
+    app(StoreCollectionRecordAction::class)->execute($copy, ['payload' => [...$copy->payload, 'tracks' => [['title' => '100%_live!']]]]);
     $this->get('/search_shelf?'.http_build_query(['q' => '100%_live!']))->assertOk()
         ->assertInertia(fn (Assert $page) => $page->has('records.data', 1));
     $this->get('/search_shelf?'.http_build_query(['q' => '100%_live?']))->assertOk()
@@ -251,7 +252,7 @@ it('keeps natural title ordering and current effective dates when browsing artis
     ] as $instance => [$title, $year, $date]) {
         $copy = socialRecord($owner, $title, instance: $instance + 1);
         $releaseId = 900000 + $instance;
-        $copy->update(['discogs_release_id' => $releaseId, 'payload' => [...$copy->payload, 'id' => $releaseId, 'originalYear' => $year]]);
+        app(StoreCollectionRecordAction::class)->execute($copy, ['discogs_release_id' => $releaseId, 'payload' => [...$copy->payload, 'id' => $releaseId, 'originalYear' => $year]]);
         RecordReleaseDate::query()->create(['discogs_release_id' => $releaseId, 'original_release_date' => $date]);
     }
 
@@ -617,7 +618,7 @@ it('shows only the recipient’s currently visible notifications and scopes read
     $owner = socialUser('owner', 'friends');
     socialFriends($viewer, $owner);
     $record = socialRecord($owner, 'Visible notification album');
-    $record->update(['payload' => [...$record->payload, 'artist' => 'Notification Artist'], 'private_note' => 'Never in a notification']);
+    app(StoreCollectionRecordAction::class)->execute($record, ['payload' => [...$record->payload, 'artist' => 'Notification Artist'], 'private_note' => 'Never in a notification']);
     SocialNotification::send($viewer, $owner, 'comment', $record);
     SocialNotification::send($owner, $viewer, 'friend_accepted');
     $this->actingAs($viewer)->get('/notifications')->assertRedirect('/friends?notifications=1');
@@ -744,7 +745,7 @@ it('serves explicit safe people and viewer contracts on Inertia visits without s
     }
     socialFriends($owner, $viewer);
     $record = socialRecord($owner);
-    $record->update([
+    app(StoreCollectionRecordAction::class)->execute($record, [
         'private_note' => 'contract-private-note', 'shared_note' => 'contract-shared-note',
         'payload' => [...$record->payload, 'private_note' => 'injected-note', 'oauth_token' => 'injected-token',
             'tracks' => [[...$record->payload['tracks'][0], 'oauth_token' => 'injected-track-token']]],
