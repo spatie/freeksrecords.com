@@ -8,6 +8,7 @@ use App\Support\RecordCoverImages;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class GenerateRecordCoverPreview implements ShouldBeUnique, ShouldQueue
@@ -41,9 +42,11 @@ class GenerateRecordCoverPreview implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $existing = CollectionRecord::query()->where('payload->cover', $source)
-            ->whereNotNull('payload->coverPreview')->first();
-        $preview = $existing?->payload['coverPreview'] ?? $images->preview($source);
+        $preview = Cache::remember(
+            'record-cover-preview:v1:'.hash('sha256', $source),
+            now()->addMonth(),
+            fn () => $images->preview($source),
+        );
 
         DB::transaction(function () use ($source, $preview): void {
             $record = CollectionRecord::query()->lockForUpdate()->find($this->recordId);

@@ -8,7 +8,9 @@ use Illuminate\Console\Command;
 
 class GenerateRecordCoverPreviewsCommand extends Command
 {
-    protected $signature = 'records:generate-cover-previews {--limit=0 : Maximum previews to queue, or zero for all}';
+    protected $signature = 'records:generate-cover-previews
+        {--limit=0 : Maximum previews to queue, or zero for all}
+        {--after-id=0 : Resume after this record ID}';
 
     protected $description = 'Queue missing inline cover previews for existing collections';
 
@@ -17,7 +19,8 @@ class GenerateRecordCoverPreviewsCommand extends Command
         $queued = 0;
         $limit = max(0, (int) $this->option('limit'));
 
-        $records = CollectionRecord::query()->whereNull('payload->coverPreview')
+        $records = CollectionRecord::query()->select('id')->where('id', '>', max(0, (int) $this->option('after-id')))
+            ->whereNull('payload->coverPreview')
             ->whereNotNull('payload->cover')->whereNotIn('payload->cover', ['', '/images/record-placeholder.svg'])
             ->lazyById(100);
 

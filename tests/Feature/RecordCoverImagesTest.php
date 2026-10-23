@@ -207,3 +207,18 @@ it('does not attach stale previews when the cover changes during generation and 
     $job->handle(app(RecordCoverImages::class), $this->collection);
     expect($record->fresh()->payload)->not->toHaveKey('coverPreview');
 });
+
+it('resumes bounded backfill batches after the last processed record', function () {
+    $owner = socialUser('previewbatches');
+    $first = socialRecord($owner, instance: 1);
+    $second = socialRecord($owner, instance: 2);
+    $third = socialRecord($owner, instance: 3);
+
+    $this->artisan('records:generate-cover-previews', ['--after-id' => $first->id, '--limit' => 1])
+        ->expectsOutput('Queued 1 cover previews.')->assertSuccessful();
+
+    expect($first->fresh()->payload)->not->toHaveKey('coverPreview')
+        ->and($second->fresh()->payload)->toHaveKey('coverPreview')
+        ->and($third->fresh()->payload)->not->toHaveKey('coverPreview');
+    Http::assertNothingSent();
+});
