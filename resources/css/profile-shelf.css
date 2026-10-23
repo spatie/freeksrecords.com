@@ -100,7 +100,6 @@
         display: grid;
         grid-template-columns: minmax(0, 1fr);
         gap: 28px;
-        padding-top: 16px;
     }
     .collection-layout.has-index {
         grid-template-columns: 210px minmax(0, 1fr);
@@ -109,9 +108,7 @@
         min-width: 0;
         align-self: start;
         position: sticky;
-        top: calc(
-            var(--site-header-height, 0px) + var(--controls-height, 0px) + 16px
-        );
+        top: calc(var(--site-header-height, 0px) + var(--controls-height, 0px));
         padding: 22px 16px;
         background: var(--paper);
         border-radius: 0 35px 0 0;
@@ -203,7 +200,7 @@
     }
     .collection-record-group {
         scroll-margin-top: calc(
-            var(--site-header-height, 0px) + var(--controls-height, 0px) + 16px
+            var(--site-header-height, 0px) + var(--controls-height, 0px)
         );
     }
     .collection-record-group:focus {
@@ -313,9 +310,7 @@
     .collection-section,
     .cabinet-year-heading {
         position: sticky;
-        top: calc(
-            var(--site-header-height, 0px) + var(--controls-height, 0px) + 16px
-        );
+        top: calc(var(--site-header-height, 0px) + var(--controls-height, 0px));
         z-index: 5;
         margin: 0;
         padding: 8px 12px;
@@ -323,7 +318,7 @@
         border-bottom: 1px solid
             color-mix(in srgb, currentColor 20%, transparent);
         scroll-margin-top: calc(
-            var(--site-header-height, 0px) + var(--controls-height, 0px) + 16px
+            var(--site-header-height, 0px) + var(--controls-height, 0px)
         );
         font:
             600 clamp(18px, 1.6vw, 22px)/1.2 'Club Sans',
