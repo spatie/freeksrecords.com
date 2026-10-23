@@ -36,7 +36,7 @@ class Discogs
         $stored = DiscogsResponse::query()->where($resource)->first();
 
         if ($stored?->expires_at->isFuture()) {
-            return $stored->response;
+            return DiscogsResponse::compactResponse($resource['resource_type'], $stored->response);
         }
 
         try {
@@ -48,6 +48,8 @@ class Discogs
 
             $response = [];
         }
+
+        $response = DiscogsResponse::compactResponse($resource['resource_type'], $response);
 
         DiscogsResponse::query()->updateOrCreate($resource, [
             'response' => $response,

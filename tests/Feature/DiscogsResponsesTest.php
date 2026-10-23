@@ -31,18 +31,30 @@ it('shares stored public responses across collectors and anonymous requests inde
     foreach ([$first, $second] as $user) {
         $user->update(['discogs_token' => 'token-'.$user->id, 'discogs_secret' => 'secret']);
     }
-    $payload = ['id' => 123, 'title' => 'Public response', 'nested' => ['unicode' => 'Björk', 'empty' => []]];
+    $expected = match ($resourceType) {
+        'releases' => [
+            'id' => 123, 'title' => 'Public response', 'year' => 1981, 'released' => '1981-05-10', 'master_id' => 456,
+            'artists' => [['id' => 7, 'name' => 'Björk']], 'labels' => [['id' => 8, 'catno' => 'ABC']],
+            'notes' => "Original notes\0é", 'extraartists' => [['id' => 9, 'role' => 'Producer']],
+            'tracklist' => [['title' => 'Suite', 'sub_tracks' => [
+                ['title' => 'Part one', 'position' => 'A1', 'extraartists' => [['id' => 10, 'role' => 'Piano']]],
+            ]]],
+        ],
+        'masters' => ['id' => 123, 'year' => 1981],
+        'artists' => ['id' => 123, 'name' => 'Björk', 'profile' => "Biography\0é"],
+    };
+    $payload = [...$expected, 'images' => [['uri' => 'https://example.test/cover.jpg']], 'videos' => [['title' => 'Unused video']]];
     Http::fake(['api.discogs.com/*' => Http::response($payload)]);
 
-    expect((new Discogs($first))->get("{$resourceType}/123"))->toBe($payload);
+    expect((new Discogs($first))->get("{$resourceType}/123"))->toBe($expected);
     Cache::flush();
-    expect((new Discogs($second))->get("{$resourceType}/123"))->toBe($payload)
-        ->and((new Discogs)->get("{$resourceType}/123"))->toBe($payload);
+    expect((new Discogs($second))->get("{$resourceType}/123"))->toEqual($expected)
+        ->and((new Discogs)->get("{$resourceType}/123"))->toEqual($expected);
 
     $stored = DiscogsResponse::query()->sole();
     expect($stored->resource_type)->toBe($resourceType)
         ->and($stored->discogs_id)->toBe(123)
-        ->and($stored->response)->toBe($payload)
+        ->and($stored->response)->toEqual($expected)
         ->and($stored->fetched_at->equalTo(now()))->toBeTrue()
         ->and($stored->expires_at->equalTo(now()->addWeek()))->toBeTrue();
     Http::assertSentCount(1);
@@ -50,13 +62,14 @@ it('shares stored public responses across collectors and anonymous requests inde
 })->with(['releases', 'masters', 'artists']);
 
 it('keeps resource types with the same Discogs ID separate', function () {
-    Http::fake(fn (Request $request) => Http::response(['resource' => basename(dirname($request->url()))]));
+    $responses = ['releases' => ['title' => 'Release'], 'masters' => ['year' => 1981], 'artists' => ['name' => 'Artist']];
+    Http::fake(fn (Request $request) => Http::response($responses[basename(dirname($request->url()))]));
 
     foreach (['releases', 'masters', 'artists'] as $resourceType) {
-        expect((new Discogs)->get("{$resourceType}/123"))->toBe(['resource' => $resourceType]);
+        expect((new Discogs)->get("{$resourceType}/123"))->toBe($responses[$resourceType]);
     }
     foreach (['releases', 'masters', 'artists'] as $resourceType) {
-        expect((new Discogs)->get("{$resourceType}/123"))->toBe(['resource' => $resourceType]);
+        expect((new Discogs)->get("{$resourceType}/123"))->toBe($responses[$resourceType]);
     }
 
     $this->assertDatabaseCount('discogs_responses', 3);
@@ -195,7 +208,7 @@ it('preserves fresh legacy public responses across batches and old prefixes with
         expect((new Discogs)->get("releases/{$id}"))->toBe(['id' => $id, 'title' => "Saved {$id}"]);
     }
     expect((new Discogs)->get('releases/1'))->toBe(['id' => 1, 'title' => 'Freshest'])
-        ->and((new Discogs)->get('masters/1'))->toBe(['id' => 1, 'title' => 'Master'])
+        ->and((new Discogs)->get('masters/1'))->toBe(['id' => 1])
         ->and((new Discogs)->get('masters/2'))->toBe(['id' => 2])
         ->and((new Discogs)->get('artists/1'))->toBe([])
         ->and((new Discogs)->get('artists/2'))->toBe(['profile' => "Björk\0profile"]);
@@ -218,6 +231,47 @@ it('creates public response storage when there is no legacy cache table', functi
 
     $this->assertDatabaseCount('discogs_responses', 0);
     expect(Schema::hasTable('cache'))->toBeFalse();
+});
+
+it('compacts existing public responses across batches without losing import fields or changing freshness', function () {
+    $record = socialRecord(socialUser('compactresponses'));
+    $record->update(['private_note' => 'Keep personal data']);
+    $catalogue = $record->fresh()->payload;
+    $expected = [];
+    foreach (range(1, 205) as $id) {
+        $resourceType = ['releases', 'masters', 'artists'][$id % 3];
+        $response = match ($resourceType) {
+            'releases' => ['id' => $id, 'year' => 0, 'released' => '1981-05-10', 'master_id' => null, 'notes' => "Notes é\0", 'tracklist' => [
+                ['title' => 'Suite', 'sub_tracks' => [['title' => 'Part', 'extraartists' => [['id' => 87, 'role' => 'Piano']]]]],
+            ], 'extraartists' => [], 'artists' => [['id' => 4, 'name' => 'Artist']], 'labels' => [['id' => 5, 'catno' => 'A']]],
+            'masters' => ['id' => $id, 'year' => 1978],
+            'artists' => $id === 2 ? [] : ['id' => $id, 'name' => 'Björk', 'profile' => "Bio\0é"],
+        };
+        $stored = DiscogsResponse::query()->create([
+            'resource_type' => $resourceType, 'discogs_id' => $id,
+            'response' => [...$response, 'images' => [['uri' => str_repeat('unused', 100)]], 'videos' => []],
+            'fetched_at' => now()->subDays(2), 'expires_at' => now()->addDays(5),
+        ]);
+        $expected[$stored->id] = ['resource_type' => $resourceType, 'discogs_id' => $id, 'response' => $response];
+    }
+    $beforeBytes = DiscogsResponse::all()->sum(fn ($stored) => strlen(json_encode($stored->response)));
+    $migration = require database_path('migrations/2026_10_24_000000_compact_discogs_responses.php');
+    $migration->up();
+
+    $this->assertDatabaseCount('discogs_responses', 205);
+    foreach (DiscogsResponse::all() as $stored) {
+        $original = $expected[$stored->id];
+        expect($stored->resource_type)->toBe($original['resource_type'])
+            ->and($stored->discogs_id)->toBe($original['discogs_id'])
+            ->and($stored->response)->toEqual($original['response'])
+            ->and($stored->fetched_at->equalTo(now()->subDays(2)))->toBeTrue()
+            ->and($stored->expires_at->equalTo(now()->addDays(5)))->toBeTrue()
+            ->and((new Discogs)->get("{$stored->resource_type}/{$stored->discogs_id}"))->toEqual($original['response']);
+    }
+    expect(DiscogsResponse::all()->sum(fn ($stored) => strlen(json_encode($stored->response))))->toBeLessThan($beforeBytes)
+        ->and($record->fresh()->payload)->toBe($catalogue)
+        ->and($record->fresh()->private_note)->toBe('Keep personal data');
+    Http::assertNothingSent();
 });
 
 it('refuses to remove active database cache and preserves catalogue data when removal is safe', function () {

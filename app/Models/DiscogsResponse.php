@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 
 /**
  * @property int $id
@@ -22,6 +23,20 @@ class DiscogsResponse extends Model
     public $timestamps = false;
 
     protected $guarded = [];
+
+    /**
+     * @param  array<string, mixed>  $response
+     * @return array<string, mixed>
+     */
+    public static function compactResponse(string $resourceType, array $response): array
+    {
+        return Arr::only($response, match ($resourceType) {
+            'releases' => ['id', 'title', 'year', 'released', 'artists', 'labels', 'master_id', 'notes', 'extraartists', 'tracklist'],
+            'masters' => ['id', 'year'],
+            'artists' => ['id', 'name', 'profile'],
+            default => array_keys($response),
+        });
+    }
 
     /** @return Builder<DiscogsResponse> */
     public function prunable(): Builder
