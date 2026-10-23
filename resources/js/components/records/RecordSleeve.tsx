@@ -14,6 +14,17 @@ type RecordSleeveProps = {
     transitionRecordId: number | null;
 };
 
+function revealCover(image: HTMLImageElement | null) {
+    if (!image?.complete || image.naturalWidth === 0) return;
+
+    void image.decode().then(
+        () => {
+            image.dataset.loaded = 'true';
+        },
+        () => {},
+    );
+}
+
 export function RecordSleeve({
     browseBasePath = '/',
     onSelect,
@@ -58,16 +69,9 @@ export function RecordSleeve({
                                 draggable={false}
                                 height={600}
                                 loading="lazy"
-                                ref={(image) => {
-                                    if (
-                                        image?.complete &&
-                                        image.naturalWidth > 0
-                                    ) {
-                                        image.dataset.loaded = 'true';
-                                    }
-                                }}
+                                ref={revealCover}
                                 onLoad={(event) => {
-                                    event.currentTarget.dataset.loaded = 'true';
+                                    revealCover(event.currentTarget);
                                 }}
                                 src={record.cover}
                                 width={600}

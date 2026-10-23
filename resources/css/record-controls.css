@@ -941,15 +941,9 @@
 }
 .catalog-record-art img {
     opacity: 0;
-    transition: opacity 280ms ease-out;
 }
 .catalog-record-art img[data-loaded='true'] {
     opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-    .catalog-record-art img {
-        transition: none;
-    }
 }
 
 /* Sleeve seams catch the light; the artwork itself remains untouched. */

@@ -7,6 +7,25 @@
     background-repeat: no-repeat;
 }
 
+.catalog-record-image img[data-loaded='true'] {
+    animation: cover-reveal 220ms ease-out;
+}
+
+@keyframes cover-reveal {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .catalog-record-image img[data-loaded='true'] {
+        animation: none;
+    }
+}
+
 /* Keep every medium on the same ledge, with its own physical packaging. */
 .catalog-record:is([data-media-format='CD'], [data-media-format='Cassette'])
     .catalog-record-open {

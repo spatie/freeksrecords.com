@@ -274,7 +274,6 @@
         height: 100%;
         object-fit: cover;
         opacity: 0;
-        transition: opacity 180ms;
     }
     .catalog-record-art img[data-loaded='true'] {
         opacity: 1;
