@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\CollectionRecord;
+use App\Models\RecordList;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -18,7 +19,10 @@ class EnsureCollectionAccess
         }
 
         $profile = $request->route('user');
-        if ($profile instanceof User && ! $profile->canViewCollection($request->user()) && ! $request->user()) {
+        $publicListProfile = $request->routeIs('profile') && $profile instanceof User && ! $request->user()
+            && ! $profile->canViewCollection(null)
+            && RecordList::visibleTo(null)->where('user_id', $profile->id)->exists();
+        if ($profile instanceof User && ! $profile->canViewCollection($request->user()) && ! $request->user() && ! $publicListProfile) {
             return redirect()->guest(route('login'));
         }
 
@@ -35,6 +39,10 @@ class EnsureCollectionAccess
         }
 
         if (! $request->user()) {
+            if ($publicListProfile && ! $record instanceof CollectionRecord) {
+                return $next($request);
+            }
+
             return redirect()->guest(route('login'));
         }
 

@@ -1,6 +1,6 @@
 import { formatReleaseDate } from '@/components/records/collection';
 import { collectionAddedDate } from '@/components/records/collectionDates';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 
 import { useRecordDetails } from '@/components/records/useRecordDetails';
@@ -14,14 +14,16 @@ import type {
 } from '@/components/records/types';
 
 export function RecordDetails({
+    actions,
     record: summary,
     onArtist,
     titleId,
     details: supplied,
 }: {
+    actions?: ReactNode;
     record: CollectionRecordSummary;
     details?: CollectionRecord;
-    onArtist: (artist: string) => void;
+    onArtist?: (artist: string) => void;
     titleId: string;
 }) {
     const { details, error, retry } = useRecordDetails(
@@ -38,18 +40,22 @@ export function RecordDetails({
     return (
         <>
             <div className="listening-artists">
-                {record.artists.map((artist) => (
-                    <button
-                        className="listening-artist"
-                        key={artist}
-                        onClick={() => onArtist(artist)}
-                        type="button"
-                        title={`All records by ${artist}`}
-                    >
-                        {artist}
-                        <ArrowUpRight size={18} />
-                    </button>
-                ))}
+                {record.artists.map((artist) =>
+                    onArtist ? (
+                        <button
+                            className="listening-artist"
+                            key={artist}
+                            onClick={() => onArtist(artist)}
+                            type="button"
+                            title={`All records by ${artist}`}
+                        >
+                            {artist}
+                            <ArrowUpRight size={18} />
+                        </button>
+                    ) : (
+                        <span key={artist}>{artist}</span>
+                    ),
+                )}
             </div>
             <h1 className="listening-title" id={titleId} tabIndex={-1}>
                 {record.displayTitle}
@@ -71,6 +77,7 @@ export function RecordDetails({
                 </p>
             )}
 
+            {actions}
             <div className="album-listen-links">
                 <a
                     aria-label={

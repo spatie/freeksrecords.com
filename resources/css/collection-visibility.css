@@ -1,3 +1,23 @@
+.visibility-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 6px 12px;
+    border: 1px solid currentColor;
+    border-radius: 24px;
+    font-size: 13px;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+.visibility-badge > svg {
+    flex: none;
+}
+.visibility-badge.is-icon-only,
+.collection-sharing summary .visibility-badge {
+    padding: 0;
+    border: 0;
+}
 .collection-sharing {
     position: relative;
     display: inline-flex;
@@ -41,7 +61,6 @@
     outline: 2px solid currentColor;
     outline-offset: 4px;
 }
-.sharing-icon,
 .sharing-chevron {
     flex: none;
 }

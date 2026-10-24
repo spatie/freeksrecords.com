@@ -1,0 +1,765 @@
+@scope (.social-app) {
+    :scope.lists-page {
+        --page-color: var(--cream);
+        --page-accent: var(--lilac);
+    }
+    .page > .collection-tabs {
+        display: flex;
+        gap: 24px;
+        border-bottom: 1px solid #1e1e1540;
+        margin: 0 0 32px;
+    }
+    .page > .collection-tabs a {
+        padding: 12px 4px;
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+    }
+    .page > .collection-tabs a[aria-current] {
+        border-color: var(--ink);
+        font-weight: 600;
+    }
+    .page > .collection-tabs + .profile-record-room .collection-controls {
+        border-top: 0;
+    }
+    .list-heading {
+        max-width: 1000px;
+    }
+    .list-heading h1,
+    .list-editor-heading h1 {
+        overflow-wrap: anywhere;
+    }
+    .list-heading .actions {
+        margin-top: 24px;
+    }
+    .list-description {
+        white-space: pre-line;
+    }
+    .lists-section-heading {
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+    .lists-section-heading h2 {
+        font-size: clamp(32px, 4vw, 44px);
+    }
+    .list-create-dialog {
+        position: fixed;
+        inset: 0;
+        width: min(540px, calc(100% - 32px));
+        max-height: calc(100dvh - 32px);
+        margin: auto;
+        padding: 0;
+        border: 1px solid var(--ink);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        background: var(--lilac);
+        color: var(--ink);
+    }
+    :scope:has(.list-create-dialog[open]) {
+        overflow: clip;
+    }
+    .list-create-dialog::backdrop {
+        background: #1e1e1580;
+    }
+    .list-create-content {
+        padding: 32px;
+    }
+    .list-create-content h2,
+    .list-create-content p {
+        margin: 0;
+    }
+    .list-create-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+    .list-create-heading h2 {
+        font-size: 40px;
+    }
+    .list-create-close {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        flex: none;
+    }
+    .list-create-close:hover {
+        background: var(--cream);
+    }
+    .list-create-dialog .list-editor-visibility {
+        padding: 0;
+        justify-content: space-between;
+    }
+    .list-create-dialog .list-editor-visibility .sharing-panel {
+        top: auto;
+        bottom: calc(100% + 10px);
+        right: 0;
+        left: auto;
+        max-width: none;
+    }
+    .list-create-dialog :is(input, textarea):focus-visible {
+        outline: 1px solid var(--ink);
+        outline-offset: -1px;
+        background: var(--cream);
+    }
+    .list-create-actions {
+        justify-content: space-between;
+        border-top: 1px solid #1e1e1540;
+        padding-top: 20px;
+    }
+    .list-create-actions .text-button {
+        min-height: 44px;
+    }
+    .list-card {
+        display: flex;
+        flex-direction: column;
+    }
+    .list-cards .list-card:nth-child(even) {
+        background: var(--lilac);
+    }
+    :scope.explore-page .list-cards .list-card:nth-child(even) {
+        background: var(--cream);
+    }
+    .list-card-owner {
+        width: fit-content;
+        font-size: 15px;
+    }
+    .list-card .collection-preview-caption {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 12px;
+    }
+    .list-card-placeholder {
+        display: grid;
+        place-items: center;
+        width: 112px;
+        height: 112px;
+        border: 1px dashed #1e1e1580;
+        transform: rotate(-8deg);
+    }
+    .list-card .list-card-description {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin: 0;
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+    }
+    .list-card-footer {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: auto;
+        padding-top: 12px;
+        font-size: 13px;
+    }
+    .list-card-footer .visibility-badge {
+        margin-right: auto;
+    }
+    .list-card-footer > span {
+        white-space: nowrap;
+    }
+    .list-card-footer > svg {
+        flex: none;
+    }
+    .list-empty {
+        padding: 32px 0;
+        max-width: 50ch;
+    }
+    .list-empty h3 {
+        font-size: 32px;
+    }
+    .list-editor-heading {
+        margin-bottom: 32px;
+    }
+    .list-editor-heading h1 {
+        font-size: clamp(38px, 4vw, 54px);
+        margin-block: 12px;
+    }
+    .list-metadata {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        padding-bottom: 28px;
+        border-bottom: 1px solid;
+        margin-bottom: 28px;
+    }
+    .list-metadata label {
+        align-content: start;
+    }
+    .list-edit-metadata {
+        margin-bottom: 24px;
+        border-bottom: 1px solid #1e1e1540;
+    }
+    .list-edit-metadata .list-metadata {
+        margin-top: 12px;
+        margin-bottom: 0;
+        border: 0;
+    }
+    .list-editor-visibility {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 24px;
+        padding-bottom: 24px;
+    }
+    .list-editor-visibility .collection-sharing {
+        position: static;
+    }
+    .list-editor-visibility .sharing-panel {
+        top: calc(100% - 14px);
+        max-width: 100%;
+        scroll-margin-block: 24px;
+    }
+    .record-list-actions {
+        position: relative;
+        width: fit-content;
+        margin-block: 20px;
+    }
+    .record-list-actions > summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid;
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: var(--ink);
+        color: var(--cream);
+        cursor: pointer;
+        list-style: none;
+    }
+    .record-list-actions > summary::-webkit-details-marker {
+        display: none;
+    }
+    .record-list-actions > summary:hover {
+        opacity: 0.85;
+    }
+    .record-list-actions[open] > summary > svg:last-child {
+        transform: rotate(180deg);
+    }
+    .record-list-panel {
+        position: absolute;
+        z-index: 30;
+        top: calc(100% + 8px);
+        left: 0;
+        width: 320px;
+        max-width: calc(100vw - 48px);
+        padding: 8px;
+        border: 1px solid #1e1e1530;
+        border-radius: 12px;
+        background: var(--cream);
+        box-shadow: 0 8px 24px #1e1e1526;
+        color: var(--ink);
+        font-size: 15px;
+    }
+    .record-list-panel h2 {
+        margin: 0;
+        font-size: 24px;
+    }
+    .record-list-panel form {
+        padding: 8px;
+        gap: 16px;
+    }
+    .record-list-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .record-list-heading button {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+    }
+    .record-list-panel .list-editor-visibility {
+        display: grid;
+        gap: 8px;
+        padding-bottom: 0;
+        font-size: 13px;
+    }
+    .record-list-panel .list-editor-visibility .sharing-panel {
+        top: calc(100% + 8px);
+    }
+    .record-list-panel form > .button {
+        justify-self: stretch;
+        font-size: 14px;
+        padding: 10px 14px;
+    }
+    .record-list-options {
+        max-height: 240px;
+        overflow-y: auto;
+    }
+    .record-list-options label,
+    .record-list-new {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 44px;
+        padding: 10px 12px;
+        text-align: left;
+        font-size: 15px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    .record-list-options span {
+        overflow-wrap: anywhere;
+    }
+    .record-list-options .visibility-badge {
+        display: flex;
+        flex: none;
+        margin-left: auto;
+    }
+    .record-list-options input {
+        appearance: none;
+        display: grid;
+        place-content: center;
+        flex: none;
+        width: 20px;
+        height: 20px;
+        min-height: 0;
+        padding: 0;
+        margin: 0;
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        background: var(--cream);
+        cursor: inherit;
+    }
+    .record-list-options input:checked {
+        background: var(--ink);
+    }
+    .record-list-options input:checked::before {
+        content: '';
+        width: 6px;
+        height: 11px;
+        border: solid var(--cream);
+        border-width: 0 2px 2px 0;
+        transform: translateY(-1px) rotate(45deg);
+    }
+    .record-list-options label:has(input:disabled) {
+        cursor: wait;
+    }
+    .record-list-options label:hover,
+    .record-list-new:hover,
+    .record-list-heading button:hover {
+        background: var(--lilac);
+    }
+    .record-list-new {
+        margin-top: 6px;
+        border-top: 1px solid #1e1e1526;
+        border-radius: 0 0 6px 6px;
+    }
+    .record-list-feedback,
+    .record-list-panel .field-error,
+    .record-list-options > p {
+        margin: 8px 12px;
+        font-size: 13px;
+    }
+    .record-list-feedback:empty {
+        display: none;
+    }
+    .list-metadata small,
+    .list-create label small {
+        display: inline;
+    }
+    .record-picker {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 40px;
+        align-items: start;
+    }
+    .picker-step-title,
+    .picker-selection h2 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        font-size: 28px;
+    }
+    .picker-step-title > span,
+    .picker-step-number {
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: var(--cream);
+        font:
+            14px 'Club Sans',
+            sans-serif;
+    }
+    .picker-search {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid;
+        padding: 0 14px;
+        background: #fffdf180;
+    }
+    .picker-search input {
+        border: 0;
+        background: transparent;
+        padding-inline: 0;
+    }
+    .picker-search:focus-within {
+        outline: 2px solid;
+        outline-offset: 3px;
+    }
+    .picker-search input:focus-visible {
+        outline: none;
+    }
+    .picker-results > .muted {
+        margin: 16px 0;
+    }
+    .picker-row {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 16px 0;
+        border-bottom: 1px solid #1e1e1530;
+    }
+    .picker-row img,
+    .list-record-toggle img {
+        object-fit: cover;
+        aspect-ratio: 1;
+    }
+    .picker-record-text {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        text-align: left;
+    }
+    .picker-record-text strong {
+        font-weight: 600;
+        line-height: 1.25;
+    }
+    .picker-record-text small {
+        font-size: 12px;
+    }
+    .picker-add {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        min-width: 86px;
+        border: 1px solid;
+        border-radius: 30px;
+        padding: 8px 12px;
+        background: transparent;
+    }
+    .picker-add:hover:not(:disabled) {
+        background: var(--ink);
+        color: var(--cream);
+    }
+    .picker-add.is-added {
+        background: var(--acid);
+        opacity: 1;
+        cursor: default;
+    }
+    .picker-selection {
+        background: var(--lilac);
+        padding: 24px;
+        position: sticky;
+        top: 24px;
+    }
+    .picker-selection .list-empty {
+        padding: 8px 0;
+    }
+    .picker-selection > .muted {
+        margin-top: 8px;
+    }
+    .selection-count {
+        font-size: 13px;
+        margin: 20px 0 0;
+        font-weight: 600;
+    }
+    .picker-selection ol {
+        list-style: none;
+        padding: 0 8px;
+        margin: 8px -8px 0;
+        max-height: 48vh;
+        overflow-y: auto;
+        scrollbar-gutter: stable;
+    }
+    .picker-selection li {
+        display: grid;
+        grid-template-columns: 32px 16px 44px minmax(0, 1fr) 36px;
+        gap: 8px;
+        padding: 14px 0;
+        border-top: 1px solid #1e1e1530;
+        align-items: center;
+        position: relative;
+        background: var(--lilac);
+    }
+    .picker-selection li.is-dragging {
+        z-index: 2;
+        box-shadow: 0 4px 12px #1e1e1530;
+        background: var(--cream);
+        outline: 1px solid var(--ink);
+    }
+    .picker-selection li img {
+        object-fit: cover;
+    }
+    .selection-number {
+        font-size: 12px;
+        padding-top: 3px;
+    }
+    .selection-drag,
+    .selection-remove {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 44px;
+        background: transparent;
+    }
+    .selection-drag {
+        width: 32px;
+        cursor: grab;
+        touch-action: none;
+    }
+    .selection-drag:active {
+        cursor: grabbing;
+    }
+    .selection-drag:hover,
+    .selection-remove:hover {
+        background: var(--cream);
+    }
+    .selection-drag:focus-visible,
+    .selection-remove:focus-visible {
+        outline-offset: 1px;
+    }
+    .picker-pagination {
+        margin-top: 24px;
+    }
+    .picker-footer {
+        position: sticky;
+        z-index: 5;
+        bottom: 0;
+        margin: 32px -1px -40px;
+        padding: 18px 0;
+        background: var(--cream);
+        border-top: 1px solid;
+        display: flex;
+        justify-content: flex-end;
+        gap: 20px;
+        align-items: center;
+    }
+    .picker-mobile-tabs {
+        display: none;
+    }
+    .list-content {
+        max-width: 1000px;
+    }
+    .list-content.with-sharing {
+        max-width: none;
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+        gap: 48px;
+        align-items: start;
+    }
+    .list-records {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .list-record-card {
+        border-top: 1px solid;
+    }
+    .list-record-card:last-child {
+        border-bottom: 1px solid;
+    }
+    .list-record-toggle {
+        display: grid;
+        grid-template-columns: 28px 96px minmax(0, 1fr) 24px;
+        gap: 20px;
+        align-items: center;
+        width: 100%;
+        padding: 24px 0;
+        text-align: left;
+    }
+    .list-record-toggle:hover {
+        background: #dbee8d70;
+    }
+    .list-record-number {
+        font-size: 13px;
+    }
+    .list-record-toggle strong {
+        font:
+            700 30px/1.1 'Club Display',
+            sans-serif;
+    }
+    .list-sharing {
+        padding: 28px;
+        background: var(--lilac);
+    }
+    .list-sharing h2 {
+        margin-top: 0;
+        font-size: 32px;
+    }
+    .list-sharing .stack {
+        gap: 16px;
+    }
+    .list-sharing-pending {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .list-sharing-explanation {
+        margin: 0;
+        font-size: 14px;
+    }
+    .list-delete {
+        margin-top: 28px;
+    }
+    .list-record-details {
+        padding: 0 24px 28px 48px;
+    }
+    .list-record-details .listening-title {
+        font-size: 38px;
+        margin: 12px 0;
+    }
+    .list-record-details .listening-artists {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .list-record-details .record-facts {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .list-record-details .album-listen-links {
+        display: flex;
+        gap: 16px;
+        margin: 20px 0;
+    }
+    .list-record-details .album-listen-links a {
+        display: grid;
+        place-items: center;
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .list-record-details .listening-tracklist ol {
+        list-style: none;
+        margin: 16px 0 0;
+        padding: 0;
+    }
+    .list-record-details .listening-tracklist li {
+        display: flex;
+        gap: 16px;
+        padding: 10px 0;
+        border-top: 1px solid #1e1e1530;
+    }
+    .list-record-details .track-name {
+        flex: 1;
+    }
+    .list-record-details .track-name small {
+        display: block;
+    }
+    @media (max-width: 850px) {
+        .list-content.with-sharing {
+            grid-template-columns: 1fr;
+            gap: 32px;
+        }
+        .record-picker {
+            gap: 20px;
+            grid-template-columns: minmax(0, 1fr);
+        }
+        .picker-selection {
+            padding: 18px;
+        }
+    }
+    @media (max-width: 850px) {
+        .list-metadata,
+        .record-picker {
+            grid-template-columns: minmax(0, 1fr);
+        }
+        .list-metadata {
+            gap: 16px;
+        }
+        .picker-mobile-tabs {
+            display: flex;
+            gap: 12px;
+            margin: 24px 0;
+        }
+        .picker-mobile-tabs button {
+            min-height: 44px;
+            border-bottom: 3px solid transparent;
+            padding: 8px 4px;
+        }
+        .picker-mobile-tabs button[aria-pressed='true'] {
+            border-color: var(--ink);
+            font-weight: 600;
+        }
+        .picker-selection {
+            display: none;
+            position: static;
+        }
+        .record-picker.reviewing .picker-selection {
+            display: block;
+        }
+        .record-picker.reviewing .picker-results {
+            display: none;
+        }
+        .picker-selection ol {
+            max-height: none;
+        }
+    }
+    @media (max-width: 620px) {
+        .list-create-content {
+            padding: 24px;
+        }
+        .picker-row {
+            gap: 10px;
+            grid-template-columns: 48px minmax(0, 1fr) auto;
+        }
+        .picker-row img {
+            width: 48px;
+            height: 48px;
+        }
+        .picker-add {
+            min-width: 70px;
+            font-size: 14px;
+            padding: 6px;
+        }
+        .picker-footer {
+            gap: 12px;
+            padding: 14px 16px;
+        }
+        .picker-footer .actions {
+            gap: 8px;
+        }
+        .picker-footer .button {
+            padding: 10px 16px;
+            font-size: 14px;
+        }
+        .list-record-toggle {
+            grid-template-columns: 18px 64px minmax(0, 1fr) 20px;
+            gap: 12px;
+            padding: 18px 0;
+        }
+        .list-record-toggle img {
+            width: 64px;
+            height: 64px;
+        }
+        .list-record-toggle strong {
+            font-size: 24px;
+        }
+        .list-record-details {
+            padding-inline: 0;
+        }
+        .list-sharing {
+            padding: 22px;
+        }
+    }
+}

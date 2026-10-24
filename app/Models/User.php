@@ -45,7 +45,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
     public const RESERVED_HANDLES = [
         'about', 'admin', 'api', 'auth', 'build', 'collection', 'collections', 'community', 'demo', 'discogs',
-        'email', 'favicon', 'feed', 'fonts', 'friends', 'images', 'index', 'login', 'logout',
+        'email', 'favicon', 'feed', 'fonts', 'friends', 'images', 'index', 'lists', 'login', 'logout',
         'notifications', 'people', 'privacy', 'record', 'register', 'robots', 'settings', 'share',
         'shelves', 'storage', 'terms', 'up',
     ];

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\FriendsWeeklyDigest;
 use App\Models\CollectionRecord;
+use App\Models\RecordList;
 use App\Models\Release;
 use App\Models\User;
 use App\Support\SocialData;
@@ -42,11 +43,21 @@ class HomeController
         ]);
     }
 
-    public function collections(): Response
+    public function collections(Request $request): Response
     {
+        if ($request->query('tab') === 'lists') {
+            $lists = RecordList::previews(null)->paginate(12)->appends(['tab' => 'lists']);
+
+            return Inertia::render('social/CollectionsPage', [
+                'tab' => 'lists',
+                'lists' => SocialData::pagination($lists, $lists->getCollection()->map(SocialData::listPreview(...))->all()),
+            ]);
+        }
+
         $collectors = $this->publicCollectors()->paginate(12);
 
         return Inertia::render('social/CollectionsPage', [
+            'tab' => 'collections',
             'collectors' => SocialData::pagination($collectors, $collectors->getCollection()->map(SocialData::collector(...))->all()),
         ]);
     }

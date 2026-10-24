@@ -23,6 +23,7 @@ import { useRecordTransition } from '@/components/records/useRecordTransition';
 import '../../../css/record-cases.css';
 
 type ListeningViewProps = {
+    actions?: ReactNode;
     clubLayout?: boolean;
     returnOrigin?: () => SleeveOrigin | null;
     instant: boolean;
@@ -62,6 +63,7 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 export function ListeningView({
+    actions,
     clubLayout = false,
     returnOrigin,
     instant,
@@ -319,6 +321,7 @@ export function ListeningView({
                         </div>
                         <div className="listening-information">
                             <RecordDetails
+                                actions={actions}
                                 onArtist={onArtist}
                                 record={record}
                                 titleId={titleId}

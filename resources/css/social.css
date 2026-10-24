@@ -718,6 +718,61 @@
     .empty h2 {
         font-size: 50px;
     }
+    .flash-notice {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        margin: 0 6px 36px 0;
+        padding: 24px;
+        border: 2px solid var(--ink);
+        border-radius: 0 32px 0 0;
+        background: var(--acid);
+        box-shadow: 6px 6px 0 var(--ink);
+    }
+    .flash-notice-stamp {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        flex: none;
+        border: 2px solid var(--ink);
+        background: var(--lilac);
+        box-shadow: 3px 3px 0 var(--ink);
+        transform: rotate(-7deg);
+    }
+    .flash-notice-stamp .brand-mark {
+        width: 44px;
+        height: 44px;
+    }
+    .flash-notice-eyebrow {
+        margin: 0 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+    .flash-notice-message {
+        margin: 0;
+        font-size: clamp(18px, 2vw, 22px);
+        font-weight: 600;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
+    }
+    @media (max-width: 600px) {
+        .flash-notice {
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px 16px;
+        }
+        .flash-notice-stamp {
+            width: 44px;
+            height: 44px;
+        }
+        .flash-notice-stamp .brand-mark {
+            width: 30px;
+            height: 30px;
+        }
+    }
     .notice,
     .errors {
         position: relative;
@@ -1233,8 +1288,9 @@
         padding-top: 18px;
         border-top: 1px solid;
     }
-    .collection-preview-caption h2 {
+    .collection-preview-caption :is(h2, h3) {
         font-size: clamp(36px, 5vw, 64px);
+        line-height: 1;
         margin-bottom: 4px;
         overflow-wrap: anywhere;
     }
@@ -1674,7 +1730,7 @@
         .collection-preview:nth-child(even) {
             transform: none;
         }
-        .collection-preview-caption h2 {
+        .collection-preview-caption :is(h2, h3) {
             font-size: 48px;
         }
         .collection-preview-covers {

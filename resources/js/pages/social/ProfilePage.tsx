@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 
+import { CollectionTabs } from '@/modules/lists/CollectionTabs';
 import { CollectionHeading } from '@/modules/social/CollectionHeading';
 import { FriendActions } from '@/modules/social/FriendActions';
 import { ProfileShelf } from '@/modules/social/ProfileShelf';
@@ -7,6 +8,7 @@ import type { ProfileProps, SocialProps } from '@/modules/social/types';
 
 export function ProfilePage({
     person,
+    listCount,
     records,
     visible,
     friendsOnly,
@@ -35,6 +37,11 @@ export function ProfilePage({
                     </Link>
                 )}
             </CollectionHeading>
+            <CollectionTabs
+                active="records"
+                person={person}
+                listCount={listCount}
+            />
             {!visible ? (
                 <section className="empty panel">
                     <h2>
@@ -47,6 +54,14 @@ export function ProfilePage({
                             ? 'This collector shares their records with friends. Once your request is accepted, you can explore their collection.'
                             : 'This collector keeps their collection to themselves. Being friends won’t make it visible.'}
                     </p>
+                    {listCount > 0 && (
+                        <Link
+                            className="button"
+                            href={`${person.profileUrl}/lists`}
+                        >
+                            View lists ({listCount})
+                        </Link>
+                    )}
                     {friendsOnly && user?.verified && (
                         <>
                             {friendship && (

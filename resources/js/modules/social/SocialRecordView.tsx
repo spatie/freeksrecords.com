@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/react';
 import { browseHash } from '@/components/records/browseState';
 import { ListeningView } from '@/components/records/ListeningView';
 import type { SleeveOrigin } from '@/components/records/recordMotion';
+import { RecordListActions } from '@/modules/lists/RecordListActions';
 import { RecordRoom } from '@/modules/social/RecordRoom';
 import { RecordSocial } from '@/modules/social/RecordSocial';
 import type { RecordProps } from '@/modules/social/types';
@@ -38,6 +39,7 @@ export function SocialRecordView({
                     shareUrl: record.url,
                 }}
                 details={payload}
+                actions={<RecordListActions record={record} />}
                 onReady={onReady}
                 onBack={onBack}
                 onArtist={(artist) =>

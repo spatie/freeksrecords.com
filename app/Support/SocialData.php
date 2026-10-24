@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\CollectionRecord;
 use App\Models\Comment;
+use App\Models\RecordList;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Http\Request;
@@ -52,6 +53,11 @@ class SocialData
                 'sharedNote' => $record->shared_note,
                 ...($owner ? ['privateNote' => $record->private_note] : []),
                 'canEditNotes' => $owner,
+                'lists' => $owner && $request->user()->hasVerifiedEmail()
+                    ? RecordList::query()->where('user_id', $record->user_id)->orderBy('name')
+                        ->withExists(['records as contains_record' => fn ($query) => $query->whereKey($record->id)])
+                        ->get()->map(fn (RecordList $list) => ['id' => $list->id, 'publicId' => $list->public_id, 'name' => $list->name, 'visibility' => $list->visibility, 'containsRecord' => $list->getAttribute('contains_record')])->all()
+                    : [],
                 'commentsEnabled' => $record->user->comments_enabled,
             ],
             'comments' => self::pagination($comments, $comments->getCollection()->map(fn (Comment $comment) => [
@@ -76,6 +82,18 @@ class SocialData
             'handle' => $user->handle,
             'profileUrl' => route('profile', $user->handle, false),
             'avatarUrl' => $user->google_avatar_url,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function listPreview(RecordList $list): array
+    {
+        return [
+            ...$list->only(['id', 'name', 'description', 'visibility']),
+            'publicId' => $list->public_id,
+            'owner' => self::person($list->user),
+            'count' => $list->records_count,
+            'covers' => $list->records->map(fn (CollectionRecord $copy) => route('lists.cover', [$list, $copy], false))->all(),
         ];
     }
 

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\CollectionRecord;
+use App\Models\RecordList;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,6 +25,15 @@ class SocialPreview
             'imageAlt' => 'Plaat Club. Good taste is contagious.',
             'type' => 'website',
         ];
+
+        $list = $request->route('recordList');
+        if ($list instanceof RecordList && $list->canView(null)) {
+            return array_replace($preview, [
+                'title' => "{$list->name} · {$list->user->name}",
+                'description' => $list->description ?: "A selection of records by {$list->user->name} on Plaat Club.",
+                'url' => route('lists.show', $list),
+            ]);
+        }
 
         $record = $request->route('record');
         $id = $request->query('record');

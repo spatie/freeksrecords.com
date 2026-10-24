@@ -36,7 +36,7 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
     try {
         $this->artisan('migrate', ['--database' => 'social_migration'])->assertSuccessful();
         (require database_path('migrations/0001_01_01_000001_create_cache_table.php'))->up();
-        foreach (['collection_browse_entries', 'social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'artist_release', 'artists', 'releases', 'invitations', 'users', 'password_reset_tokens'] as $table) {
+        foreach (['record_list_entries', 'record_lists', 'collection_browse_entries', 'social_notifications', 'comments', 'appreciations', 'friendships', 'collection_records', 'artist_release', 'artists', 'releases', 'invitations', 'users', 'password_reset_tokens'] as $table) {
             Schema::drop($table);
         }
         Schema::table('activity_log', function (Blueprint $table) {
@@ -63,6 +63,10 @@ it('migrates the existing collection losslessly and silently to Freek’s reserv
         $migration = require database_path('migrations/2026_10_23_130000_promote_release_metadata_columns.php');
         $migration->up();
         $migration = require database_path('migrations/2026_10_23_140000_add_public_ids.php');
+        $migration->up();
+        $migration = require database_path('migrations/2026_10_22_100000_create_record_lists.php');
+        $migration->up();
+        $migration = require database_path('migrations/2026_10_23_190000_add_public_ids_to_record_lists.php');
         $migration->up();
         $freek = User::freek();
         expect($freek->email)->toBe('freek@spatie.be')->and($freek->visibility)->toBe('everyone')->and($freek->collection_imported_at)->not->toBeNull();

@@ -4,6 +4,7 @@ import type {
     CollectionRecord,
     CollectionRecordSummary,
 } from '@/components/records/types';
+import type { ListPreview } from '@/modules/lists/types';
 
 export type Visibility = 'only_me' | 'friends' | 'everyone';
 
@@ -68,7 +69,9 @@ export type Collector = Person & {
 
 export type RecordArtwork = { cover: string; title: string; url: string };
 export type HomeProps = { artwork: RecordArtwork[] };
-export type CollectionsProps = { collectors: Pagination<Collector> };
+export type CollectionsProps =
+    | { tab: 'collections'; collectors: Pagination<Collector> }
+    | { tab: 'lists'; lists: Pagination<ListPreview> };
 export type AuthProps = {
     artwork: RecordArtwork[];
     mode: 'login' | 'register' | 'forgot' | 'reset' | 'verify';
@@ -77,6 +80,7 @@ export type AuthProps = {
 };
 export type ProfileProps = {
     person: Person;
+    listCount: number;
     visible: boolean;
     friendsOnly: boolean;
     friendship: FriendsProps['connections'][number] | null;
@@ -118,6 +122,13 @@ export type RecordProps = {
         sharedNote: string | null;
         privateNote?: string | null;
         canEditNotes: boolean;
+        lists: {
+            id: number;
+            publicId: string;
+            name: string;
+            visibility: Visibility;
+            containsRecord: boolean;
+        }[];
         commentsEnabled: boolean;
     };
     comments: Pagination<{

@@ -9,6 +9,7 @@ use App\Actions\Social\UpdateRecordAppreciationAction;
 use App\Models\CollectionRecord;
 use App\Models\Comment;
 use App\Models\Friendship;
+use App\Models\RecordList;
 use App\Models\SocialNotification;
 use App\Models\User;
 use App\Support\ProfileCollection;
@@ -32,6 +33,7 @@ class SocialController extends Controller
 
         return Inertia::render('social/ProfilePage', [
             'person' => SocialData::person($user), 'visible' => $visible,
+            'listCount' => RecordList::visibleTo($request->user())->where('user_id', $user->id)->count(),
             'friendsOnly' => $user->visibility === 'friends',
             'friendship' => ! $visible && $request->user() ? Friendship::query()->where([
                 'user_low' => min($request->user()->id, $user->id),
@@ -54,7 +56,7 @@ class SocialController extends Controller
 
         return match ($request->header('X-Inertia-Partial-Component')) {
             'social/HomePage' => app(HomeController::class)->intro(),
-            'social/CollectionsPage' => app(HomeController::class)->collections(),
+            'social/CollectionsPage' => app(HomeController::class)->collections($request),
             'social/FeedPage' => $request->user()?->hasVerifiedEmail()
                 ? $this->feed($request)
                 : $this->profile($request, $user),

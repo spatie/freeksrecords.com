@@ -58,6 +58,10 @@ export function SocialLayout({ children }: { children: ReactNode }) {
             'social/HomePage': 'home-page',
             'social/AuthPage': 'auth-page',
             'social/ProfilePage': 'collection-page',
+            'social/ListsPage': 'lists-page',
+            'social/ProfileListsPage': 'lists-page',
+            'social/ListPage': 'lists-page',
+            'social/ListEditPage': 'lists-page',
             'social/CollectionsPage': 'explore-page',
             'social/FeedPage': 'feed-page',
             'social/FriendsPage': 'friends-page',
@@ -122,7 +126,10 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                             : user.profileUrl
                                     }
                                     aria-current={
-                                        path === user.profileUrl || onboarding
+                                        path === user.profileUrl ||
+                                        path === '/lists' ||
+                                        path.startsWith('/lists/') ||
+                                        onboarding
                                             ? 'page'
                                             : undefined
                                     }
@@ -152,7 +159,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                             : undefined
                                     }
                                 >
-                                    Public collections
+                                    Explore
                                 </Link>
                             </nav>
                         )}
@@ -192,7 +199,7 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                                 path === '/collections' ? 'page' : undefined
                             }
                         >
-                            Public collections
+                            Explore
                         </Link>
                         <Link
                             href="/about"
@@ -227,9 +234,25 @@ export function SocialLayout({ children }: { children: ReactNode }) {
                             user?.discogsConnected &&
                             !user.importedAt
                         ) && (
-                            <p className="notice" role="status">
-                                {props.flash.status}
-                            </p>
+                            <div className="flash-notice" role="status">
+                                <span
+                                    className="flash-notice-stamp"
+                                    aria-hidden="true"
+                                >
+                                    <span className="brand-mark" />
+                                </span>
+                                <div>
+                                    <p
+                                        className="flash-notice-eyebrow"
+                                        aria-hidden="true"
+                                    >
+                                        On the record
+                                    </p>
+                                    <p className="flash-notice-message">
+                                        {props.flash.status}
+                                    </p>
+                                </div>
+                            </div>
                         )}
                     {Object.keys(props.errors).length > 0 && (
                         <div className="errors" role="alert">
