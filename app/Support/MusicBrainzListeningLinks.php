@@ -211,7 +211,7 @@ class MusicBrainzListeningLinks
         return Cache::lock('musicbrainz-request', 35)->block(40, function () use ($path, $query): ?array {
             $delay = Cache::get('musicbrainz-next-request', 0) - now()->getTimestampMs();
             if ($delay > 5000) {
-                throw new RuntimeException('MusicBrainz is cooling down; retry this release later.');
+                throw new MusicBrainzRateLimitException((int) ceil($delay / 1000));
             }
             if ($delay > 0) {
                 Sleep::for($delay)->milliseconds();
@@ -229,6 +229,8 @@ class MusicBrainzListeningLinks
                 $seconds = is_numeric($retry) ? (int) $retry : max(0, (strtotime($retry) ?: 0) - now()->getTimestamp());
                 $seconds = max(60, $seconds);
                 Cache::put('musicbrainz-next-request', now()->addSeconds($seconds)->getTimestampMs(), $seconds + 120);
+
+                throw new MusicBrainzRateLimitException($seconds);
             }
             if ($response->status() === 404) {
                 return null;

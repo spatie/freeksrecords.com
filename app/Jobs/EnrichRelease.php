@@ -6,6 +6,8 @@ use App\Actions\Discogs\ImportReleaseInfoAction;
 use App\Actions\MusicBrainz\EnrichReleaseListeningLinksAction;
 use App\Models\Release;
 use App\Support\DiscogsRateLimitException;
+use App\Support\MusicBrainzRateLimitException;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -19,6 +21,8 @@ class EnrichRelease implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 5;
 
+    public int $maxExceptions = 5;
+
     public int $timeout = 600;
 
     public function __construct(public int $releaseId, public bool $refresh = false)
@@ -29,6 +33,11 @@ class EnrichRelease implements ShouldBeUnique, ShouldQueue
     public function uniqueId(): string
     {
         return (string) $this->releaseId;
+    }
+
+    public function retryUntil(): CarbonImmutable
+    {
+        return CarbonImmutable::now()->addWeek();
     }
 
     /** @return list<int> */
@@ -50,7 +59,7 @@ class EnrichRelease implements ShouldBeUnique, ShouldQueue
             }
 
             $enrichLinks->execute($release->id, $this->refresh);
-        } catch (DiscogsRateLimitException $exception) {
+        } catch (DiscogsRateLimitException|MusicBrainzRateLimitException $exception) {
             $this->release($exception->retryAfter);
         } catch (ConnectionException|RequestException $exception) {
             // HTTP exceptions can contain authorization headers; do not serialize them into failed_jobs.

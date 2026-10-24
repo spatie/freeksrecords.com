@@ -390,7 +390,10 @@ incomplete releases daily at 05:00 Europe/Brussels as a safety net.
 
 MusicBrainz requests share an atomic lock and are spaced at least 1.1 seconds apart, in
 addition to response time. HTTP 429/503 cooldowns and `Retry-After` are shared across workers;
-failed jobs retry with backoff. As with Discogs, production requires the shared Redis cache.
+cooldowns postpone jobs without consuming their exception budget. Other failures retry with
+backoff, with Laravel's five-exception limit. Every job has a fixed deadline one week after
+dispatch, which retries never extend. The daily safety net can dispatch a new job for an
+unfinished release after a previous job fails. As with Discogs, production requires the shared Redis cache.
 Do not run the separate legacy `records:sync-dates --musicbrainz` lookup concurrently, since
 that older date importer has its own request pacing. Large backfills belong in the background,
 not in deployment or page requests. Legacy edge-cached pages can retain old links until their

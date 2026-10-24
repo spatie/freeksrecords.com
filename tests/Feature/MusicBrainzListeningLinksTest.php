@@ -6,11 +6,12 @@ use App\Actions\MusicBrainz\EnrichReleaseListeningLinksAction;
 use App\Jobs\EnrichRelease;
 use App\Models\Release;
 use App\Support\Discogs;
+use App\Support\MusicBrainzRateLimitException;
 use App\Support\RecordCollection;
 use App\Support\RecordReleaseDates;
 use Illuminate\Http\Client\Request;
-use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
@@ -199,9 +200,9 @@ it('keeps failures retryable and coordinates request spacing and server cooldown
             : Http::response(['release-groups' => []]);
     });
 
-    expect(fn () => app(EnrichReleaseListeningLinksAction::class)->execute(201))->toThrow(RequestException::class)
+    expect(fn () => app(EnrichReleaseListeningLinksAction::class)->execute(201))->toThrow(MusicBrainzRateLimitException::class)
         ->and($release->fresh()->musicbrainz_checked_at)->toBeNull();
-    expect(fn () => app(EnrichReleaseListeningLinksAction::class)->execute(201))->toThrow(RuntimeException::class);
+    expect(fn () => app(EnrichReleaseListeningLinksAction::class)->execute(201))->toThrow(MusicBrainzRateLimitException::class);
     $this->travel(180)->seconds();
     $release->update(['musicbrainz_id' => null]);
     app(EnrichReleaseListeningLinksAction::class)->execute(201);
@@ -303,8 +304,9 @@ it('keeps imported Discogs information when MusicBrainz fails and resumes only t
         'musicbrainz.org/ws/2/release?*' => Http::response(['release-count' => 0, 'releases' => []]),
     ]);
 
-    expect(fn () => app()->call([new EnrichRelease(201), 'handle']))->toThrow(RuntimeException::class, 'HTTP 503')
-        ->and($release->fresh()->info_imported_at)->not->toBeNull()
+    app()->call([new EnrichRelease(201), 'handle']);
+
+    expect($release->fresh()->info_imported_at)->not->toBeNull()
         ->and($release->fresh()->musicbrainz_checked_at)->toBeNull()
         ->and($release->fresh()->release_notes)->toBe('Backfilled sleeve notes.');
 
@@ -325,3 +327,60 @@ it('retains the resolved release-group ID when adding date metadata', function (
 
     expect(app(RecordReleaseDates::class)->enrichOne($record)['musicbrainzId'])->toBe('album-group');
 });
+
+it('finishes after repeated cooldowns without spending the error budget or extending the deadline', function () {
+    config(['queue.default' => 'database']);
+    Bus::swap(Bus::getFacadeRoot()->dispatcher);
+    $release = listeningLinkRelease();
+    $release->update(['info_imported_at' => now()]);
+    Http::fakeSequence()->push([], 503, ['Retry-After' => '90'])->push([], 429)->push([], 503)
+        ->push([], 429)->push([], 503)->push([], 429)
+        ->push([...listeningLinkEdition(), 'id' => 'album-group'])
+        ->push(['release-count' => 0, 'releases' => []]);
+    EnrichRelease::dispatch(201);
+    $deadline = now()->addWeek()->timestamp;
+
+    foreach (range(1, 7) as $attempt) {
+        if ($attempt === 2) {
+            Cache::put('musicbrainz-next-request', now()->addSeconds(125)->getTimestampMs(), 300);
+        }
+        $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'release-enrichment', '--once' => true, '--sleep' => 0])->assertSuccessful();
+        $this->assertDatabaseCount('failed_jobs', 0);
+        $job = DB::table('jobs')->sole();
+        expect(json_decode($job->payload, true)['retryUntil'])->toBe($deadline)
+            ->and($job->available_at - now()->timestamp)->toBe($attempt === 1 ? 90 : ($attempt === 2 ? 125 : 60))
+            ->and($release->fresh()->musicbrainz_checked_at)->toBeNull();
+        $this->travelTo(now()->setTimestamp($job->available_at));
+    }
+
+    $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'release-enrichment', '--once' => true, '--sleep' => 0])->assertSuccessful();
+    $this->assertDatabaseCount('jobs', 0);
+    $this->assertDatabaseCount('failed_jobs', 0);
+    expect($release->fresh()->musicbrainz_checked_at)->not->toBeNull();
+    Http::assertSentCount(8);
+});
+
+it('stops enrichment at the error budget or the fixed deadline', function (bool $expire) {
+    config(['queue.default' => 'database']);
+    Bus::swap(Bus::getFacadeRoot()->dispatcher);
+    $release = listeningLinkRelease();
+    $release->update(['info_imported_at' => now()]);
+    Http::fakeSequence()->push([], 500)->push([], 500)->push([], 500)->push([], 500)->push([], 500);
+    EnrichRelease::dispatch(201);
+    if ($expire) {
+        $this->travel(8)->days();
+    }
+
+    foreach (range(1, $expire ? 1 : 5) as $attempt) {
+        $this->artisan('queue:work', ['connection' => 'database', '--queue' => 'release-enrichment', '--once' => true, '--sleep' => 0])->assertSuccessful();
+        if (! $expire && $attempt < 5) {
+            $this->assertDatabaseCount('failed_jobs', 0);
+            $this->travelTo(now()->setTimestamp(DB::table('jobs')->sole()->available_at));
+        }
+    }
+
+    $this->assertDatabaseCount('jobs', 0);
+    $this->assertDatabaseCount('failed_jobs', 1);
+    expect($release->fresh()->musicbrainz_checked_at)->toBeNull();
+    Http::assertSentCount($expire ? 0 : 5);
+})->with([false, true]);
