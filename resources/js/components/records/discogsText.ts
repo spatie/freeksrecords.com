@@ -87,19 +87,3 @@ export function discogsText(text: string): ReactNode[] {
 
     return root;
 }
-
-export function bandcampLink(record: {
-    artist: string;
-    title: string;
-    bandcampUrl?: string | null;
-    bandcampSearch?: boolean;
-}) {
-    const supplied = safeExternalUrl(record.bandcampUrl);
-
-    return {
-        url:
-            supplied ??
-            `https://bandcamp.com/search?q=${encodeURIComponent(`${record.artist} ${record.title}`)}&item_type=a`,
-        search: supplied ? (record.bandcampSearch ?? true) : true,
-    };
-}

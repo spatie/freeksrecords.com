@@ -7,10 +7,7 @@ import { useRecordDetails } from '@/components/records/useRecordDetails';
 import { AppleIcon } from '@/components/records/AppleIcon';
 import { SpotifyIcon } from '@/components/records/SpotifyIcon';
 import { RecordLinerNotes } from '@/components/records/RecordLinerNotes';
-import {
-    bandcampLink,
-    safeExternalUrl,
-} from '@/components/records/discogsText';
+import { safeExternalUrl } from '@/components/records/discogsText';
 import type {
     CollectionRecord,
     CollectionRecordSummary,
@@ -34,7 +31,10 @@ export function RecordDetails({
     const record = details ?? summary;
     const tracks = details?.tracks ?? [];
     const addedDate = collectionAddedDate(record);
-    const bandcamp = bandcampLink(record);
+    const bandcampUrl =
+        record.bandcampSearch === false
+            ? safeExternalUrl(record.bandcampUrl)
+            : undefined;
     return (
         <>
             <div className="listening-artists">
@@ -100,28 +100,26 @@ export function RecordDetails({
                     <SpotifyIcon size={24} />
                     <span className="album-service-name">Spotify</span>
                 </a>
-                <a
-                    aria-label={
-                        bandcamp.search
-                            ? 'Find this release on Bandcamp'
-                            : 'Open this release on Bandcamp'
-                    }
-                    href={bandcamp.url}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    title="Bandcamp"
-                >
-                    <svg
-                        aria-hidden="true"
-                        width={24}
-                        height={24}
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
+                {bandcampUrl && (
+                    <a
+                        aria-label="Open this release on Bandcamp"
+                        href={bandcampUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        title="Bandcamp"
                     >
-                        <path d="M6 5h18l-6 14H0z" />
-                    </svg>
-                    <span className="album-service-name">Bandcamp</span>
-                </a>
+                        <svg
+                            aria-hidden="true"
+                            width={24}
+                            height={24}
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                        >
+                            <path d="M6 5h18l-6 14H0z" />
+                        </svg>
+                        <span className="album-service-name">Bandcamp</span>
+                    </a>
+                )}
             </div>
             <div className="listening-tracklist">
                 <div className="tracks-heading">

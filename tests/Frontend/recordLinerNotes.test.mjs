@@ -53,7 +53,7 @@ const { RecordLinerNotes } =
     await import('../../resources/js/components/records/RecordLinerNotes.tsx');
 const { RecordDetails } =
     await import('../../resources/js/components/records/RecordDetails.tsx');
-const { discogsText, safeExternalUrl, bandcampLink } =
+const { discogsText, safeExternalUrl } =
     await import('../../resources/js/components/records/discogsText.ts');
 
 const record = {
@@ -196,40 +196,29 @@ await test('Discogs markup uses fixed safe links and unknown or malformed markup
     );
 });
 
-await test('Bandcamp uses a safe album-search fallback for old or unsafe payloads and accessible Find/Open labels', () => {
-    const fallback = bandcampLink(record);
-    assert.equal(fallback.search, true);
-    assert.equal(
-        new URL(fallback.url).searchParams.get('q'),
-        'Oren Ambarchi Shebang',
-    );
-    assert.equal(new URL(fallback.url).searchParams.get('item_type'), 'a');
-    assert.match(
-        renderDetails(record),
-        /aria-label="Find this release on Bandcamp"/,
-    );
-    assert.match(
-        renderDetails({
-            ...record,
-            bandcampUrl: 'https://artist.bandcamp.com/album/shebang',
-            bandcampSearch: false,
-        }),
-        /aria-label="Open this release on Bandcamp"/,
-    );
-    assert.match(
-        renderDetails({
-            ...record,
+await test('Bandcamp is only shown for a confirmed direct link, never a search fallback', () => {
+    const directUrl = 'https://artist.bandcamp.com/album/shebang';
+    const html = renderDetails({
+        ...record,
+        bandcampUrl: directUrl,
+        bandcampSearch: false,
+    });
+    assert.match(html, /aria-label="Open this release on Bandcamp"/);
+    assert.ok(html.includes(`href="${directUrl}"`));
+
+    for (const payload of [
+        {},
+        { bandcampUrl: null, bandcampSearch: false },
+        { bandcampUrl: directUrl },
+        {
             bandcampUrl: 'https://bandcamp.com/search?q=Shebang',
             bandcampSearch: true,
-        }),
-        /aria-label="Find this release on Bandcamp"/,
-    );
-    assert.deepEqual(
-        bandcampLink({
-            ...record,
-            bandcampUrl: 'javascript:alert(1)',
-            bandcampSearch: false,
-        }),
-        fallback,
-    );
+        },
+        { bandcampUrl: 'javascript:alert(1)', bandcampSearch: false },
+    ]) {
+        const hidden = renderDetails({ ...record, ...payload });
+        assert.doesNotMatch(hidden, /Bandcamp|bandcamp\.com/);
+        assert.match(hidden, /title="Apple Music"/);
+        assert.match(hidden, /title="Spotify"/);
+    }
 });
